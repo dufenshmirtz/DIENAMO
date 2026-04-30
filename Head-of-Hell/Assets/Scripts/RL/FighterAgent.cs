@@ -179,13 +179,7 @@ public class FighterAgent : Agent
 
     [Header("Offensive Intent Rewards")]
     [Tooltip("Reward for starting a light attack in a good attack window.")]
-    float goodLightIntentBonus = +0.00035f;
-
-    [Tooltip("Reward for starting a heavy attack in a good attack window.")]
-    float goodHeavyIntentBonus = +0.00025f;
-
-    [Tooltip("Reward for starting a special in a good attack window.")]
-    float goodSpecialIntentBonus = +0.00030f;
+    float usefulIntentBonus = +0.00035f;
 
     [Tooltip("Horizontal range where attack-start rewards are allowed.")]
     float attackIntentRangeX = 1.10f;
@@ -664,6 +658,7 @@ public class FighterAgent : Agent
         BehaviorHygieneRewards(jump, drop, light, heavy, blockHold, special, chargeMode, parry);
         TacticalRangeRewards(light, heavy, special, chargeMode);
 
+        OffensiveIntentRewards(jump, drop, light, heavy, blockHold, special, chargeMode, parry);
         DirectionalHygieneRewards(moveX, light, special);
         PressureRewards(moveX, blockHold);
         PassivityPenalty(light, heavy, special, chargeMode, parry, blockHold);
@@ -1347,8 +1342,12 @@ public class FighterAgent : Agent
             rewardDebugger?.LogApproachReward(forwardPressureBonus);
         }
 
-        // Reward active close pressure instead of freezing
-        if (closeEnoughToPressure && movingToward && blockHold == 0)
+        bool goodPressureDistance =
+            absDx >= usefulRangeMinX &&
+            absDx <= closePressureRangeX &&
+            absDy <= closePressureRangeY;
+
+        if (goodPressureDistance && movingToward && blockHold == 0)
         {
             AddReward(closePressureBonus);
         }
@@ -1360,7 +1359,7 @@ public class FighterAgent : Agent
         }
     }
 
-        void OffensiveIntentRewards(int light, int heavy, int special)  //maybe remove
+    void OffensiveIntentRewards(int jump, int drop, int light, int heavy, int blockHold, int special, int chargeMode, int parry)
     {
         if (self == null || opp == null)
         {
@@ -1377,37 +1376,28 @@ public class FighterAgent : Agent
 
         bool facingOpponent = IsFacingOpponent();
 
-        bool lightPressedNow = (light == 1 && lastLightAction == 0);
-        bool heavyPressedNow = (heavy == 1 && lastHeavyAction == 0);
-        bool specialPressedNow = (special == 1 && lastSpecialAction == 0);
-
-        bool inAttackWindow =
+        bool inCloseRange =
             absDx <= attackIntentRangeX &&
             absDy <= attackIntentRangeY &&
             facingOpponent;
 
-        if (inAttackWindow)
+        bool nonMovementAction =
+            jump == 1 ||
+            drop == 1 ||
+            light == 1 ||
+            heavy == 1 ||
+            blockHold == 1 ||
+            special == 1 ||
+            chargeMode != 0 ||
+            parry == 1;
+
+        if (inCloseRange && nonMovementAction)
         {
-            if (lightPressedNow)
-            {
-                AddReward(goodLightIntentBonus);
-            }
-
-            if (heavyPressedNow)
-            {
-                AddReward(goodHeavyIntentBonus);
-            }
-
-            if (specialPressedNow)
-            {
-                AddReward(goodSpecialIntentBonus);
-            }
+            AddReward(usefulIntentBonus);
         }
-
-        lastHeavyAction = heavy;
     }
 
-        void PassivityPenalty(int light, int heavy, int special, int chargeMode, int parry, int blockHold)
+    void PassivityPenalty(int light, int heavy, int special, int chargeMode, int parry, int blockHold)
     {
         if (self == null || opp == null)
         {
