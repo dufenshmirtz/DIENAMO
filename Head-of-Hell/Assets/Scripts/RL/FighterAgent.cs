@@ -22,182 +22,113 @@ public class FighterAgent : Agent
     public string playerSuffix = "_P1";
     private AIInputProvider aiInput;
 
-    // live pointers
     private Character self;
     private Character opp;
 
-    // cache keys for Heuristic
     KeyCode upK, downK, leftK, rightK, lightK, heavyK, blockK, abilityK, chargeK, parryK;
 
     [Header("Main Rewards")]
-     float rewardDamageDealt = +0.01f;
-     float rewardDamageTaken = -0.007f;
-     float rewardWin = +1.0f;
-     float rewardLoss = -1.0f;
-     float stepPenalty = -0.0001f;
+    float rewardDamageDealt = +0.01f;
+    float rewardDamageTaken = -0.007f;
+    float rewardWin = +1.0f;
+    float rewardLoss = -1.0f;
+    float stepPenalty = -0.0001f;
 
     [Header("Minimal Spacing Shaping")]
-     float spacingBonus = +0.0002f;
-
-    [Tooltip("Useful horizontal spacing for common melee attacks.")]
-     float usefulRangeMinX = 0.4f;
-
-    [Tooltip("Useful horizontal spacing for common melee attacks.")]
-     float usefulRangeMaxX = 0.90f;
-
-    [Tooltip("Useful vertical spacing for common melee attacks.")]
-     float usefulRangeMaxY = 0.50f;
+    float spacingBonus = +0.0002f;
+    float usefulRangeMinX = 0.4f;
+    float usefulRangeMaxX = 0.90f;
+    float usefulRangeMaxY = 0.50f;
 
     [Header("Observation scales")]
-     float relXScale = 9f;
-     float relYScale = 5f;
-     float velScale = 10f;
-
-     int totalCharacterCount = 10;
+    float relXScale = 9f;
+    float relYScale = 5f;
+    float velScale = 10f;
+    int totalCharacterCount = 10;
 
     [Header("Behavior Hygiene")]
-     float mashPenalty = -0.0003f;
-     float airJumpPenalty = -0.0008f;
-     float edgeCampPenalty = -0.0007f;
-
-    [Tooltip("How many consecutive action changes before we start punishing noisy mashing.")]
-     int mashChangeThreshold = 3;
-
-    [Tooltip("World X beyond which we consider the fighter near the edge.")]
-     float edgeZoneX = 8f;
-
-    [Tooltip("How long (seconds) the fighter can stay near the edge before mild penalty starts.")]
-     float edgeGraceTime = 1.75f;
-
-    [Tooltip("Small x movement range considered 'camping in place'.")]
-     float edgeSmallMoveThreshold = 0.35f;
+    float mashPenalty = -0.0003f;
+    float airJumpPenalty = -0.0008f;
+    float edgeCampPenalty = -0.0007f;
+    int mashChangeThreshold = 3;
+    float edgeZoneX = 8f;
+    float edgeGraceTime = 1.75f;
+    float edgeSmallMoveThreshold = 0.35f;
 
     [Header("Move Semantics")]
-     private ReachType lightReachType = ReachType.Melee;
-     private ReachType specialReachType = ReachType.Melee;
+    private ReachType lightReachType = ReachType.Melee;
+    private ReachType specialReachType = ReachType.Melee;
 
     [Header("Range Logic")]
-     float extremeFarThreshold = 8.5f;
-
-    [Tooltip("Tiny penalty for using heavy from absurdly far away.")]
-     float extremeFarHeavyPenalty = -0.0007f;
-
-    [Tooltip("Tiny penalty for using charge from absurdly far away.")]
-     float extremeFarChargePenalty = -0.001f;
-
-    [Tooltip("Reward for reducing distance when clearly outside melee threat range.")]
-     float approachBonus = +0.00065f;
-
-    [Tooltip("Extra margin beyond useful melee range before approach shaping starts.")]
-     float approachStartMargin = 0.75f;
-
-    [Tooltip("Tiny penalty for using clearly melee light from absurdly far away.")]
-     float farMeleeLightPenalty = -0.00035f;
-
-    [Tooltip("Tiny penalty for using clearly melee special from absurdly far away.")]
-     float farMeleeSpecialPenalty = -0.00035f;
+    float extremeFarThreshold = 8.5f;
+    float extremeFarHeavyPenalty = -0.0007f;
+    float extremeFarChargePenalty = -0.001f;
+    float approachBonus = +0.00065f;
+    float approachStartMargin = 0.75f;
+    float farMeleeLightPenalty = -0.00035f;
+    float farMeleeSpecialPenalty = -0.00035f;
 
     [Header("Directional Hygiene")]
-    [Tooltip("Tiny penalty for using a Dash-type move without horizontal direction input.")]
-     float dashNoDirectionPenalty = -0.0005f;
+    float dashNoDirectionPenalty = -0.0005f;
+    float wrongFacingSpecialPenalty = -0.0005f;
 
-    [Tooltip("Tiny penalty for using special while not facing the opponent.")]
-     float wrongFacingSpecialPenalty = -0.0005f;
-
-    //anti-charge-exploit
-     int freeConsecutiveCharges = 4;
-     float repeatedChargePenaltyBase = -0.0001f;
-     float repeatedChargePenaltyStep = -0.0003f;
-     float repeatedChargePenaltyCap = -0.0006f;
-
-     float chargeChainDecaySeconds = 0.9f;
+    int freeConsecutiveCharges = 4;
+    float repeatedChargePenaltyBase = -0.0001f;
+    float repeatedChargePenaltyStep = -0.0003f;
+    float repeatedChargePenaltyCap = -0.0006f;
+    float chargeChainDecaySeconds = 0.9f;
 
     [Header("Charge Release Outcome")]
-    float emptyReleasedChargePenalty = -0.00003f;  // must be removed along with code for it
+    float emptyReleasedChargePenalty = -0.00003f;
 
     [Header("Anti Vertical Cheese")]
-    [Tooltip("How long they can stay vertically stacked before punishment starts.")]
     float verticalCheeseGraceTime = 0.25f;
-
-    [Tooltip("Very small horizontal gap while one fighter stays above/below the other.")]
     float verticalCheeseMaxX = 0.5f;
-
-    [Tooltip("Minimum vertical offset that counts as useless top/bottom stacking.")]
     float verticalCheeseMinY = 0.75f;
-
-    [Tooltip("Base penalty once grace time is exceeded.")]
     float verticalCheesePenaltyBase = -0.00015f;
-
-    [Tooltip("Extra penalty added per second after grace time.")]
-     float verticalCheesePenaltyPerSecond = -0.00045f;
-
-    [Tooltip("Maximum total penalty per step from vertical cheese.")]
+    float verticalCheesePenaltyPerSecond = -0.00045f;
     float verticalCheesePenaltyCap = -0.009f;
-
     float verticalCheeseTimer = 0f;
-    [Tooltip("How quickly the vertical cheese timer decays when they leave the bad state.")]
-     float verticalCheeseDecayPerSecond = 1.2f;
+    float verticalCheeseDecayPerSecond = 1.2f;
 
     [Header("Block Hold Hygiene")]
-    [Tooltip("How long block can be held before tiny penalty starts.")]
     float blockHoldGraceTime = 6f;
-
-    [Tooltip("Very small penalty applied while holding block too long.")]
     float longBlockHoldPenaltyPerSecond = -0.0015f;
-
-    [Tooltip("How quickly the block hold timer decays after releasing block.")]
     float blockHoldDecayPerSecond = 1.5f;
 
     [Header("Repeat Move Hygiene")]
-    [Tooltip("How many consecutive starts of the same move are free.")]
     int freeRepeatedSameMoveStarts = 3;
-
-    [Tooltip("Tiny penalty base for repeating the exact same move too many times.")]
     float repeatedSameMovePenaltyBase = -0.00000f;
-
-    [Tooltip("Extra tiny penalty per extra repeated start.")]
     float repeatedSameMovePenaltyStep = -0.00001f;
-
-    [Tooltip("Cap for repeated same move penalty.")]
     float repeatedSameMovePenaltyCap = -0.00009f;
 
     [Header("Pressure / Aggression Shaping")]
-    [Tooltip("Reward for actively moving toward the opponent while outside close range.")]
     float forwardPressureBonus = +0.00035f;
-
-    [Tooltip("Small reward for staying active and advancing in close pressure range.")]
     float closePressureBonus = +0.00015f;
-
-    [Tooltip("Tiny penalty for backing away while already in a good fighting range.")]
     float retreatFromCloseRangePenalty = -0.00001f;
-
-    [Tooltip("Max horizontal distance where we consider it close enough for pressure.")]
     float closePressureRangeX = 1.4f;
-
-    [Tooltip("Max vertical distance where we consider it close enough for pressure.")]
     float closePressureRangeY = 0.7f;
 
     [Header("Offensive Intent Rewards")]
-    [Tooltip("Reward for starting a light attack in a good attack window.")]
     float usefulIntentBonus = +0.00035f;
-
-    [Tooltip("Horizontal range where attack-start rewards are allowed.")]
     float attackIntentRangeX = 1.10f;
-
-    [Tooltip("Vertical range where attack-start rewards are allowed.")]
     float attackIntentRangeY = 0.65f;
 
     [Header("Anti-Passivity")]
-    [Tooltip("How long the agent may stay near the opponent without offensive action before punishment starts.")]
     float passiveNearGraceTime = 1.0f;
-
-    [Tooltip("Penalty per second for staying near the opponent without offensive action.")]
     float passiveNearPenaltyPerSecond = -0.0009f;
-
-    [Tooltip("Extra multiplier when the passive behavior is specifically defensive (block/parry).")]
     float defensivePassivityMultiplier = 1f;
-
     float passiveNearTimer = 0f;
+
+    [Header("Anti Body-Push Cheese")]
+    float bodyPushRangeX = 0.48f;
+    float bodyPushRangeY = 0.75f;
+    float bodyPushGraceTime = 0.16f;
+    float bodyPushPenaltyPerSecond = -0.018f;
+    float bodyPushBlockMultiplier = 1.7f;
+    float bodyPushRealPressureGrace = 0.22f;
+    float bodyPushTimer = 0f;
+    float recentRealPressureTimer = 0f;
 
     int lastHeavyAction = 0;
 
@@ -207,7 +138,6 @@ public class FighterAgent : Agent
 
     private FighterAgentRewardDebugger rewardDebugger;
 
-    // bookkeeping
     int lastSelfHP, lastOppHP;
     int lastMoveX = 0;
 
@@ -235,7 +165,6 @@ public class FighterAgent : Agent
     int lastStartedIntent = 0;
     int consecutiveSameMoveStarts = 0;
 
-    // optional
     FighterAgent oppAgent;
 
     void Start()
@@ -264,7 +193,6 @@ public class FighterAgent : Agent
             if (c != null)
             {
                 BindSelf(c);
-                //Debug.Log($"[Agent {playerSuffix}] Bound SELF: {c.name}");
             }
         }
 
@@ -274,7 +202,6 @@ public class FighterAgent : Agent
             if (e != null)
             {
                 BindEnemy(e);
-                //Debug.Log($"[Agent {playerSuffix}] Bound OPP: {e.name}");
             }
         }
     }
@@ -473,12 +400,7 @@ public class FighterAgent : Agent
 
         if (badVerticalCheese)
         {
-            float dt = Time.deltaTime;
-            if (dt <= 0f)
-            {
-                dt = 0.016f;
-            }
-
+            float dt = GetSafeDeltaTime();
             verticalCheeseTimer += dt;
 
             if (verticalCheeseTimer > verticalCheeseGraceTime)
@@ -497,11 +419,7 @@ public class FighterAgent : Agent
         }
         else
         {
-            float dt = Time.deltaTime;
-            if (dt <= 0f)
-            {
-                dt = 0.016f;
-            }
+            float dt = GetSafeDeltaTime();
 
             verticalCheeseTimer -= verticalCheeseDecayPerSecond * dt;
             if (verticalCheeseTimer < 0f)
@@ -629,8 +547,6 @@ public class FighterAgent : Agent
             parry = (parry == 1)
         };
 
-        int currentIntent = GetActionIntent(jump, drop, light, heavy, blockHold, special, chargeMode, parry);
-
         aiInput.Apply(cmd);
 
         AddReward(stepPenalty);
@@ -657,15 +573,13 @@ public class FighterAgent : Agent
         ShapingRewards();
         BehaviorHygieneRewards(jump, drop, light, heavy, blockHold, special, chargeMode, parry);
         TacticalRangeRewards(light, heavy, special, chargeMode);
-
         OffensiveIntentRewards(jump, drop, light, heavy, blockHold, special, chargeMode, parry);
         DirectionalHygieneRewards(moveX, light, special);
         PressureRewards(moveX, blockHold);
         PassivityPenalty(light, heavy, special, chargeMode, parry, blockHold);
-
+        BodyPushCheesePenalty(moveX, light, heavy, special, chargeMode, parry, blockHold);
         ChargeSpamPenalty(chargeMode);
         ChargeReleaseOutcomePenalty(chargeMode);
-
     }
 
     public override void Heuristic(in ActionBuffers actionsOut)
@@ -781,6 +695,9 @@ public class FighterAgent : Agent
 
         passiveNearTimer = 0f;
         lastHeavyAction = 0;
+
+        bodyPushTimer = 0f;
+        recentRealPressureTimer = 0f;
     }
 
     private void OnDestroy()
@@ -835,13 +752,8 @@ public class FighterAgent : Agent
             rewardDebugger?.LogAirJumpPenalty(airJumpPenalty);
         }
 
-        float dt = Time.deltaTime;
-        if (dt <= 0f)
-        {
-            dt = 0.016f;
-        }
+        float dt = GetSafeDeltaTime();
 
-        // Long block hold punishment
         if (blockHold == 1)
         {
             blockHoldTimer += dt;
@@ -862,7 +774,6 @@ public class FighterAgent : Agent
             }
         }
 
-        // Repeated same move punishment (only on new starts)
         bool startedNow = (currentIntent != 0 && previousIntent == 0);
 
         if (startedNow)
@@ -887,8 +798,8 @@ public class FighterAgent : Agent
 
                 repeatPenalty = Mathf.Max(repeatPenalty, repeatedSameMovePenaltyCap);
 
-                //AddReward(repeatPenalty); TempRemoval
-                //rewardDebugger?.LogRepeatSameMovePenalty(repeatPenalty);
+                // AddReward(repeatPenalty);
+                // rewardDebugger?.LogRepeatSameMovePenalty(repeatPenalty);
             }
         }
 
@@ -990,7 +901,6 @@ public class FighterAgent : Agent
         }
 
         float absDx = Mathf.Abs(opp.transform.position.x - self.transform.position.x);
-        float absDy = Mathf.Abs(opp.transform.position.y - self.transform.position.y);
 
         float approachStartDistance = usefulRangeMaxX + approachStartMargin;
         bool farFromOpponent = absDx > approachStartDistance;
@@ -1007,28 +917,24 @@ public class FighterAgent : Agent
         {
             if (heavy == 1)
             {
-                //Debug.Log($"[HeavyFar TRIGGER] CharID={self.characterID}  absDx={absDx}");
                 AddReward(extremeFarHeavyPenalty);
                 rewardDebugger?.LogExtremeFarHeavyPenalty(extremeFarHeavyPenalty);
             }
 
             if (chargeMode == 1)
             {
-                //Debug.Log($"[ChargeFar TRIGGER] CharID={self.characterID}  absDx={absDx}");
                 AddReward(extremeFarChargePenalty);
                 rewardDebugger?.LogExtremeFarChargePenalty(extremeFarChargePenalty);
             }
 
             if (light == 1 && IsStrictMelee(lightReachType))
             {
-                //Debug.Log($"[FarMeleeLight TRIGGER] CharID={self.characterID} LightReach={lightReachType} absDx={absDx}");
                 AddReward(farMeleeLightPenalty);
                 rewardDebugger?.LogFarMeleeLightPenalty(farMeleeLightPenalty);
             }
 
             if (special == 1 && IsStrictMelee(specialReachType))
             {
-                //Debug.Log($"[FarMeleeSpecial TRIGGER] CharID={self.characterID} SpecialReach={specialReachType} absDx={absDx}");
                 AddReward(farMeleeSpecialPenalty);
                 rewardDebugger?.LogFarMeleeSpecialPenalty(farMeleeSpecialPenalty);
             }
@@ -1187,7 +1093,7 @@ public class FighterAgent : Agent
 
         if (selfHP <= 0 && oppHP <= 0)
         {
-            return; // tie, ή βάλε ειδικό handling
+            return;
         }
 
         if (oppHP <= 0)
@@ -1217,11 +1123,7 @@ public class FighterAgent : Agent
             return;
         }
 
-        float dt = Time.deltaTime;
-        if (dt <= 0f)
-        {
-            dt = 0.016f;
-        }
+        float dt = GetSafeDeltaTime();
 
         timeSinceLastChargeStart += dt;
 
@@ -1291,8 +1193,8 @@ public class FighterAgent : Agent
 
             if (chargeWasFullyCharged && !dealtDamage)
             {
-                //AddReward(emptyReleasedChargePenalty);
-                //rewardDebugger?.LogEmptyChargeReleasePenalty(emptyReleasedChargePenalty);
+                // AddReward(emptyReleasedChargePenalty);
+                // rewardDebugger?.LogEmptyChargeReleasePenalty(emptyReleasedChargePenalty);
             }
 
             chargeTrackingActive = false;
@@ -1308,7 +1210,7 @@ public class FighterAgent : Agent
         lastChargeModeForOutcome = chargeMode;
     }
 
-        void PressureRewards(int moveX, int blockHold)
+    void PressureRewards(int moveX, int blockHold)
     {
         if (self == null || opp == null)
         {
@@ -1335,7 +1237,6 @@ public class FighterAgent : Agent
         bool outsideCloseRange =
             absDx > usefulRangeMaxX + 0.2f;
 
-        // Reward advancing when not yet in threatening range
         if (outsideCloseRange && movingToward)
         {
             AddReward(forwardPressureBonus);
@@ -1347,12 +1248,23 @@ public class FighterAgent : Agent
             absDx <= closePressureRangeX &&
             absDy <= closePressureRangeY;
 
-        if (goodPressureDistance && movingToward && blockHold == 0)
+        bool tooCloseBodyPushZone =
+            absDx <= bodyPushRangeX &&
+            absDy <= bodyPushRangeY;
+
+        bool doingRealPressure =
+            self.LightAttacking ||
+            self.HeavyAttacking ||
+            self.IsCasting ||
+            self.IsCharging ||
+            self.IsCharged ||
+            self.Parrying;
+
+        if (goodPressureDistance && movingToward && blockHold == 0 && (!tooCloseBodyPushZone || doingRealPressure))
         {
             AddReward(closePressureBonus);
         }
 
-        // Tiny penalty for retreating when already close enough to interact
         if (closeEnoughToPressure && movingAway)
         {
             AddReward(retreatFromCloseRangePenalty);
@@ -1409,11 +1321,7 @@ public class FighterAgent : Agent
             return;
         }
 
-        float dt = Time.deltaTime;
-        if (dt <= 0f)
-        {
-            dt = 0.016f;
-        }
+        float dt = GetSafeDeltaTime();
 
         float absDx = Mathf.Abs(opp.transform.position.x - self.transform.position.x);
         float absDy = Mathf.Abs(opp.transform.position.y - self.transform.position.y);
@@ -1456,5 +1364,112 @@ public class FighterAgent : Agent
                 passiveNearTimer = 0f;
             }
         }
+    }
+
+    void BodyPushCheesePenalty(int moveX, int light, int heavy, int special, int chargeMode, int parry, int blockHold)
+    {
+        if (self == null || opp == null)
+        {
+            return;
+        }
+
+        if (GameManager.instance == null || !GameManager.instance.trainingRoundOn)
+        {
+            return;
+        }
+
+        float dt = GetSafeDeltaTime();
+
+        float dx = opp.transform.position.x - self.transform.position.x;
+        float absDx = Mathf.Abs(dx);
+        float absDy = Mathf.Abs(opp.transform.position.y - self.transform.position.y);
+
+        int towardOpponent = dx > 0f ? 1 : -1;
+
+        bool movingToward =
+            moveX != 0 &&
+            moveX == towardOpponent;
+
+        bool veryClose =
+            absDx <= bodyPushRangeX &&
+            absDy <= bodyPushRangeY;
+
+        bool actionStartedThisStep =
+            light == 1 ||
+            heavy == 1 ||
+            special == 1 ||
+            chargeMode != 0 ||
+            parry == 1;
+
+        bool realActivePressure =
+            self.LightAttacking ||
+            self.HeavyAttacking ||
+            self.IsCasting ||
+            self.IsCharging ||
+            self.IsCharged ||
+            self.Parrying;
+
+        if (actionStartedThisStep || realActivePressure)
+        {
+            recentRealPressureTimer = bodyPushRealPressureGrace;
+            bodyPushTimer = 0f;
+        }
+        else
+        {
+            recentRealPressureTimer -= dt;
+            if (recentRealPressureTimer < 0f)
+            {
+                recentRealPressureTimer = 0f;
+            }
+        }
+
+        bool protectedByRealPressure =
+            recentRealPressureTimer > 0f;
+
+        bool blockingPush =
+            blockHold == 1 &&
+            movingToward &&
+            veryClose;
+
+        bool bodyPushCheese =
+            veryClose &&
+            movingToward &&
+            !protectedByRealPressure;
+
+        if (bodyPushCheese)
+        {
+            bodyPushTimer += dt;
+
+            if (bodyPushTimer > bodyPushGraceTime)
+            {
+                float penalty = bodyPushPenaltyPerSecond * dt;
+
+                if (blockingPush)
+                {
+                    penalty *= bodyPushBlockMultiplier;
+                }
+
+                AddReward(penalty);
+            }
+        }
+        else
+        {
+            bodyPushTimer -= 3f * dt;
+            if (bodyPushTimer < 0f)
+            {
+                bodyPushTimer = 0f;
+            }
+        }
+    }
+
+    float GetSafeDeltaTime()
+    {
+        float dt = Time.deltaTime;
+        if (dt <= 0f)
+        {
+            dt = 0.016f;
+        }
+
+        return dt;
     }
 }
