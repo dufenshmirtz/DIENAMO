@@ -27,6 +27,11 @@ public class StartButtonScript : MonoBehaviour
         // Check if the ruleset is "Default" and apply settings
         if (setting.text == "Default")
         {
+            RulesetManager.Instance.SetRulesetNum(-1);
+            RulesetSelectionState.SelectDefault();
+            CustomRulesetScreenManager.selectedSlot = -1;
+            CustomRulesetScreenManager.currentRuleset = null;
+
             CustomRuleset ruleset = new CustomRuleset();
             ruleset.health = 100;
             ruleset.powerupsEnabled = false;

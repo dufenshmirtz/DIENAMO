@@ -14,6 +14,9 @@ public class StageChoiceManager : MonoBehaviour
 
     public GameObject gameSetupMenu;
     public GameObject characterSelectionMenu;
+    public GameObject mainMenu;
+    public GameObject botSelectionMenu;
+    public GameObject menuBackground;
 
     public TextMeshProUGUI selectionText;
 
@@ -204,6 +207,45 @@ public class StageChoiceManager : MonoBehaviour
             print("sakede");
         }
             
+    }
+
+    // Call this from the Back Button OnClick
+    public void OnBack()
+    {
+        ResetAll();
+
+        StageChoiceButtons stageChoiceButtons = GetComponentInChildren<StageChoiceButtons>(true);
+        if (stageChoiceButtons != null)
+        {
+            stageChoiceButtons.ResetStageSelection();
+        }
+
+        if (gameSetupMenu != null)
+        {
+            gameSetupMenu.SetActive(false);
+        }
+
+        if (PvESelectionState.IsPvE)
+        {
+            if (botSelectionMenu != null)
+            {
+                botSelectionMenu.SetActive(true);
+            }
+
+            return;
+        }
+
+        PvESelectionState.SelectPvPMode();
+
+        if (mainMenu != null)
+        {
+            mainMenu.SetActive(true);
+        }
+
+        if (menuBackground != null)
+        {
+            menuBackground.SetActive(true);
+        }
     }
 
     private Button GetRandomStageButton()

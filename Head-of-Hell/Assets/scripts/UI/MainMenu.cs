@@ -2,12 +2,32 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+
 public class MainMenu : MonoBehaviour
-{ private void Start() { 
-    } 
+{
+    private void Start()
+    {
+        Button pvpButton = GameObject.Find("PvPButton")?.GetComponent<Button>();
+        if (pvpButton != null)
+        {
+            pvpButton.onClick.AddListener(SelectPvPMode);
+        }
+    }
+
+    public void SelectPvPMode()
+    {
+        PvESelectionState.SelectPvPMode();
+    }
+
     public void PlayGame()
-    { 
-        SceneManager.LoadScene(1); 
+    {
+        if (!PvESelectionState.IsPvE)
+        {
+            PvESelectionState.SelectPvPMode();
+        }
+
+        SceneManager.LoadScene(1);
     }
 
     public void OpenTutorial()
@@ -15,8 +35,8 @@ public class MainMenu : MonoBehaviour
         SceneManager.LoadScene("TutorialScene");
     }
 
-    public void QuitGame() 
+    public void QuitGame()
     {
-        Application.Quit(); 
+        Application.Quit();
     }
 }

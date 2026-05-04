@@ -9,7 +9,10 @@ public class DefaultButtonScript : MonoBehaviour
 
     public void Defaultify()
     {
-        choice.text="Default";
+        choice.text = "Default";
         RulesetManager.Instance.SetRulesetNum(-1);
+        RulesetSelectionState.SelectDefault();
+        CustomRulesetScreenManager.selectedSlot = -1;
+        CustomRulesetScreenManager.currentRuleset = null;
     }
 }

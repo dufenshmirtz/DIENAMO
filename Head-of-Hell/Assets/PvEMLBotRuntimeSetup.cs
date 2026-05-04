@@ -14,8 +14,17 @@ public class PvEMLBotRuntimeSetup : MonoBehaviour
 
     void Start()
     {
-        if (!PvESelectionState.IsPvE) return;
-        if (PvESelectionState.SelectedBotType != PvEBotType.MLAgent) return;
+        if (!PvESelectionState.IsPvE)
+        {
+            PvESelectionState.DisableAllMLAgents();
+            return;
+        }
+
+        if (PvESelectionState.SelectedBotType != PvEBotType.MLAgent)
+        {
+            PvESelectionState.DisableAllMLAgents();
+            return;
+        }
 
         CharacterManager[] managers = FindObjectsOfType<CharacterManager>();
 

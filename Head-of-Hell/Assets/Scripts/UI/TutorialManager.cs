@@ -58,6 +58,7 @@ public class TutorialManager : MonoBehaviour
     private bool movedRight;
     private bool chargeReachedReadyState;
     private int defenseOpponentHealthBeforeAttack;
+    private int opponentHealthAtStepStart;
 
     private void Awake()
     {
@@ -138,12 +139,12 @@ public class TutorialManager : MonoBehaviour
                 break;
 
             case TutorialStep.Attack:
-                if (Input.GetKeyDown(playerCharacter.lightAttack) || playerCharacter.LightAttacking)
+                if (DidPlayerHitOpponent())
                     AdvanceStep(TutorialStep.Heavy);
                 break;
 
             case TutorialStep.Heavy:
-                if (Input.GetKeyDown(playerCharacter.heavyAttack) || playerCharacter.HeavyAttacking)
+                if (DidPlayerHitOpponent())
                     AdvanceStep(TutorialStep.Charge);
                 break;
 
@@ -156,7 +157,7 @@ public class TutorialManager : MonoBehaviour
                         UpdatePrompt();
                     }
                 }
-                else if (chargeReachedReadyState && !playerCharacter.IsCharging)
+                else if (chargeReachedReadyState && !playerCharacter.IsCharging && DidPlayerHitOpponent())
                 {
                     AdvanceStep(TutorialStep.Spell);
                 }
@@ -437,6 +438,9 @@ public class TutorialManager : MonoBehaviour
 
         if (step == TutorialStep.Charge)
             chargeReachedReadyState = false;
+
+        if (RequiresSuccessfulHit(step) && opponentCharacter != null)
+            opponentHealthAtStepStart = opponentCharacter.GetCurrentHealth();
     }
 
     private void UpdatePrompt()
@@ -459,23 +463,23 @@ public class TutorialManager : MonoBehaviour
                 break;
 
             case TutorialStep.Attack:
-                promptText.text = "Quick attack: press [" + playerCharacter.lightAttack + "]";
-                SetStatusText(string.Empty);
+                promptText.text = "Quick attack: press [" + playerCharacter.lightAttack + "] and hit the enemy.";
+                //SetStatusText("This step only completes when the enemy takes damage.");
                 break;
 
             case TutorialStep.Heavy:
-                promptText.text = "Heavy attack: press [" + playerCharacter.heavyAttack + "]";
-                SetStatusText(string.Empty);
+                promptText.text = "Heavy attack: press [" + playerCharacter.heavyAttack + "] and hit the enemy.";
+                //SetStatusText("This step only completes when the enemy takes damage.");
                 break;
 
             case TutorialStep.Charge:
-                promptText.text = "Charge: hold [" + playerCharacter.charge + "] until the indicator says RELEASE.";
-                SetStatusText(chargeReachedReadyState ? "RELEASE NOW" : "HOLD...");
+                promptText.text = "Charge: hold [" + playerCharacter.charge + "] until the indicator says RELEASE, then hit the enemy.";
+               //SetStatusText(chargeReachedReadyState ? "RELEASE NOW AND LAND THE HIT" : "HOLD...");
                 break;
 
             case TutorialStep.Spell:
-                promptText.text = "Spell: press [" + playerCharacter.ability + "]";
-                SetStatusText(string.Empty);
+                promptText.text = "Spell: use a direction with the spell input. Try [" + playerCharacter.left + "] + [" + playerCharacter.ability + "] or [" + playerCharacter.right + "] + [" + playerCharacter.ability + "].";
+                //SetStatusText("Do not just press the spell button by itself. Add a left or right direction.");
                 break;
 
             case TutorialStep.Block:
@@ -507,6 +511,21 @@ public class TutorialManager : MonoBehaviour
     private static bool IsDefenseStep(TutorialStep step)
     {
         return step == TutorialStep.Block || step == TutorialStep.Parry;
+    }
+
+    private static bool RequiresSuccessfulHit(TutorialStep step)
+    {
+        return step == TutorialStep.Attack ||
+               step == TutorialStep.Heavy ||
+               step == TutorialStep.Charge;
+    }
+
+    private bool DidPlayerHitOpponent()
+    {
+        if (opponentCharacter == null)
+            return false;
+
+        return opponentCharacter.GetCurrentHealth() < opponentHealthAtStepStart;
     }
 
     private static void ClearSavedStep()
