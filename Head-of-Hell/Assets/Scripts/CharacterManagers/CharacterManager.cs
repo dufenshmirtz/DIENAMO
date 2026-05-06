@@ -215,7 +215,7 @@ public class CharacterManager : MonoBehaviour
 
         if (mngr.trainingMode)
         {
-            while (characterTypeNames[randomIndex]=="Lupen")
+            while (characterTypeNames[randomIndex]=="Lupen" || characterTypeNames[randomIndex] == "Visvia")
             {
                 randomIndex = UnityEngine.Random.Range(0, characterTypeNames.Length);
             }
