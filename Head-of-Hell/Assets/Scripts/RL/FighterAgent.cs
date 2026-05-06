@@ -92,8 +92,8 @@ public class FighterAgent : Agent
     float verticalCheeseDecayPerSecond = 1.2f;
 
     [Header("Block Hold Hygiene")]
-    float blockHoldGraceTime = 6f;
-    float longBlockHoldPenaltyPerSecond = -0.0015f;
+    float blockHoldGraceTime = 3f;
+    float longBlockHoldPenaltyPerSecond = -0.002f;
     float blockHoldDecayPerSecond = 1.5f;
 
     [Header("Repeat Move Hygiene")]
@@ -124,7 +124,7 @@ public class FighterAgent : Agent
     float bodyPushRangeX = 0.48f;
     float bodyPushRangeY = 0.75f;
     float bodyPushGraceTime = 0.16f;
-    float bodyPushPenaltyPerSecond = -0.018f;
+    float bodyPushPenaltyPerSecond = -0.023f;
     float bodyPushBlockMultiplier = 1.7f;
     float bodyPushRealPressureGrace = 0.22f;
     float bodyPushTimer = 0f;
@@ -1448,7 +1448,7 @@ public class FighterAgent : Agent
                 {
                     penalty *= bodyPushBlockMultiplier;
                 }
-
+                rewardDebugger?.LogChargeSpamPenalty(penalty);
                 AddReward(penalty);
             }
         }
