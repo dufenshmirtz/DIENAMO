@@ -92,7 +92,7 @@ public class FighterAgent : Agent
     float verticalCheeseDecayPerSecond = 1.2f;
 
     [Header("Block Hold Hygiene")]
-    float blockHoldGraceTime = 3f;
+    float blockHoldGraceTime = 5f;
     float longBlockHoldPenaltyPerSecond = -0.002f;
     float blockHoldDecayPerSecond = 1.5f;
 
@@ -124,11 +124,12 @@ public class FighterAgent : Agent
     float bodyPushRangeX = 0.48f;
     float bodyPushRangeY = 0.75f;
     float bodyPushGraceTime = 0.16f;
-    float bodyPushPenaltyPerSecond = -0.023f;
+    float bodyPushPenaltyPerSecond = -0.035f;
     float bodyPushBlockMultiplier = 1.7f;
     float bodyPushRealPressureGrace = 0.22f;
     float bodyPushTimer = 0f;
     float recentRealPressureTimer = 0f;
+    float lastBodyPushAbsDx = 999f;
 
     int lastHeavyAction = 0;
 
@@ -698,6 +699,8 @@ public class FighterAgent : Agent
 
         bodyPushTimer = 0f;
         recentRealPressureTimer = 0f;
+
+        lastBodyPushAbsDx = 999f;
     }
 
     private void OnDestroy()
@@ -1369,14 +1372,10 @@ public class FighterAgent : Agent
     void BodyPushCheesePenalty(int moveX, int light, int heavy, int special, int chargeMode, int parry, int blockHold)
     {
         if (self == null || opp == null)
-        {
             return;
-        }
 
         if (GameManager.instance == null || !GameManager.instance.trainingRoundOn)
-        {
             return;
-        }
 
         float dt = GetSafeDeltaTime();
 
@@ -1384,15 +1383,23 @@ public class FighterAgent : Agent
         float absDx = Mathf.Abs(dx);
         float absDy = Mathf.Abs(opp.transform.position.y - self.transform.position.y);
 
-        int towardOpponent = dx > 0f ? 1 : -1;
+        int towardOpponent = dx >= 0f ? 1 : -1;
 
         bool movingToward =
             moveX != 0 &&
             moveX == towardOpponent;
 
+        bool movingAway =
+            moveX != 0 &&
+            moveX == -towardOpponent;
+
         bool veryClose =
             absDx <= bodyPushRangeX &&
             absDy <= bodyPushRangeY;
+
+        bool distanceClosing =
+            veryClose &&
+            absDx < lastBodyPushAbsDx - 0.005f;
 
         bool actionStartedThisStep =
             light == 1 ||
@@ -1418,23 +1425,34 @@ public class FighterAgent : Agent
         {
             recentRealPressureTimer -= dt;
             if (recentRealPressureTimer < 0f)
-            {
                 recentRealPressureTimer = 0f;
-            }
         }
 
-        bool protectedByRealPressure =
-            recentRealPressureTimer > 0f;
+        bool protectedByRealPressure = recentRealPressureTimer > 0f;
 
         bool blockingPush =
             blockHold == 1 &&
-            movingToward &&
-            veryClose;
+            veryClose &&
+            !movingAway;
+
+        bool idleBodyPush =
+            veryClose &&
+            moveX == 0 &&
+            !movingAway;
+
+        bool walkBodyPush =
+            veryClose &&
+            movingToward;
+
+        bool physicsBodyPush =
+            veryClose &&
+            distanceClosing &&
+            !movingAway;
 
         bool bodyPushCheese =
             veryClose &&
-            movingToward &&
-            !protectedByRealPressure;
+            !protectedByRealPressure &&
+            (walkBodyPush || blockingPush || idleBodyPush || physicsBodyPush);
 
         if (bodyPushCheese)
         {
@@ -1445,10 +1463,14 @@ public class FighterAgent : Agent
                 float penalty = bodyPushPenaltyPerSecond * dt;
 
                 if (blockingPush)
-                {
                     penalty *= bodyPushBlockMultiplier;
-                }
-                rewardDebugger?.LogChargeSpamPenalty(penalty);
+
+                Debug.Log(
+                    $"[BODY PUSH] {playerSuffix} penalty={penalty:F5} " +
+                    $"dx={absDx:F2} dy={absDy:F2} moveX={moveX} block={blockHold} " +
+                    $"walk={walkBodyPush} blockPush={blockingPush} idle={idleBodyPush} physics={physicsBodyPush}"
+                );
+
                 AddReward(penalty);
             }
         }
@@ -1456,10 +1478,10 @@ public class FighterAgent : Agent
         {
             bodyPushTimer -= 3f * dt;
             if (bodyPushTimer < 0f)
-            {
                 bodyPushTimer = 0f;
-            }
         }
+
+        lastBodyPushAbsDx = absDx;
     }
 
     float GetSafeDeltaTime()

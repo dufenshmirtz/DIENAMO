@@ -43594,10 +43594,10 @@ MonoBehaviour:
   behaviorP2: {fileID: 1367423862}
   decisionP2: {fileID: 1367423863}
   botP2: {fileID: 1367423888}
-  inferenceModel1: {fileID: 5022602860645237092, guid: 799190f388963d64ebc935068459c5b2, type: 3}
-  inferenceModel2: {fileID: 5022602860645237092, guid: 2c00af0f9787ef9499d6341e0c5b7955, type: 3}
-  inferenceModel3: {fileID: 5022602860645237092, guid: 298fdfa968c71ff49bfd283cbd1f9f82, type: 3}
-  inferenceModel4: {fileID: 5022602860645237092, guid: e5000afe833126049b0f713178c53607, type: 3}
+  inferenceModel1: {fileID: 5022602860645237092, guid: 0f1726a329814e84dba31242891a030d, type: 3}
+  inferenceModel2: {fileID: 5022602860645237092, guid: 7c067f183879a4042a450a565cee4b25, type: 3}
+  inferenceModel3: {fileID: 5022602860645237092, guid: 5584398a3b6d37247871de3bf2f8435d, type: 3}
+  inferenceModel4: {fileID: 5022602860645237092, guid: aa21061267094784c9cab7d93c7adfb8, type: 3}
   inferenceModel5: {fileID: 5022602860645237092, guid: 69b4b92f57c4793468cae954c66fd9ff, type: 3}
   phase2StartEpisode: 1
   phase3StartEpisode: 1
