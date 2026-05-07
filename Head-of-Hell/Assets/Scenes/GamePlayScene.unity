@@ -21524,8 +21524,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   easyModel: {fileID: 5022602860645237092, guid: 69b4b92f57c4793468cae954c66fd9ff, type: 3}
-  mediumModel: {fileID: 5022602860645237092, guid: 799190f388963d64ebc935068459c5b2, type: 3}
-  hardModel: {fileID: 5022602860645237092, guid: 7c067f183879a4042a450a565cee4b25, type: 3}
+  mediumModel: {fileID: 5022602860645237092, guid: 7c067f183879a4042a450a565cee4b25, type: 3}
+  hardModel: {fileID: 5022602860645237092, guid: 0f1726a329814e84dba31242891a030d, type: 3}
   useInferenceOnly: 1
 --- !u!1 &790769231
 GameObject:
@@ -36411,7 +36411,7 @@ MonoBehaviour:
     VectorActionDescriptions: []
     VectorActionSpaceType: 0
     hasUpgradedBrainParametersWithActionSpec: 1
-  m_Model: {fileID: 5022602860645237092, guid: f4767d6836bd9604f8ecf1e088ee57bc, type: 3}
+  m_Model: {fileID: 5022602860645237092, guid: b34254f8ab1c8b844bd7b5c9a8c7f417, type: 3}
   m_InferenceDevice: 0
   m_BehaviorType: 2
   m_BehaviorName: Fighter
