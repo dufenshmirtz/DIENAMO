@@ -41,8 +41,9 @@ public class Custom : Character
     override public void DealHeavyDamage()
     {
         Collider2D hitEnemy = Physics2D.OverlapCircle( attackPoint.position,  attackRange,  enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemy);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
             audioManager.PlaySFX(audioManager.explosion, audioManager.lessVol);
             TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Heavy);
@@ -178,7 +179,8 @@ public class Custom : Character
 
     override protected void OnTriggerEnter2D(Collider2D other)
     {
-        if (dashing && other.CompareTag("Player") && !dashHit)  //--here
+        Character target = ResolveTargetFromHit(other);
+        if (dashing && target != null && !dashHit)  //--here
         {
             DealCustomDashDmg();
             dashHit = true;
@@ -263,8 +265,9 @@ public class Custom : Character
     public void DealCustomBlinkDmg()
     {
         Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemy);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
             TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
             enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);

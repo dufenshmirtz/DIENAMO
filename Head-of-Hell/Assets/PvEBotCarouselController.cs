@@ -12,6 +12,7 @@ public class PvEBotCarouselController : MonoBehaviour
     private void Start()
     {
         PvESelectionState.IsPvE = true;
+        GameModeSelectionState.SelectPvE();
 
         botSelector.SetOptions(new List<string>
         {

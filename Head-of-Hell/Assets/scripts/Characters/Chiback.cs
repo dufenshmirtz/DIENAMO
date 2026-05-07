@@ -39,18 +39,19 @@ public class Chiback : Character
 
     override public void DealHeavyDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle( attackPoint.position,  attackRange,  enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
             audioManager.PlaySFX(audioManager.katanaHit, 1.8f);
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Heavy);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
-            enemy.TakeDamage(heavyDamage, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Heavy);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
+            target.TakeDamage(heavyDamage, true);
 
-            if (! enemy.isBlocking)
+            if (!target.isBlocking)
             {
-                enemy.Knockback(11f, 0.15f, true);
+                target.Knockback(11f, 0.15f, true);
             }
         }
         else
@@ -109,38 +110,39 @@ public class Chiback : Character
         while (elapsedTime < jumpDuration)
         {
             // Check for enemy collision
-            Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
-            if (hitEnemy != null)
+            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+            Character target = ResolveTargetFromHit(hitEnemies);
+            if (target != null)
             {
-                enemy.BreakCharge();
+                target.BreakCharge();
                 animator.SetTrigger("SpellHit");
                 audioManager.PlaySFX(audioManager.sytheHit, 1f);
                 audioManager.PlaySFX(audioManager.sytheSlash, 1f);
 
                 // Telemetry: HitAttempt + context (Special / Spell)
-                TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
-                enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+                target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
                 landed = true;
 
                 // Apply damage based on elapsed time during the jump
                 if (elapsedTime < 0.33f)
                 {
                     // Telemetry: ensure context is set right before TakeDamage
-                    enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
-                    enemy.TakeDamage(shortJumpDamage, true);
-                    Enraged(shortJumpDamage);
+                    target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+                    target.TakeDamage(shortJumpDamage, true);
+                    Enraged(target, shortJumpDamage);
                 }
                 else if (elapsedTime < 0.66f)
                 {
-                    enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
-                    enemy.TakeDamage(MedJumpDamage, true);
-                    Enraged(MedJumpDamage);
+                    target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+                    target.TakeDamage(MedJumpDamage, true);
+                    Enraged(target, MedJumpDamage);
                 }
                 else
                 {
-                    enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
-                    enemy.TakeDamage(wideJumpDamage, true);
-                    Enraged(wideJumpDamage);
+                    target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+                    target.TakeDamage(wideJumpDamage, true);
+                    Enraged(target, wideJumpDamage);
                 }
 
                 // Reset enraging hits if the threshold is reached
@@ -150,7 +152,7 @@ public class Chiback : Character
                 }
 
                 // Apply knockback to the enemy
-                enemy.Knockback(11f, 0.25f, false);
+                target.Knockback(11f, 0.25f, false);
 
                 // Reset velocity after hitting the enemy
                 rb.velocity = Vector2.zero;
@@ -191,24 +193,28 @@ public class Chiback : Character
     {
         Collider2D hitEnemy = Physics2D.OverlapCircle( mirrorFireAttackPoint.position,  attackRange,  enemyLayer);
         Collider2D hitEnemy2 = Physics2D.OverlapCircle( fireAttackPoint.position,  attackRange,  enemyLayer);
+        var targets = ResolveTargetsFromHits(hitEnemy, hitEnemy2);
 
-        if (hitEnemy != null || hitEnemy2!=null)
+        if (targets.Count > 0)
         {
             audioManager.PlaySFX(audioManager.skiplaHeavyHit, 1f);
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
-            enemy.TakeDamage(5, true);
-            if(!onCooldown){
-                enemy.Knockback(15f, 0.8f, true);
-            }
-            else
+            for (int i = 0; i < targets.Count; i++)
             {
-                enemy.Knockback(3f, 0.3f, true);
+                Character target = targets[i];
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+                target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+                target.TakeDamage(5, true);
+                if(!onCooldown){
+                    target.Knockback(15f, 0.8f, true);
+                }
+                else
+                {
+                    target.Knockback(3f, 0.3f, true);
+                }
+                target.DisableBlock(true);
+                target.DisableJump(true);
+                StartCoroutine(ResetBlockability(target));
             }
-            enemy.DisableBlock(true);
-            enemy.DisableJump(true);
-            StartCoroutine(ResetBlockability());
-            
         }
         else
         {
@@ -225,14 +231,23 @@ public class Chiback : Character
         QuickAttackIndicatorEnable();
     }
 
-    private IEnumerator ResetBlockability()
+    private IEnumerator ResetBlockability(Character target)
     {
+        if (target == null)
+        {
+            yield break;
+        }
 
         // Wait for 1.1 seconds before enabling the block
         yield return new WaitForSeconds(jumpDuration+0.1f);
 
-        enemy.EnableBlock();
-        enemy.DisableJump(false);
+        if (target == null || !target.isActiveAndEnabled)
+        {
+            yield break;
+        }
+
+        target.EnableBlock();
+        target.DisableJump(false);
     }
 
     #endregion
@@ -261,11 +276,12 @@ public class Chiback : Character
         base.TakeDamage(dmg, blockable);
     }
 
-    void Enraged(int jumpDamage)
+    void Enraged(Character target, int jumpDamage)
     {
-        if (timesHit == enragingNum)
+        if (timesHit == enragingNum && target != null)
         {
-            enemy.TakeDamageNoAnimation(jumpDamage / 2,true);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+            target.TakeDamageNoAnimation(jumpDamage / 2,true);
             roarPlayed = false;
         }
     }

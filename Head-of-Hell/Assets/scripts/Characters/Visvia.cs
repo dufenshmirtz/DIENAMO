@@ -5,6 +5,7 @@ using UnityEngine;
 public class Visvia : Character
 {
     private bool grabLandedThisCast = false;
+    private readonly HashSet<Character> grabTargetsHitThisCast = new HashSet<Character>();
     bool shotgunReady = true;
     float shotgunForce = 15f;
     float upwardsForce = 6f;
@@ -49,18 +50,19 @@ public class Visvia : Character
 
     override public void DealHeavyDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle( attackPoint.position,  attackRange,  enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
 
             audioManager.PlaySFX(audioManager.katanaHit, 1f);
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Heavy);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
-            enemy.TakeDamage(heavyDamage, true);
-            if (! enemy.isBlocking)
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Heavy);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
+            target.TakeDamage(heavyDamage, true);
+            if (!target.isBlocking)
             {
-                enemy.Knockback(11f, 0.15f, true);
+                target.Knockback(11f, 0.15f, true);
             }
 
         }
@@ -80,6 +82,7 @@ public class Visvia : Character
 
         // Telemetry: reset per-cast landing state (for Miss logging + avoid double HitAttempt)
         grabLandedThisCast = false;
+        grabTargetsHitThisCast.Clear();
         blastCounter++;
         StartCoroutine(HeatCounter());
         UsingAbility(cooldown);
@@ -91,25 +94,28 @@ public class Visvia : Character
     public void GrabDmg()
     {
         Vector2 capsuleSize = new Vector2(7f, 0.5f); // Long in X-axis, thin in Y-axis
-        Collider2D hitEnemy = Physics2D.OverlapCapsule(grabPoint.position, capsuleSize, CapsuleDirection2D.Horizontal, 0f, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCapsuleAll(grabPoint.position, capsuleSize, CapsuleDirection2D.Horizontal, 0f, enemyLayer);
+        var targets = ResolveTargetsFromHits(hitEnemies);
 
-        if (hitEnemy != null)
+        if (targets.Count > 0)
         {
-            // Telemetry: log HitAttempt only once per cast (first time we connect)
-            if (!grabLandedThisCast)
+            for (int i = 0; i < targets.Count; i++)
             {
-                TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
-                grabLandedThisCast = true;
+                Character target = targets[i];
+                if (grabTargetsHitThisCast.Add(target))
+                {
+                    TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+                }
+
+                target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+
+                audioManager.PlaySFX(audioManager.stabHit, 2f);
+                target.StopPunching();
+                target.TakeDamage(grabDamage, true);
+                target.BreakCharge();
+                target.Knockback(12f, 0.3333f, true);
             }
-
-            // Telemetry: context before damage
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
-
-            audioManager.PlaySFX(audioManager.stabHit, 2f);
-            enemy.StopPunching();
-            enemy.TakeDamage(grabDamage, true);
-            enemy.BreakCharge();
-            enemy.Knockback(12f, 0.3333f, true);
+            grabLandedThisCast = true;
         }
         else
         {
@@ -120,24 +126,27 @@ public class Visvia : Character
     public void GrabStartDmg()
     {
         Vector2 capsuleSize = new Vector2(7f, 0.5f); // Long in X-axis, thin in Y-axis
-        Collider2D hitEnemy = Physics2D.OverlapCapsule(grabPoint.position, capsuleSize, CapsuleDirection2D.Horizontal, 0f, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCapsuleAll(grabPoint.position, capsuleSize, CapsuleDirection2D.Horizontal, 0f, enemyLayer);
+        var targets = ResolveTargetsFromHits(hitEnemies);
 
-        if (hitEnemy != null)
+        if (targets.Count > 0)
         {
-            // Telemetry: log HitAttempt only once per cast (first time we connect)
-            if (!grabLandedThisCast)
+            for (int i = 0; i < targets.Count; i++)
             {
-                TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
-                grabLandedThisCast = true;
+                Character target = targets[i];
+                if (grabTargetsHitThisCast.Add(target))
+                {
+                    TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+                }
+
+                target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+
+                target.StopPunching();
+                target.TakeDamage(grabDamage, true);
+                target.BreakCharge();
+                audioManager.PlaySFX(audioManager.katanaSwoosh, 2f);
             }
-
-            // Telemetry: context before damage
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
-
-            enemy.StopPunching();
-            enemy.TakeDamage(grabDamage, true);
-            enemy.BreakCharge();
-            audioManager.PlaySFX(audioManager.katanaSwoosh, 2f);
+            grabLandedThisCast = true;
         }
         else
         {
@@ -156,6 +165,7 @@ public class Visvia : Character
         }
 
         OnCooldown(cooldown);
+        grabTargetsHitThisCast.Clear();
         OverheatCheck();
     }
     #endregion
@@ -195,21 +205,21 @@ public class Visvia : Character
 
         // Deal damage in front of the player
         Vector2 attackPosition = attackPoint.position;
-        Collider2D hit = Physics2D.OverlapCircle(attackPoint.position, shotgunRange, enemyLayer);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(attackPoint.position, shotgunRange, enemyLayer);
+        var targets = ResolveTargetsFromHits(hits);
         
-        if (hit != null)
+        if (targets.Count > 0)
         {
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
-            enemy.TakeDamage(shotgunDamage, true);
-            if (!enemy.isBlocking)
+            for (int i = 0; i < targets.Count; i++)
             {
-                enemy.Knockback(10f, 0.2f, true);
-            }
-            else
-            {
-                TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
-                enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+                Character target = targets[i];
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+                target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+                target.TakeDamage(shotgunDamage, true);
+                if (!target.isBlocking)
+                {
+                    target.Knockback(10f, 0.2f, true);
+                }
             }
         }
         //Unlock Rotation
@@ -267,15 +277,13 @@ public class Visvia : Character
 
         while (elapsed < overheatDuration && !animator.GetBool("isDead"))
         {
-            Collider2D hit = Physics2D.OverlapCircle(attackPoint.position, shotgunRange, enemyLayer);
-            if (hit != null)
+            Collider2D[] hits = Physics2D.OverlapCircleAll(attackPoint.position, shotgunRange, enemyLayer);
+            var targets = ResolveTargetsFromHits(hits);
+            for (int i = 0; i < targets.Count; i++)
             {
-                Character target = hit.GetComponent<Character>();
-                if (target != null && target != this)
-                {
-                    target.TakeDamage(overheatDamage, false, false, false);
-
-                }
+                Character target = targets[i];
+                target.SetIncomingDamageContext(PlayerId, MoveType.PoisonTick, SourceType.Dot);
+                target.TakeDamage(overheatDamage, false, false, false);
             }
             ShowShotgunBlast(0.1f);
 

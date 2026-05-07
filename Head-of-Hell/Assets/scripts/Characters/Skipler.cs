@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Skipler : Character
@@ -9,7 +10,7 @@ public class Skipler : Character
     protected float dashingTime = 0.1f;
     protected int DashDamage = 10;
     bool dashing = false;
-    bool dashHit = false;
+    private readonly HashSet<Character> dashTargetsHit = new HashSet<Character>();
     //LightAttack
     bool lightReady = true;
     protected float blinkPower = 10f;
@@ -59,19 +60,20 @@ public class Skipler : Character
 
     override public void DealHeavyDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
 
             audioManager.PlaySFX(audioManager.heavyGlitchHit, 1.3f);
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Heavy);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
-            enemy.TakeDamage(heavyDamage, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Heavy);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
+            target.TakeDamage(heavyDamage, true);
 
-            if (!enemy.isBlocking)
+            if (!target.isBlocking)
             {
-                enemy.Knockback(11f, 0.15f, true);
+                target.Knockback(11f, 0.15f, true);
             }
 
         }
@@ -107,6 +109,7 @@ public class Skipler : Character
         ignoreMovement = true;
         ignoreDamage = true;
         dashing = true;
+        dashTargetsHit.Clear();
 
         // Disable gravity while dashing
         rb.gravityScale = 0f;
@@ -150,7 +153,7 @@ public class Skipler : Character
         yield return new WaitForSeconds(dashingTime);
 
         // Telemetry: dash ended without landing a hit
-        if (!dashHit)
+        if (dashTargetsHit.Count == 0)
         {
             TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);
         }
@@ -175,32 +178,47 @@ public class Skipler : Character
         colliders[5].enabled = false;
 
         // Reset dash state
-        dashHit = false;
         dashing = false;
 
         // Trigger cooldown
         OnCooldown(cooldown);
     }
 
-    public void DealDashDmg()
+    public void DealDashDmg(Character target)
     {
-        enemy.StopPunching();
-        enemy.BreakCharge();
+        if (target == null)
+        {
+            return;
+        }
+
+        target.StopPunching();
+        target.BreakCharge();
 
         // Telemetry: HitAttempt + context before damage
-        TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
-        enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+        TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+        target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
 
-        enemy.TakeDamage(DashDamage, true);
+        target.TakeDamage(DashDamage, true);
         audioManager.PlaySFX(audioManager.dashHit, 3f);
     }
 
     override protected void OnTriggerEnter2D(Collider2D other)
     {
-        if (dashing && other.CompareTag("Player") && !dashHit)  //--here
+        Character collidedCharacter = GetCharacterFromCollider(other);
+
+        if (dashing
+            && gameManager != null
+            && gameManager.IsTwoVersusTwoMatch()
+            && collidedCharacter != null
+            && gameManager.ArePlayersTeammates(playerNum, collidedCharacter.GetPlayerNum()))
         {
-            DealDashDmg();
-            dashHit = true;
+            return;
+        }
+
+        Character target = ResolveTargetFromHit(other);
+        if (dashing && target != null && dashTargetsHit.Add(target))  //--here
+        {
+            DealDashDmg(target);
         }
 
         base.OnTriggerEnter2D(other);
@@ -280,14 +298,15 @@ public class Skipler : Character
 
     public void DealBlinkDmg()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
-            enemy.TakeDamage(blinkDmg, true);
-            enemy.Knockback(10f, .15f, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+            target.TakeDamage(blinkDmg, true);
+            target.Knockback(10f, .15f, true);
             audioManager.PlaySFX(audioManager.dashHit, 0.8f);
             ReduceCD();
         }
@@ -310,6 +329,17 @@ public class Skipler : Character
     void ReduceCD()
     {
         cdTimer -= 2f;
+    }
+
+    public override void TutorialRefreshQuickAttack()
+    {
+        if (dashing || ignoreMovement || isLightAttacking)
+        {
+            return;
+        }
+
+        lightReady = true;
+        QuickAttackIndicatorEnable();
     }
     #endregion
 

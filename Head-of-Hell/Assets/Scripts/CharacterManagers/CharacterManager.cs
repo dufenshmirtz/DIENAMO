@@ -78,6 +78,18 @@ public class CharacterManager : MonoBehaviour
         {
             characterName = PlayerPrefs.GetString("Player1Choice");
         }
+        else if (playerNum == 2)
+        {
+            characterName = PlayerPrefs.GetString("Player2Choice");
+        }
+        else if (playerNum == 3)
+        {
+            characterName = PlayerPrefs.GetString("Player3Choice");
+        }
+        else if (playerNum == 4)
+        {
+            characterName = PlayerPrefs.GetString("Player4Choice");
+        }
         else
         {
             characterName = PlayerPrefs.GetString("Player2Choice");
@@ -449,6 +461,30 @@ public class CharacterManager : MonoBehaviour
 
     // Small helper so others don’t need to know about CharacterChoice(1)
     public Character GetCurrentCharacter() => character;
+
+    public void NotifyCurrentCharacterChanged()
+    {
+        OnCharacterChanged?.Invoke(character);
+    }
+
+    public void ConfigureRuntimeClone(int newPlayerNum, CharacterManager newEnemyHandler, GameManager managerOverride)
+    {
+        playerNum = newPlayerNum;
+        enemyHandler = newEnemyHandler;
+        mngr = managerOverride;
+
+        CharacterSetup setup = GetComponent<CharacterSetup>();
+        if (setup != null)
+        {
+            setup.playerNum = newPlayerNum;
+            setup.gameManager = managerOverride;
+        }
+
+        if (character != null)
+        {
+            character.RefreshSetupBindingsForRuntime();
+        }
+    }
 
     public IEnumerator RerollRandomCharacter_TrainingOnly_Co()
     {

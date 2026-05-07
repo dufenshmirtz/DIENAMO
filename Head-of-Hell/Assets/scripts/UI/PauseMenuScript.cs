@@ -41,17 +41,11 @@ public class PauseMenuScript : MonoBehaviour
         soundMenu.SetActive(false);
         if (!menu.activeSelf)
         {
-            cChoice.CharacterChoice(1).stayDynamic();
-            cChoice.CharacterChoice(1).ignoreUpdate = false;
-            cChoice.CharacterChoice(2).stayDynamic();
-            cChoice.CharacterChoice(2).ignoreUpdate = false;
+            manager.EnableGamePlay();
         }
         else
         {
-            cChoice.CharacterChoice(1).stayStatic();
-            cChoice.CharacterChoice(1).ignoreUpdate = true;
-            cChoice.CharacterChoice(2).stayStatic();
-            cChoice.CharacterChoice(2).ignoreUpdate = true;
+            manager.DisableGamePlay();
         }
     }
 
@@ -63,9 +57,6 @@ public class PauseMenuScript : MonoBehaviour
 
     public void Resume()
     {
-        cChoice.CharacterChoice(1).stayDynamic();
-        cChoice.CharacterChoice(1).ignoreUpdate = false;
-        cChoice.CharacterChoice(2).stayDynamic();
-        cChoice.CharacterChoice(2).ignoreUpdate = false;
+        manager.EnableGamePlay();
     }
 }

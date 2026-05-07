@@ -29,15 +29,20 @@ public static class PvESelectionState
 
     public static void ResetToDefaults()
     {
+        ResetPvEOptions();
+        GameModeSelectionState.SelectPvP1v1();
+    }
+
+    public static void ResetPvEOptions()
+    {
         IsPvE = false;
         SelectedBotType = PvEBotType.ScriptedBot;
         SelectedDifficulty = PvEDifficulty.Easy;
         SelectedBotSide = PvEBotSide.Player1;
     }
-
     public static void SelectPvPMode()
     {
-        ResetToDefaults();
+        ResetPvEOptions();
         DisableAllMLAgents();
     }
 

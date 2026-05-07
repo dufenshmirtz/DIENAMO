@@ -59,12 +59,14 @@ public class Lupen : Character
 
     override public void DealHeavyDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
 
             audioManager.PlaySFX(audioManager.heavyattack, 1f);
+            enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
             enemy.TakeDamage(heavyDamage, true);
             Robbed();
 
@@ -103,12 +105,17 @@ public class Lupen : Character
 
     void KnockNearbyEnemies()
     {
-        if (IsEnemyClose())
-        {
-            // Telemetry: special interaction (no damage, but successful effect on enemy)
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, passiveRange, enemyLayer);
+        var targets = ResolveTargetsFromHits(hitEnemies);
 
-            enemy.Knockback(9f, 0.5f, false);
+        if (targets.Count > 0)
+        {
+            for (int i = 0; i < targets.Count; i++)
+            {
+                Character target = targets[i];
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+                target.Knockback(9f, 0.5f, false);
+            }
         }
         else
         {
@@ -132,10 +139,15 @@ public class Lupen : Character
         stolenCharacter = characterChoiceHandler.CharacterChoice(1);
         stolenCharacter.overrideDeath = true; //in case he dies in form
         stayDynamic();
-        enemy.ChangeEnemy(stolenCharacter);
+        Character currentTarget = GetCurrentCombatTarget();
+        if (currentTarget != null)
+        {
+            stolenCharacter.ChangeEnemy(currentTarget);
+        }
         //SaveValues and change form
         spirit.SetInput(GetInputProvider());        // NEW: give the same provider
         spirit.stolenCharacter = stolenCharacter;
+        spirit.enemy = currentTarget;
         spirit.currentHealth = currHealth;
         spirit.whipDamage = wipDamage;
         spirit.robberyCounter = robberyCountter;
@@ -148,35 +160,94 @@ public class Lupen : Character
         robberyCountter = rc;
         currHealth = currentHealth;
         casting = false;
-        RemoveLastAttachedScript();
+        RestoreOriginalState();
+        RemoveStolenForm();
         OnCooldown(cooldown);
     }
 
-    public void RemoveLastAttachedScript()
+    private void RestoreOriginalState()
     {
-        // Get all components attached to the GameObject
-        Component[] components = this.GetComponents<Component>();
+        ignoreUpdate = false;
+        ignoreDamage = false;
+        ignoreMovement = false;
+        knockable = true;
+        damageShield = false;
+        usingAbility = false;
+        canRotate = true;
+        chargeDisable = false;
+        canCast = true;
+        stunned = false;
+        knocked = false;
+        isBlocking = false;
+        isStatic = false;
+        charging = false;
+        charged = false;
+        chargeAttackActive = false;
+        chargeReset = false;
+        KBCounter = 0f;
+        KBForce = 0f;
+        knockfromright = false;
+        knockbackXaxis = false;
 
-        // Ensure the GameObject has components beyond the Transform
-        if (components.Length > 1)
+        StopCHarge();
+        Unblock();
+        stayDynamic();
+        ActivateColliders();
+
+        if (rb != null)
         {
-            // Get the last component (excluding Transform, which is always first)
-            Component lastComponent = components[components.Length - 1];
+            rb.gravityScale = originalGravityScale;
+            rb.velocity = Vector2.zero;
+        }
 
-            // Destroy the last component
-            Destroy(lastComponent);
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Update(0f);
+            animator.SetBool("Casting", false);
+            animator.SetBool("Charging", false);
+            animator.SetBool("IsRunning", false);
+            animator.SetBool("Crouch", false);
+            animator.SetBool("cWalk", false);
+            animator.SetBool("isUsingAbility", false);
+            animator.ResetTrigger("ChargedHit");
+            animator.ResetTrigger("tookDmg");
+        }
+    }
+
+    public void RemoveStolenForm()
+    {
+        if (stolenCharacter != null && stolenCharacter != this)
+        {
+            stolenCharacter.enabled = false;
+            stolenCharacter.StopAllCoroutines();
+            Destroy(stolenCharacter);
+            stolenCharacter = null;
 
             characterChoiceHandler.ChangeCharacter("Lupen");
-            cEvents.ChangeCharacterEvents(2);
-            enemy.ChangeEnemy(characterChoiceHandler.CharacterChoice(1));
-            P1Name.text = "Lupen";
+            Lupen activeLupen = characterChoiceHandler.GetCurrentCharacter() as Lupen;
+            if (activeLupen == null)
+            {
+                activeLupen = this;
+            }
 
-            Debug.Log($"Removed component: {lastComponent.GetType().Name}");
+            activeLupen.enabled = true;
+            activeLupen.InitializeCharacter();
+            activeLupen.RefreshSetupBindingsForRuntime();
+            activeLupen.SetInput(GetInputProvider());
+            cEvents.SetCharacter(activeLupen);
+            characterChoiceHandler.NotifyCurrentCharacterChanged();
+
+            Character currentTarget = GetCurrentCombatTarget();
+            if (currentTarget != null)
+            {
+                activeLupen.ChangeEnemy(currentTarget);
+            }
+            P1Name.text = "Lupen";
+            return;
         }
-        else
-        {
-            Debug.LogWarning("No scripts to remove on this GameObject.");
-        }
+
+        Debug.LogWarning("No stolen form was available to remove from Lupen.");
     }
 
     #endregion
@@ -201,8 +272,9 @@ public class Lupen : Character
     {
         audioManager.PlaySFX(audioManager.whip , audioManager.normalVol);
         Collider2D hitEnemy = Physics2D.OverlapCapsule(wipPoint.position,size, CapsuleDirection2D.Horizontal,0f,enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemy);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
             TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
             enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);

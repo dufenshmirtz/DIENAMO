@@ -12,6 +12,8 @@ public class ProfileManager : MonoBehaviour
     [SerializeField] private ProfilesDatabase db = new ProfilesDatabase();
     [SerializeField] private int selectedIndexP1 = NONE;
     [SerializeField] private int selectedIndexP2 = NONE;
+    [SerializeField] private int selectedIndexP3 = NONE;
+    [SerializeField] private int selectedIndexP4 = NONE;
 
     [SerializeField] private ProfileData guestProfile;
 
@@ -55,23 +57,30 @@ public class ProfileManager : MonoBehaviour
 
     public bool IsGuestSelected(int playerNum)
     {
-        if (playerNum == 1)
-            return selectedIndexP1 == GUEST;
-        else
-            return selectedIndexP2 == GUEST;
+        return GetSelectedIndex(playerNum) == GUEST;
     }
 
     // --- Public API (θα το καλέσει το UI στο επόμενο βήμα) ---
 
     public ProfilesDatabase GetDatabase() => db;
 
-    public int GetSelectedIndex(int playerNum) => (playerNum == 1) ? selectedIndexP1 : selectedIndexP2;
+    public int GetSelectedIndex(int playerNum)
+    {
+        switch (playerNum)
+        {
+            case 1: return selectedIndexP1;
+            case 2: return selectedIndexP2;
+            case 3: return selectedIndexP3;
+            case 4: return selectedIndexP4;
+            default: return NONE;
+        }
+    }
 
 
     public ProfileData GetSelectedProfile(int playerNum)
     {
         EnsureGuest();
-        int idx = (playerNum == 1) ? selectedIndexP1 : selectedIndexP2;
+        int idx = GetSelectedIndex(playerNum);
 
         if (idx == GUEST)
             return guestProfile;
@@ -86,20 +95,46 @@ public class ProfileManager : MonoBehaviour
     {
         if (!db.HasAt(index)) return;
 
-        if (playerNum == 1) 
-            selectedIndexP1 = index;
-        else 
-            selectedIndexP2 = index;
+        switch (playerNum)
+        {
+            case 1:
+                selectedIndexP1 = index;
+                break;
+            case 2:
+                selectedIndexP2 = index;
+                break;
+            case 3:
+                selectedIndexP3 = index;
+                break;
+            case 4:
+                selectedIndexP4 = index;
+                break;
+            default:
+                return;
+        }
 
         Save();
     }
 
     public void SelectGuest(int playerNum)
     {
-        if (playerNum == 1)
-            selectedIndexP1 = GUEST;
-        else
-            selectedIndexP2 = GUEST;
+        switch (playerNum)
+        {
+            case 1:
+                selectedIndexP1 = GUEST;
+                break;
+            case 2:
+                selectedIndexP2 = GUEST;
+                break;
+            case 3:
+                selectedIndexP3 = GUEST;
+                break;
+            case 4:
+                selectedIndexP4 = GUEST;
+                break;
+            default:
+                return;
+        }
 
         EnsureGuest();
         Save();
@@ -132,6 +167,8 @@ public class ProfileManager : MonoBehaviour
 
         if (selectedIndexP1 == index) selectedIndexP1 = -1;
         if (selectedIndexP2 == index) selectedIndexP2 = -1;
+        if (selectedIndexP3 == index) selectedIndexP3 = -1;
+        if (selectedIndexP4 == index) selectedIndexP4 = -1;
         Save();
     }
 

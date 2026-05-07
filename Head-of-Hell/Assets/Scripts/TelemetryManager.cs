@@ -409,6 +409,9 @@ public class TelemetryMatchMeta
 
     public string p2Id = "";
     public string p2Character = "";
+    
+    public string p3Id = "";
+    public string p3Character = "";
 
     // Outcome
     public string winnerId = "";          // "P1" / "P2" / empty for tie
@@ -423,6 +426,9 @@ public class TelemetryMatchMeta
 
     public string p2ProfileId = "";
     public string p2ProfileName = "";
+
+    public string p3ProfileId = "";
+    public string p3ProfileName = "";
 
     // NEW: runtime separation
     public string runtimeEnvironment = "";   // "Editor" / "Build"

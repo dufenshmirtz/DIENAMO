@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 //using UnityEditor.Build;
 using UnityEngine;
 
@@ -38,22 +39,24 @@ public class Steelager : Character
 
     override public void DealHeavyDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle( attackPoint.position,  attackRange,  enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
             audioManager.PlaySFX(audioManager.explosion, audioManager.lessVol);
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Heavy);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
-            enemy.TakeDamage(heavyDamage, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Heavy);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
+            target.TakeDamage(heavyDamage, true);
 
             if(knocked){
-                enemy.TakeDamageNoAnimation(comboDamage,false);
+                target.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
+                target.TakeDamageNoAnimation(comboDamage,false);
             }
 
-            if (!enemy.isBlocking)
+            if (!target.isBlocking)
             {
-                enemy.Knockback(11f, 0.15f, true);
+                target.Knockback(11f, 0.15f, true);
             }
 
         }
@@ -80,19 +83,41 @@ public class Steelager : Character
 
     public void DealExplosionDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(explosionPoint.position, attackRange * 4, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(explosionPoint.position, attackRange * 4, enemyLayer);
+        HashSet<Character> hitTargets = new HashSet<Character>();
+        bool hitAny = false;
 
-        if (hitEnemy != null)
+        foreach (Collider2D hit in hitEnemies)
         {
-            // Telemetry: successful special hit + context before damage
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+            if (hit == null)
+            {
+                continue;
+            }
 
-            enemy.BreakCharge();
-            enemy.TakeDamage(damage, true);
-            enemy.Knockback(10f, 0.8f, false);
+            Character target = hit.GetComponent<Character>();
+            if (target == null)
+            {
+                target = hit.GetComponentInParent<Character>();
+            }
+
+            if (target == null || target == this || !target.isActiveAndEnabled || !hitTargets.Add(target))
+            {
+                continue;
+            }
+
+            enemy = target;
+            target.SetEnemy(this);
+
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+
+            target.BreakCharge();
+            target.TakeDamage(damage, true);
+            target.Knockback(10f, 0.8f, false);
+            hitAny = true;
         }
-        else
+
+        if (!hitAny)
         {
             // Telemetry: special whiff (no target in AoE)
             TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);

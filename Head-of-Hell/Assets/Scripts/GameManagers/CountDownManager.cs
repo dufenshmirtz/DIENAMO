@@ -21,8 +21,7 @@ public class CountdownManager : MonoBehaviour
             }
 
             gameManager.roundOn = true;
-            p1Manager?.Resume();
-            p2Manager?.Resume();
+            gameManager?.EnableGamePlay();
             return;
         }
 
@@ -81,13 +80,11 @@ public class CountdownManager : MonoBehaviour
 
     public void EnableGamePlay()
     {
-        p1Manager.Resume();
-        p2Manager.Resume();
+        gameManager?.EnableGamePlay();
     }
 
     public void DisableGamePlay()
     {
-        p1Manager.Pause();
-        p2Manager.Pause();
+        gameManager?.DisableGamePlay();
     }
 }

@@ -57,6 +57,8 @@ public class TutorialManager : MonoBehaviour
     private bool movedLeft;
     private bool movedRight;
     private bool chargeReachedReadyState;
+    private bool chargeReleasedTooEarly;
+    private bool spellRequiresDirectionReminder;
     private int defenseOpponentHealthBeforeAttack;
     private int opponentHealthAtStepStart;
 
@@ -139,12 +141,12 @@ public class TutorialManager : MonoBehaviour
                 break;
 
             case TutorialStep.Attack:
-                if (DidPlayerHitOpponent())
+                if (DidPlayerHitOpponentWithMove(MoveType.Quick))
                     AdvanceStep(TutorialStep.Heavy);
                 break;
 
             case TutorialStep.Heavy:
-                if (DidPlayerHitOpponent())
+                if (DidPlayerHitOpponentWithMove(MoveType.Heavy))
                     AdvanceStep(TutorialStep.Charge);
                 break;
 
@@ -156,15 +158,42 @@ public class TutorialManager : MonoBehaviour
                         chargeReachedReadyState = true;
                         UpdatePrompt();
                     }
+
+                    SetStatusText("RELEASE NOW");
                 }
-                else if (chargeReachedReadyState && !playerCharacter.IsCharging && DidPlayerHitOpponent())
+                else if (playerCharacter.IsCharging)
+                {
+                    SetStatusText("HOLD");
+                }
+                else
+                {
+                    if (Input.GetKeyUp(playerCharacter.charge) && !chargeReachedReadyState)
+                    {
+                        chargeReleasedTooEarly = true;
+                    }
+
+                    SetStatusText(chargeReleasedTooEarly
+                        ? "Keep holding until RELEASE appears."
+                        : "Hold the charge until RELEASE appears.");
+                }
+
+                if (chargeReachedReadyState && !playerCharacter.IsCharging && DidPlayerHitOpponent())
                 {
                     AdvanceStep(TutorialStep.Spell);
                 }
                 break;
 
             case TutorialStep.Spell:
-                if (Input.GetKeyDown(playerCharacter.ability) || playerCharacter.IsCasting)
+                bool hasSpellDirection = Input.GetKey(playerCharacter.left) || Input.GetKey(playerCharacter.right);
+                if (Input.GetKeyDown(playerCharacter.ability))
+                {
+                    spellRequiresDirectionReminder = !hasSpellDirection;
+                    SetStatusText(spellRequiresDirectionReminder
+                        ? "Add LEFT or RIGHT with the spell input."
+                        : "Good. Direction detected.");
+                }
+
+                if (playerCharacter.IsCasting && hasSpellDirection && !spellRequiresDirectionReminder)
                     AdvanceStep(TutorialStep.Block);
                 break;
 
@@ -242,6 +271,8 @@ public class TutorialManager : MonoBehaviour
         {
             playerCharacter.ignoreDamage = true;
             playerCharacter.overrideDeath = true;
+            playerCharacter.TutorialRefreshQuickAttack();
+            playerCharacter.TutorialRefreshAbilityAndParry();
 
             if (playerCharacter.GetCurrentHealth() < playerCharacter.maxHealth)
                 playerCharacter.SetCurrentHealth(playerCharacter.maxHealth);
@@ -437,7 +468,15 @@ public class TutorialManager : MonoBehaviour
         }
 
         if (step == TutorialStep.Charge)
+        {
             chargeReachedReadyState = false;
+            chargeReleasedTooEarly = false;
+        }
+
+        if (step == TutorialStep.Spell)
+        {
+            spellRequiresDirectionReminder = false;
+        }
 
         if (RequiresSuccessfulHit(step) && opponentCharacter != null)
             opponentHealthAtStepStart = opponentCharacter.GetCurrentHealth();
@@ -464,22 +503,22 @@ public class TutorialManager : MonoBehaviour
 
             case TutorialStep.Attack:
                 promptText.text = "Quick attack: press [" + playerCharacter.lightAttack + "] and hit the enemy.";
-                //SetStatusText("This step only completes when the enemy takes damage.");
+                SetStatusText(string.Empty);
                 break;
 
             case TutorialStep.Heavy:
                 promptText.text = "Heavy attack: press [" + playerCharacter.heavyAttack + "] and hit the enemy.";
-                //SetStatusText("This step only completes when the enemy takes damage.");
+                SetStatusText(string.Empty);
                 break;
 
             case TutorialStep.Charge:
                 promptText.text = "Charge: hold [" + playerCharacter.charge + "] until the indicator says RELEASE, then hit the enemy.";
-               //SetStatusText(chargeReachedReadyState ? "RELEASE NOW AND LAND THE HIT" : "HOLD...");
+                SetStatusText(chargeReachedReadyState ? "RELEASE NOW" : "HOLD");
                 break;
 
             case TutorialStep.Spell:
                 promptText.text = "Spell: use a direction with the spell input. Try [" + playerCharacter.left + "] + [" + playerCharacter.ability + "] or [" + playerCharacter.right + "] + [" + playerCharacter.ability + "].";
-                //SetStatusText("Do not just press the spell button by itself. Add a left or right direction.");
+                SetStatusText(string.Empty);
                 break;
 
             case TutorialStep.Block:
@@ -526,6 +565,15 @@ public class TutorialManager : MonoBehaviour
             return false;
 
         return opponentCharacter.GetCurrentHealth() < opponentHealthAtStepStart;
+    }
+
+    private bool DidPlayerHitOpponentWithMove(MoveType moveType)
+    {
+        if (!DidPlayerHitOpponent() || playerCharacter == null || opponentCharacter == null)
+            return false;
+
+        return opponentCharacter.LastIncomingAttackerId == playerCharacter.PlayerId &&
+               opponentCharacter.LastIncomingMoveType == moveType;
     }
 
     private static void ClearSavedStep()

@@ -35,6 +35,8 @@ public class PvEBotSetupUI : MonoBehaviour
         if (!PvESelectionState.IsPvE)
             PvESelectionState.IsPvE = true;
 
+        GameModeSelectionState.SelectPvE();
+
         // Δεν θεωρούμε preselected τα defaults.
         botSelected = false;
         difficultySelected = false;

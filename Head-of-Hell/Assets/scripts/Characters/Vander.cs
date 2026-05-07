@@ -47,19 +47,20 @@ public class Vander : Character
 
     override public void DealHeavyDamage()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
 
             audioManager.PlaySFX(audioManager.katanaHit, 1f);
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Heavy);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
-            enemy.TakeDamage(heavyDamage, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Heavy);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
+            target.TakeDamage(heavyDamage, true);
             Lifesteal(smallLifesteal);
-            if (!enemy.isBlocking)
+            if (!target.isBlocking)
             {
-                enemy.Knockback(11f, 0.15f, true);
+                target.Knockback(11f, 0.15f, true);
             }
 
         }
@@ -84,20 +85,27 @@ public class Vander : Character
 
     public void DealStabDmg()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        var targets = ResolveTargetsFromHits(hitEnemies);
 
-        if (hitEnemy != null)
+        if (targets.Count > 0)
         {
-            // Telemetry: successful special hit + context before damage
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Special);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+            for (int i = 0; i < targets.Count; i++)
+            {
+                Character target = targets[i];
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+                target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
 
-            enemy.StopPunching();
-            enemy.BreakCharge();
-            enemy.TakeDamage(stabDamage, true);
+                target.StopPunching();
+                target.BreakCharge();
+                target.TakeDamage(stabDamage, true);
 
-            Lifesteal(stabHeal);
-            healthbar.SetHealth(currHealth);
+                Lifesteal(stabHeal);
+            }
+            if (healthbar != null)
+            {
+                healthbar.SetHealth(currHealth);
+            }
             audioManager.PlaySFX(audioManager.stabHit, audioManager.doubleVol);
         }
         else
@@ -145,12 +153,13 @@ public class Vander : Character
     public void DealKatanaDmg1()
     {
         Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemy);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Quick);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
-            enemy.TakeDamage(katanaDmg, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+            target.TakeDamage(katanaDmg, true);
             audioManager.PlaySFX(audioManager.katanaHit, audioManager.lightAttackVolume);
         }
         else
@@ -164,12 +173,15 @@ public class Vander : Character
     public void DealKatanaDmg2()
     {
         Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemy);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
-            enemy.TakeDamage(katanaDmg, true);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+            target.TakeDamage(katanaDmg, true);
             Lifesteal(smallLifesteal);
-            enemy.Knockback(10f, .15f, true);
+            target.Knockback(10f, .15f, true);
             audioManager.PlaySFX(audioManager.katanaHit2, 1.5f);
         }
         else
@@ -203,19 +215,20 @@ public class Vander : Character
     {
         TelemetryManager.Instance?.LogAction(PlayerId, "ChargeRelease");
         Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemy);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
-            enemy.StopPunching();
-            if (!enemy.counterIsOn)
+            target.StopPunching();
+            if (!target.counterIsOn)
             {
-                enemy.BreakCharge();
+                target.BreakCharge();
             }
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Charge);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
-            enemy.TakeDamage(chargeDmg, false);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Charge);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
+            target.TakeDamage(chargeDmg, false);
             Lifesteal(chargeLifesteal);
-            enemy.Knockback(13f, 0.4f, false);
+            target.Knockback(13f, 0.4f, false);
             audioManager.PlaySFX(audioManager.smash, audioManager.doubleVol);
             if (chargeHitSound != null)
             {

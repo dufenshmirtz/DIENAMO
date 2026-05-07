@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BeamScript : MonoBehaviour
@@ -6,7 +7,7 @@ public class BeamScript : MonoBehaviour
     public LazyBigus playa;
 
     private Collider2D beamCollider;
-    private bool hasHit;
+    private readonly HashSet<Character> hitTargets = new HashSet<Character>();
 
     private void Awake()
     {
@@ -15,7 +16,7 @@ public class BeamScript : MonoBehaviour
 
     private void OnEnable()
     {
-        hasHit = false;
+        hitTargets.Clear();
 
         if (beamCollider != null)
         {
@@ -56,13 +57,34 @@ public class BeamScript : MonoBehaviour
 
     private void TryHit(Collider2D collision)
     {
-        if (hasHit) return;
-
         if (collision.CompareTag("Player"))
         {
-            hasHit = true;
-            playa.BeamHit();
+            Character target = GetCharacterFromCollider(collision);
+            if (target == null || playa == null || !playa.CanDamageTarget(target))
+            {
+                return;
+            }
+            if (hitTargets.Add(target))
+            {
+                playa.BeamHit(target);
+            }
         }
+    }
+
+    private Character GetCharacterFromCollider(Collider2D collision)
+    {
+        if (collision == null)
+        {
+            return null;
+        }
+
+        Character target = collision.GetComponent<Character>();
+        if (target == null)
+        {
+            target = collision.GetComponentInParent<Character>();
+        }
+
+        return target;
     }
 
     private void CheckOverlappingPlayers()
@@ -77,11 +99,19 @@ public class BeamScript : MonoBehaviour
 
         foreach (Collider2D hit in hits)
         {
-            if (hit != beamCollider && hit.CompareTag("Player"))
+            if (hit == beamCollider || !hit.CompareTag("Player"))
             {
-                hasHit = true;
-                playa.BeamHit();
-                break;
+                continue;
+            }
+
+            Character target = GetCharacterFromCollider(hit);
+            if (target == null || playa == null || !playa.CanDamageTarget(target))
+            {
+                continue;
+            }
+            if (hitTargets.Add(target))
+            {
+                playa.BeamHit(target);
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Xml.Linq;
@@ -36,7 +37,17 @@ public abstract class Character : MonoBehaviour
 {
 
 
-    public string PlayerId => playerNum == 1 ? "P1" : "P2";
+    public string PlayerId
+    {
+        get
+        {
+            if (playerNum == 1) return "P1";
+            if (playerNum == 2) return "P2";
+            if (playerNum == 3) return "P3";
+            if (playerNum == 4) return "P4";
+            return $"P{playerNum}";
+        }
+    }
     public bool CanDropPlatform => isonpad > 0;
     protected string incomingAttackerId;
     protected MoveType incomingMoveType;
@@ -239,6 +250,10 @@ public abstract class Character : MonoBehaviour
     private static int spawnIndexP2 = -1;
 
     Coroutine flashRedCoroutine;
+    private SpriteRenderer[] flashedRenderers;
+    private Color[] flashedOriginalColors;
+    private bool deferCritFeedback;
+    private bool deferredCritFeedbackPending;
 
     Coroutine cdCoroutine;
 
@@ -249,6 +264,12 @@ public abstract class Character : MonoBehaviour
         incomingAttackerId = attackerId;
         incomingMoveType = moveType;
         incomingSourceType = sourceType;
+
+        Character attacker = GetCharacterForPlayerId(attackerId);
+        if (attacker != null && attacker != this)
+        {
+            enemy = attacker;
+        }
     }
     #region Base
     public virtual void Start()
@@ -286,7 +307,7 @@ public abstract class Character : MonoBehaviour
             {
                 maxHealth = loadedRuleset.health;
                 currHealth = maxHealth;
-                healthbar.SetMaxHealth(maxHealth);
+                SetHealthbarMaxSafe(maxHealth);
             }
 
 
@@ -300,7 +321,7 @@ public abstract class Character : MonoBehaviour
 
             if (loadedRuleset.hideHealth)
             {
-                healthbar.gameObject.SetActive(false);
+                SetHealthbarVisibleSafe(false);
             }
         }
         else
@@ -321,7 +342,7 @@ public abstract class Character : MonoBehaviour
         OGMoveSpeed = moveSpeed;
         heavySpeed = moveSpeed / 2;
 
-        cooldownSlider.maxValue = 1f;
+        SetCooldownSliderMaxSafe(1f);
 
         _spawnPos = transform.position;
 
@@ -393,23 +414,7 @@ public abstract class Character : MonoBehaviour
         enemy = characterChoiceHandler.CharacterChoice(2);
 
 
-        if (playerNum == 1)
-        {
-            playerString = "_P1";
-            if (controllerCount >= 2)
-            {
-                controller = true;
-            }
-        }
-        else if (playerNum == 2)
-        {
-            playerString = "_P2";
-            if (controllerCount >= 1)
-            {
-                controller = true;
-            }
-
-        }
+        ConfigurePlayerInputMode();
 
         animator = GetComponent<Animator>();
 
@@ -432,20 +437,211 @@ public abstract class Character : MonoBehaviour
     // inside Character
     public IInputProvider GetInputProvider() => input;
 
+    public void RefreshSetupBindingsForRuntime()
+    {
+        if (characterSetup == null || characterChoiceHandler == null)
+            return;
+
+        enemyLayer = characterSetup.enemyLayer;
+        gameManager = characterSetup.gameManager;
+        rb = characterSetup.rb;
+        healthbar = characterSetup.healthbar;
+        P1Name = characterSetup.P1Name;
+        winner = characterSetup.winner;
+        playAgainButton = characterSetup.playAgainButton;
+        mainMenuButton = characterSetup.mainMenuButton;
+        saveReplayButton = characterSetup.saveReplayButton;
+        cooldownSlider = characterSetup.cooldownSlider;
+        damageCounter = characterSetup.damageCounter;
+        audioManager = characterSetup.audioManager;
+        quickAttackIndicator = characterSetup.quickAttackIndicator;
+        groundCheck = characterSetup.groundCheck;
+        playerNum = characterSetup.playerNum;
+        playerGroundLayers = enemyLayer;
+
+        if (P1Name != null)
+            P1Name.text = characterChoiceHandler.GetCharacterName(1);
+
+        P2Name = characterChoiceHandler.GetCharacterName(2);
+        enemy = characterChoiceHandler.CharacterChoice(2);
+
+        ConfigurePlayerInputMode();
+    }
+
+    private void ConfigurePlayerInputMode()
+    {
+        bool isThreePlayerMode = GameModeSelectionState.CurrentMode == SelectedGameMode.PvP_1v1v1;
+        bool isTwoVersusTwoMode = gameManager != null && gameManager.IsTwoVersusTwoMatch();
+
+        controller = false;
+
+        if (playerNum == 1)
+        {
+            playerString = "_P1";
+            if (!isTwoVersusTwoMode && controllerCount >= 2)
+            {
+                controller = true;
+            }
+            return;
+        }
+
+        if (playerNum == 2)
+        {
+            playerString = "_P2";
+            if (!isThreePlayerMode && !isTwoVersusTwoMode && controllerCount >= 1)
+            {
+                controller = true;
+            }
+            return;
+        }
+
+        if (playerNum == 3)
+        {
+            playerString = "_P3";
+            controller = controllerCount >= 1;
+            return;
+        }
+
+        if (playerNum == 4)
+        {
+            playerString = "_P4";
+            controller = controllerCount >= 2;
+        }
+    }
+
     int ControllerNum(int pNum)
     {
-        if (pNum == 1)
+        if (gameManager != null && gameManager.IsTwoVersusTwoMatch())
         {
-            return 2;
+            if (pNum == 3) return 1;
+            if (pNum == 4) return 2;
+            return 0;
         }
-        else
+
+        if (pNum == 1)
+            return 2;
+
+        return 1;
+    }
+
+    private float GetHorizontalInput()
+    {
+        if (!controller)
         {
-            return 1;
+            float move = 0f;
+            if (input.GetKey(left)) move -= 1f;
+            if (input.GetKey(right)) move += 1f;
+            return move;
+        }
+
+        return input.GetAxis("Horizontal" + playerString);
+    }
+
+    private float GetVerticalInput()
+    {
+        if (!controller)
+        {
+            float move = 0f;
+            if (input.GetKey(down)) move -= 1f;
+            if (input.GetKey(up)) move += 1f;
+            return move;
+        }
+
+        return input.GetAxis("Vertical" + playerString);
+    }
+
+    private void SetHealthbarMaxSafe(int value)
+    {
+        if (healthbar != null)
+        {
+            healthbar.SetMaxHealth(value);
+        }
+    }
+
+    private void SetHealthbarSafe(int value)
+    {
+        if (healthbar != null)
+        {
+            healthbar.SetHealth(value);
+        }
+    }
+
+    private void SetHealthbarVisibleSafe(bool visible)
+    {
+        if (healthbar != null)
+        {
+            healthbar.gameObject.SetActive(visible);
+        }
+    }
+
+    private void SetCooldownSliderMaxSafe(float value)
+    {
+        if (cooldownSlider != null)
+        {
+            cooldownSlider.maxValue = value;
+        }
+    }
+
+    private void SetCooldownSliderValueSafe(float value)
+    {
+        if (cooldownSlider != null)
+        {
+            cooldownSlider.value = value;
+        }
+    }
+
+    protected void SetCooldownSpriteSafe(Sprite sprite)
+    {
+        if (cdbarimage != null)
+        {
+            cdbarimage.sprite = sprite;
+        }
+    }
+
+    private void SetQuickAttackIndicatorSafe(bool visible)
+    {
+        if (quickAttackIndicator != null)
+        {
+            quickAttackIndicator.SetActive(visible);
+        }
+    }
+
+    public virtual void TutorialRefreshQuickAttack()
+    {
+    }
+
+    public virtual void TutorialRefreshAbilityAndParry()
+    {
+        if (!casting && onCooldown)
+        {
+            if (cdCoroutine != null)
+            {
+                StopCoroutine(cdCoroutine);
+                cdCoroutine = null;
+            }
+
+            onCooldown = false;
+            cdTimer = 0f;
+            SetCooldownSliderValueSafe(1f);
+            SetCooldownSpriteSafe(ogSprite);
+
+            if (animator != null)
+            {
+                animator.SetBool("isUsingAbility", false);
+                animator.SetBool("Casting", false);
+            }
+        }
+
+        if (!counterIsOn && !casting)
+        {
+            canParry = true;
         }
     }
 
     public virtual void Update()
     {
+        RefreshCombatTargetFromNearest();
+
         GroundedSafeguard();
         StaticSafeguard();
         //UpdateGroundedState(); in the future
@@ -519,7 +715,7 @@ public abstract class Character : MonoBehaviour
             return;
         }
 
-        float moveDirection = input.GetAxis("Horizontal" + playerString);
+        float moveDirection = GetHorizontalInput();
         int dir = (moveDirection > 0.1f) ? 1 : (moveDirection < -0.1f) ? -1 : 0;
 
         
@@ -565,7 +761,7 @@ public abstract class Character : MonoBehaviour
             animator.SetBool("cWalk", false);
         }
 
-        float v = input.GetAxis("Vertical" + playerString);
+        float v = GetVerticalInput();
         bool axisUp = v > 0.5f;
 
         // Jumping
@@ -617,7 +813,7 @@ public abstract class Character : MonoBehaviour
         }
 
         //Get down from pad
-        if (input.GetKeyDown(down) || (controller && input.GetAxis("Vertical" + playerString) < -0.5f))
+        if (input.GetKeyDown(down) || (controller && GetVerticalInput() < -0.5f))
         {
             Collider2D[] colliders = GetComponents<Collider2D>();
             if (CanDropPlatform)
@@ -696,7 +892,7 @@ public abstract class Character : MonoBehaviour
         // Now it's safe to assign the value
         maxHealth = gameManager.maxHealth;
         currHealth = maxHealth;
-        healthbar.SetMaxHealth(maxHealth);
+        SetHealthbarMaxSafe(maxHealth);
     }
 
 
@@ -911,12 +1107,12 @@ public abstract class Character : MonoBehaviour
     {
         ignoreDamage = false;
         ignoreMovement = false;
-        if(enemy != null)
+        if (GetCurrentCombatTarget() != null)
         {
             EnemyAbilityEnable();
         }      
         knockable = true;
-        cdbarimage.sprite = ogSprite;
+        SetCooldownSpriteSafe(ogSprite);
         animator.SetBool("isUsingAbility", false);
         animator.SetBool("Casting", false);
         casting = false;
@@ -949,18 +1145,21 @@ public abstract class Character : MonoBehaviour
     void UpdateCooldownSlider(float duration)
     {
         float progress = Mathf.Clamp01(1f - cdTimer / duration);
-        cooldownSlider.value = progress;
+        SetCooldownSliderValueSafe(progress);
     }
 
     public void EnemyAbilityBlock()
     {
-        if (enemy == null) return;
-        enemy.AbilityDisabled();
+        Character target = GetCurrentCombatTarget();
+        if (target == null) return;
+        target.AbilityDisabled();
     }
 
     public void EnemyAbilityEnable()
     {
-        enemy.AbilityEnabled();
+        Character target = GetCurrentCombatTarget();
+        if (target == null) return;
+        target.AbilityEnabled();
     }
 
     public void AbilityDisabled()
@@ -981,7 +1180,7 @@ public abstract class Character : MonoBehaviour
         animator.SetBool("Casting", true);
         EnemyAbilityBlock();
         animator.SetBool("isUsingAbility", true);
-        cdbarimage.sprite = activeSprite;
+        SetCooldownSpriteSafe(activeSprite);
         isBlocking = false;
         UpdateCooldownSlider(cd);
 
@@ -1025,7 +1224,10 @@ public abstract class Character : MonoBehaviour
         {
             knockbackXaxis = axis;
             audioManager.PlaySFX(audioManager.knockback, audioManager.lessVol);
-            bool enemyOnRight = enemy.transform.position.x > this.transform.position.x;
+            Character knockbackSource = GetKnockbackSource();
+            bool enemyOnRight = knockbackSource != null
+                ? knockbackSource.transform.position.x > this.transform.position.x
+                : transform.localScale.x > 0f;
             //This if must be removed when knockback tranfers to playerscript, its used for a Stellger Passive Function
             if (time == 0.3333f)
             {
@@ -1104,18 +1306,19 @@ public abstract class Character : MonoBehaviour
     public virtual void DealChargeDmg()
     {
         TelemetryManager.Instance?.LogAction(PlayerId, "ChargeRelease");
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
 
-        if (hitEnemy != null)
+        if (target != null)
         {
-            enemy.StopPunching();
-            if (!enemy.counterIsOn) {
-                enemy.BreakCharge();
+            target.StopPunching();
+            if (!target.counterIsOn) {
+                target.BreakCharge();
             }
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, enemy.PlayerId, MoveType.Charge);
-            enemy.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
-            enemy.TakeDamage(chargeDmg, false);
-            enemy.Knockback(13f, 0.4f, false);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Charge);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
+            target.TakeDamage(chargeDmg, false);
+            target.Knockback(13f, 0.4f, false);
             audioManager.PlaySFX(audioManager.smash, audioManager.doubleVol);
             if (chargeHitSound != null)
             {
@@ -1307,8 +1510,9 @@ public abstract class Character : MonoBehaviour
 
     public Collider2D HitEnemy()
     {
-        Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
-        return hitEnemy;
+        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
+        Character target = ResolveTargetFromHit(hitEnemies);
+        return target != null ? target.GetComponent<Collider2D>() : null;
     }
 
     virtual public void HeavyAttackStart()
@@ -1392,11 +1596,18 @@ public abstract class Character : MonoBehaviour
 
     public void Countered()
     {
+        Character target = GetCurrentCombatTarget();
+        if (target == null)
+        {
+            CounterVariablesOff();
+            return;
+        }
+
         TelemetryManager.Instance?.LogAction(PlayerId, "Parry");
 
         animator.SetTrigger("counterHit");
         audioManager.PlaySFX(audioManager.counterSucces, 1.5f);
-        enemy.stayStatic();
+        target.stayStatic();
         stayStatic();
         ignoreCounterOff = true;
         counterDone = true;
@@ -1406,17 +1617,25 @@ public abstract class Character : MonoBehaviour
 
     virtual public void DealCounterDmg()
     {
-        enemy.StopPunching();
-        enemy.BreakCharge();
+        Character target = GetCurrentCombatTarget();
+        if (target == null)
+        {
+            stayDynamic();
+            return;
+        }
+
+        target.StopPunching();
+        target.BreakCharge();
 
         audioManager.PlaySFX(audioManager.counterClong, 0.5f);
 
-        enemy.TakeDamage(parryDamage, true);
+        target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Melee);
+        target.TakeDamage(parryDamage, true);
 
         stayDynamic();
-        enemy.stayDynamic();
+        target.stayDynamic();
 
-        enemy.Knockback(10f, .3f, false);
+        target.Knockback(10f, .3f, false);
 
     }
 
@@ -1439,7 +1658,11 @@ public abstract class Character : MonoBehaviour
         safety = true;
         ignoreCounterOff = false;
         ignoreUpdate = false;
-        enemy.stayDynamic();
+        Character target = GetCurrentCombatTarget();
+        if (target != null)
+        {
+            target.stayDynamic();
+        }
         stayDynamic();
     }
 
@@ -1460,22 +1683,232 @@ public abstract class Character : MonoBehaviour
 
     protected void QuickAttackIndicatorEnable()
     {
-        quickAttackIndicator.SetActive(true);
+        SetQuickAttackIndicatorSafe(true);
     }
 
     protected void QuickAttackIndicatorDisable()
     {
-        quickAttackIndicator?.SetActive(false);
+        SetQuickAttackIndicatorSafe(false);
     }
 
     public Character GetEnemy()
     {
-        return enemy;
+        return GetCurrentCombatTarget();
     }
 
     public void SetEnemy(Character changeEnemy)
     {
-        enemy = changeEnemy;
+        if (IsValidCombatTarget(changeEnemy))
+        {
+            enemy = changeEnemy;
+        }
+    }
+
+    protected Character ResolveTargetFromHit(params Collider2D[] hits)
+    {
+        List<Character> targets = ResolveTargetsFromHits(hits);
+        if (targets.Count == 0)
+        {
+            return null;
+        }
+
+        Character closestTarget = null;
+        float closestDistanceSq = float.MaxValue;
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            Character target = targets[i];
+            float distanceSq = (target.transform.position - transform.position).sqrMagnitude;
+            if (distanceSq < closestDistanceSq)
+            {
+                closestDistanceSq = distanceSq;
+                closestTarget = target;
+            }
+        }
+
+        SetCombatTarget(closestTarget);
+        return closestTarget;
+    }
+
+    protected List<Character> ResolveTargetsFromHits(params Collider2D[] hits)
+    {
+        List<Character> targets = new List<Character>();
+        if (hits == null)
+        {
+            return targets;
+        }
+
+        HashSet<Character> uniqueTargets = new HashSet<Character>();
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Character target = GetCharacterFromCollider(hits[i]);
+            if (!IsValidCombatTarget(target) || !uniqueTargets.Add(target))
+            {
+                continue;
+            }
+
+            targets.Add(target);
+        }
+
+        return targets;
+    }
+
+    protected void SetCombatTarget(Character target)
+    {
+        if (!IsValidCombatTarget(target))
+        {
+            return;
+        }
+
+        enemy = target;
+        target.SetEnemy(this);
+    }
+
+    protected Character GetCharacterFromCollider(Collider2D hit)
+    {
+        if (hit == null)
+        {
+            return null;
+        }
+
+        Character target = hit.GetComponent<Character>();
+        if (target == null)
+        {
+            target = hit.GetComponentInParent<Character>();
+        }
+
+        return target;
+    }
+
+    protected bool IsValidCombatTarget(Character target)
+    {
+        return target != null
+            && target != this
+            && target.isActiveAndEnabled
+            && (gameManager == null || gameManager.AreCharactersOpponents(this, target))
+            && !target.IsDead();
+    }
+
+    public bool CanDamageTarget(Character target)
+    {
+        return IsValidCombatTarget(target);
+    }
+
+    protected Character GetNearestLivingOpponent()
+    {
+        if (gameManager == null)
+        {
+            return IsValidCombatTarget(enemy) ? enemy : null;
+        }
+
+        Character closestTarget = null;
+        float closestDistanceSq = float.MaxValue;
+
+        Character[] candidates =
+        {
+            gameManager.p1Manager != null ? gameManager.p1Manager.GetCurrentCharacter() : null,
+            gameManager.p2Manager != null ? gameManager.p2Manager.GetCurrentCharacter() : null,
+            gameManager.p3Manager != null ? gameManager.p3Manager.GetCurrentCharacter() : null,
+            gameManager.p4Manager != null ? gameManager.p4Manager.GetCurrentCharacter() : null
+        };
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            Character candidate = candidates[i];
+            if (!IsValidCombatTarget(candidate))
+            {
+                continue;
+            }
+
+            float distanceSq = (candidate.transform.position - transform.position).sqrMagnitude;
+            if (distanceSq < closestDistanceSq)
+            {
+                closestDistanceSq = distanceSq;
+                closestTarget = candidate;
+            }
+        }
+
+        return closestTarget;
+    }
+
+    protected void RefreshCombatTargetFromNearest()
+    {
+        Character nearestTarget = GetNearestLivingOpponent();
+        if (nearestTarget != null)
+        {
+            enemy = nearestTarget;
+        }
+    }
+
+    protected Character GetCurrentCombatTarget()
+    {
+        Character attacker = GetCharacterForPlayerId(incomingAttackerId);
+        if (IsValidCombatTarget(attacker))
+        {
+            enemy = attacker;
+            return attacker;
+        }
+
+        if (IsValidCombatTarget(enemy))
+        {
+            return enemy;
+        }
+
+        Character nearestTarget = GetNearestLivingOpponent();
+        if (nearestTarget != null)
+        {
+            enemy = nearestTarget;
+            return nearestTarget;
+        }
+
+        return null;
+    }
+
+    private Character GetCharacterForPlayerId(string playerId)
+    {
+        if (gameManager == null || string.IsNullOrEmpty(playerId))
+        {
+            return null;
+        }
+
+        if (playerId == "P1")
+        {
+            return gameManager.p1Manager != null ? gameManager.p1Manager.GetCurrentCharacter() : null;
+        }
+
+        if (playerId == "P2")
+        {
+            return gameManager.p2Manager != null ? gameManager.p2Manager.GetCurrentCharacter() : null;
+        }
+
+        if (playerId == "P3")
+        {
+            return gameManager.p3Manager != null ? gameManager.p3Manager.GetCurrentCharacter() : null;
+        }
+
+        if (playerId == "P4")
+        {
+            return gameManager.p4Manager != null ? gameManager.p4Manager.GetCurrentCharacter() : null;
+        }
+
+        return null;
+    }
+
+    private Character GetKnockbackSource()
+    {
+        Character source = GetCharacterForPlayerId(incomingAttackerId);
+        if (source != null && source != this)
+        {
+            return source;
+        }
+
+        if (enemy != null && enemy != this)
+        {
+            return enemy;
+        }
+
+        return GetNearestLivingOpponent();
     }
 
     public bool AmICasting()
@@ -1509,8 +1942,9 @@ public abstract class Character : MonoBehaviour
     // --- Telemetry helper ---
     protected float GetDistanceToEnemy()
     {
-        if (enemy == null || gameManager.trainingMode) return -1f;
-        return Vector2.Distance(transform.position, enemy.transform.position);
+        Character target = GetCurrentCombatTarget();
+        if (target == null || (gameManager != null && gameManager.trainingMode)) return -1f;
+        return Vector2.Distance(transform.position, target.transform.position);
     }
     virtual public void TakeDamage(int dmg, bool blockable, bool parryable = true, bool canCrit = true)
     {
@@ -1579,7 +2013,7 @@ public abstract class Character : MonoBehaviour
             {
                 currHealth -= 5;
                 //Debug.Log("Took 5 damage.");
-                healthbar.SetHealth(currHealth);
+                SetHealthbarSafe(currHealth);
                 StartCoroutine(TriggerDamageCounter(5));
             }
 
@@ -1587,7 +2021,7 @@ public abstract class Character : MonoBehaviour
             {
                 currHealth -= dmg;
                 //Debug.Log("Took " + dmg + " damage.");
-                healthbar.SetHealth(currHealth);
+                SetHealthbarSafe(currHealth);
                 moveSpeed = OGMoveSpeed;
                 StartCoroutine(TriggerDamageCounter(dmg));
             }
@@ -1621,7 +2055,7 @@ public abstract class Character : MonoBehaviour
             currHealth -= dmg;
             CheckForCrit(canCrit);
             animator.SetTrigger("tookDmg");
-            healthbar.SetHealth(currHealth);
+            SetHealthbarSafe(currHealth);
             StartCoroutine(TriggerDamageCounter(dmg));
 
             //Debug.Log("Took " + dmg + " damage.");
@@ -1665,7 +2099,6 @@ public abstract class Character : MonoBehaviour
 
     public void Die()
     {
-        int winnerNum = (playerNum == 1) ? 2 : 1;   // ή: int winnerNum = enemy.playerNum;
         if (overrideDeath) {
             return;
         }
@@ -1687,18 +2120,46 @@ public abstract class Character : MonoBehaviour
 
         ActivateHealthBars(); //In case they are hidden
 
-        enemy.Win();
-        enemy.stayStatic();
+        if (gameManager != null && gameManager.IsTwoVersusTwoMatch())
+        {
+            audioManager.PlaySFX(audioManager.dearth, audioManager.doubleVol);
+            if (gameManager.HandleTeamDeath(this))
+            {
+                audioManager.StopMusic();
+            }
+            return;
+        }
+
+        if (gameManager != null && gameManager.IsThreePlayerMatch())
+        {
+            audioManager.PlaySFX(audioManager.dearth, audioManager.doubleVol);
+            if (gameManager.HandleThreePlayerDeath(this))
+            {
+                audioManager.StopMusic();
+            }
+            return;
+        }
+
+        Character target = GetCurrentCombatTarget();
+        if (target == null)
+        {
+            gameManager?.RoundEndTie(playerNum);
+            return;
+        }
+
+        int winnerNum = (playerNum == 1) ? 2 : 1;   // ή: int winnerNum = enemy.playerNum;
+        target.Win();
+        target.stayStatic();
 
         audioManager.StopMusic();
         audioManager.PlaySFX(audioManager.dearth, audioManager.doubleVol);
 
-        if (enemy.currHealth == maxHealth)
+        if (target.currHealth == maxHealth)
         {
             gameManager.RoundEndFlawless(winnerNum, P2Name);
-            KeepStats(P2Name,enemy.GetCharID(), P1Name.text,characterID);
+            KeepStats(P2Name, target.GetCharID(), P1Name.text, characterID);
         }
-        else if (enemy.currHealth <= 0)
+        else if (target.currHealth <= 0)
         {
             if (gameManager.trainingMode && TrainingCharacterWinrateTracker.Instance != null)
             {
@@ -1711,7 +2172,7 @@ public abstract class Character : MonoBehaviour
         }
         else
         {
-            KeepStats(P2Name,enemy.GetCharID(), P1Name.text,characterID);
+            KeepStats(P2Name, target.GetCharID(), P1Name.text, characterID);
             gameManager.RoundEnd(winnerNum, P2Name);
         }
 
@@ -1734,8 +2195,9 @@ public abstract class Character : MonoBehaviour
 
     public void ActivateHealthBars()
     {
-        healthbar.gameObject.SetActive(true);
-        enemy.healthbar.gameObject.SetActive(true);
+        SetHealthbarVisibleSafe(true);
+        Character target = GetCurrentCombatTarget();
+        target?.SetHealthbarVisibleSafe(true);
     }
 
     virtual public void TakeDamageNoAnimation(int dmg, bool blockable, bool parryable = true)
@@ -1803,7 +2265,7 @@ public abstract class Character : MonoBehaviour
 
             currHealth -= dmg;
 
-            healthbar.SetHealth(currHealth);
+            SetHealthbarSafe(currHealth);
             StartCoroutine(TriggerDamageCounter(dmg));
         }
 
@@ -1842,9 +2304,15 @@ public abstract class Character : MonoBehaviour
     }
 
     IEnumerator TriggerDamageCounter(int damage) {
+        if (damageCounter == null)
+        {
+            yield break;
+        }
 
         if (damageCounter.gameObject.activeSelf) {
-            damage += int.Parse(damageCounter.text);
+            int currentDisplayedDamage = 0;
+            int.TryParse(damageCounter.text, out currentDisplayedDamage);
+            damage += currentDisplayedDamage;
         }
         damageCounter.text = damage.ToString();
         damageCounter.gameObject.SetActive(true);
@@ -1857,7 +2325,14 @@ public abstract class Character : MonoBehaviour
 
     public void DealDamageToEnemy(int amount)
     {
-        enemy.TakeDamageNoAnimation(amount, false);
+        Character target = GetCurrentCombatTarget();
+        if (target == null)
+        {
+            return;
+        }
+
+        target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
+        target.TakeDamageNoAnimation(amount, false);
     }
 
     public IEnumerator InterruptMovement(float time)
@@ -1966,7 +2441,18 @@ public abstract class Character : MonoBehaviour
 
     public bool IsEnemyClose()
     {
-        return Vector3.Distance(this.transform.position, enemy.transform.position) <= 4f;
+        Character target = GetCurrentCombatTarget();
+        if (target == null)
+        {
+            return false;
+        }
+
+        return Vector3.Distance(this.transform.position, target.transform.position) <= 4f;
+    }
+
+    public bool IsDead()
+    {
+        return animator != null && animator.GetBool("isDead");
     }
 
     public int GetCurrentHealth()
@@ -1977,7 +2463,7 @@ public abstract class Character : MonoBehaviour
     public void SetCurrentHealth(int value)
     {
         currHealth = value;
-        healthbar.SetHealth(value);
+        SetHealthbarSafe(value);
     }
     #endregion
 
@@ -2038,7 +2524,7 @@ public abstract class Character : MonoBehaviour
             {
                 currHealth = maxHealth;
             }
-            healthbar.SetHealth(currHealth);
+            SetHealthbarSafe(currHealth);
         }
 
     }
@@ -2047,9 +2533,15 @@ public abstract class Character : MonoBehaviour
     {
         if (CriticalChance() && !gameManager.trainingMode && canCrit)
         {
-            FlashRed();
             TakeDamageNoAnimation(10,false);
-            audioManager.PlaySFX(audioManager.critical, 2.6f);
+            if (deferCritFeedback)
+            {
+                deferredCritFeedbackPending = true;
+            }
+            else
+            {
+                PlayCritFeedback();
+            }
         }
     }
     virtual protected bool CriticalChance()
@@ -2062,40 +2554,80 @@ public abstract class Character : MonoBehaviour
         if (flashRedCoroutine != null)
         {
             StopCoroutine(flashRedCoroutine);
+            RestoreFlashRedColors();
         }
 
         flashRedCoroutine = StartCoroutine(FlashRedCoroutine(0.3f));
     }
 
+    private void PlayCritFeedback()
+    {
+        FlashRed();
+        audioManager.PlaySFX(audioManager.critical, 2.6f);
+    }
+
+    public void BeginDeferredCritFeedback()
+    {
+        deferCritFeedback = true;
+        deferredCritFeedbackPending = false;
+    }
+
+    public void EndDeferredCritFeedback(bool playFeedback)
+    {
+        deferCritFeedback = false;
+
+        if (playFeedback && deferredCritFeedbackPending)
+        {
+            PlayCritFeedback();
+        }
+
+        deferredCritFeedbackPending = false;
+    }
+
     private IEnumerator FlashRedCoroutine(float duration)
     {
-        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        flashedRenderers = GetComponentsInChildren<SpriteRenderer>(true);
 
-        if (renderers == null || renderers.Length == 0)
+        if (flashedRenderers == null || flashedRenderers.Length == 0)
             yield break;
 
-        Color[] originalColors = new Color[renderers.Length];
+        flashedOriginalColors = new Color[flashedRenderers.Length];
 
-        for (int i = 0; i < renderers.Length; i++)
+        for (int i = 0; i < flashedRenderers.Length; i++)
         {
-            originalColors[i] = renderers[i].color;
-            renderers[i].color = Color.red;
+            flashedOriginalColors[i] = flashedRenderers[i].color;
+            flashedRenderers[i].color = Color.red;
         }
 
         yield return new WaitForSeconds(duration);
 
-        for (int i = 0; i < renderers.Length; i++)
+        RestoreFlashRedColors();
+        flashRedCoroutine = null;
+    }
+
+    private void RestoreFlashRedColors()
+    {
+        if (flashedRenderers == null || flashedOriginalColors == null)
         {
-            if (renderers[i] != null)
-                renderers[i].color = originalColors[i];
+            return;
         }
 
-        flashRedCoroutine = null;
+        int count = Mathf.Min(flashedRenderers.Length, flashedOriginalColors.Length);
+        for (int i = 0; i < count; i++)
+        {
+            if (flashedRenderers[i] != null)
+            {
+                flashedRenderers[i].color = flashedOriginalColors[i];
+            }
+        }
+
+        flashedRenderers = null;
+        flashedOriginalColors = null;
     }
 
     public void ChangeEnemy(Character newEnemy)
     {
-        enemy = newEnemy;
+        SetEnemy(newEnemy);
     }
 
     #endregion
@@ -2231,6 +2763,7 @@ public abstract class Character : MonoBehaviour
     #region RL
     // --- Public read-only state for RL ---
     public bool IsGrounded => isGrounded;
+    public int GetPlayerNum() => playerNum;
     public bool IsBlocking => isBlocking;
     public bool IsCasting => casting;
     public bool IsStunned => stunned;
@@ -2250,6 +2783,8 @@ public abstract class Character : MonoBehaviour
     public bool Parrying => counterIsOn;
     public bool HeavyAttacking => heavyAttacking;
     public bool LightAttacking => isLightAttacking;
+    public string LastIncomingAttackerId => incomingAttackerId;
+    public MoveType LastIncomingMoveType => incomingMoveType;
 
     // Optional: normalized ability cooldown (0=ready, 1=just used).
     // Store last used cooldown length so we can normalize.
