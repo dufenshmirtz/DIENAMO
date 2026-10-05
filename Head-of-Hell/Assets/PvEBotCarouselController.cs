@@ -38,13 +38,13 @@ public class PvEBotCarouselController : MonoBehaviour
         sideSelector.OnIndexChanged += OnSideChanged;
 
         botSelector.SetIndexWithoutNotify(
-            PvESelectionState.SelectedBotType == PvEBotType.MLAgent ? 0 : 1
+            PvESelectionState.SelectedBotType == PvEBotType.ScriptedBot ? 0 : 1
         );
 
         difficultySelector.SetIndexWithoutNotify((int)PvESelectionState.SelectedDifficulty);
 
         sideSelector.SetIndexWithoutNotify(
-            PvESelectionState.SelectedBotSide == PvEBotSide.Player1 ? 0 : 1
+            PvESelectionState.SelectedBotSide == PvEBotSide.Player2 ? 0 : 1
         );
 
         ApplyCurrentSelections();
