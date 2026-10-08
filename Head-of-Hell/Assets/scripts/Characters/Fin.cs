@@ -28,13 +28,13 @@ public class Fin : Character
     #region HeavyAttack
     override public void HeavyAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.incense, audioManager.doubleVol);
     }
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -215,7 +215,7 @@ public class Fin : Character
             return;
         }
 
-        target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Melee);
+        target.SetIncomingDamageContext(PlayerId, MoveType.ParryCounter, SourceType.Parry);
         target.TakeDamageNoAnimation(passiveDamage,false,false);
     }
     #endregion

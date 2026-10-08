@@ -43,13 +43,13 @@ public class Visvia : Character
     #region HeavyAttack
     override public void HeavyAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.heavyswoosh, audioManager.heavySwooshVolume);
     }
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -221,6 +221,10 @@ public class Visvia : Character
                     target.Knockback(10f, 0.2f, true);
                 }
             }
+        }
+        else
+        {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Quick);
         }
         //Unlock Rotation
         yield return new WaitForSeconds(dashDuration-0.1f);

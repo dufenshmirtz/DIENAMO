@@ -53,13 +53,13 @@ public class Skipler : Character
     #region HeavyAttack
     override public void HeavyAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.heavyGlitch, 0.8f);
     }
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 

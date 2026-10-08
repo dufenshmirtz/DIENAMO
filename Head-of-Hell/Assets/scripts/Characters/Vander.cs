@@ -10,6 +10,7 @@ public class Vander : Character
     int katanaDmg = 3;
     int smallLifesteal = 3;
     bool katanaready = true;
+    bool katanaHitThisCast = false;
 
     int chargeLifesteal=8;
 
@@ -40,13 +41,13 @@ public class Vander : Character
     #region HeavyAttack
     override public void HeavyAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.heavyswoosh, audioManager.heavySwooshVolume);
     }
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -143,6 +144,7 @@ public class Vander : Character
             isLightAttacking=true;
             moveSpeed = OGMoveSpeed;
             TelemetryManager.Instance?.LogAction(PlayerId, "Quick");
+            katanaHitThisCast = false;
             QuickAttackIndicatorDisable();
             animator.SetTrigger("QuickAttack");
             katanaready = false;
@@ -160,11 +162,11 @@ public class Vander : Character
             TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
             target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
             target.TakeDamage(katanaDmg, true);
+            katanaHitThisCast = true;
             audioManager.PlaySFX(audioManager.katanaHit, audioManager.lightAttackVolume);
         }
         else
         {
-            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Quick);
             audioManager.PlaySFX(audioManager.katanaSwoosh, audioManager.swooshVolume);
         }
 
@@ -180,12 +182,17 @@ public class Vander : Character
             TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
             target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
             target.TakeDamage(katanaDmg, true);
+            katanaHitThisCast = true;
             Lifesteal(smallLifesteal);
             target.Knockback(10f, .15f, true);
             audioManager.PlaySFX(audioManager.katanaHit2, 1.5f);
         }
         else
         {
+            if (!katanaHitThisCast)
+            {
+                TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Quick);
+            }
             audioManager.PlaySFX(audioManager.katanaSwoosh, audioManager.swooshVolume);
         }
 
@@ -237,13 +244,13 @@ public class Vander : Character
         }
         else
         {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
             if (chargeHitSound != null)
             {
                 audioManager.PlaySFX(chargeHitSound, 1.5f);
             }
             else
             {
-                TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
                 audioManager.PlaySFX(audioManager.swoosh, audioManager.swooshVolume);
             }
 

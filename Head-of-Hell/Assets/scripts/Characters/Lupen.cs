@@ -51,7 +51,6 @@ public class Lupen : Character
         {
             return;
         }
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.heavyswoosh, audioManager.heavySwooshVolume);
         ResetQuickPunch();
@@ -59,6 +58,7 @@ public class Lupen : Character
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -66,6 +66,7 @@ public class Lupen : Character
         {
 
             audioManager.PlaySFX(audioManager.heavyattack, 1f);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Heavy);
             enemy.SetIncomingDamageContext(PlayerId, MoveType.Heavy, SourceType.Melee);
             enemy.TakeDamage(heavyDamage, true);
             Robbed();
@@ -78,6 +79,7 @@ public class Lupen : Character
         }
         else
         {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Heavy);
             audioManager.PlaySFX(audioManager.swoosh, 1f);
         }
 
@@ -113,14 +115,8 @@ public class Lupen : Character
             for (int i = 0; i < targets.Count; i++)
             {
                 Character target = targets[i];
-                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
                 target.Knockback(9f, 0.5f, false);
             }
-        }
-        else
-        {
-            // Telemetry: special had no effect (no enemy in range)
-            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);
         }
     }
 

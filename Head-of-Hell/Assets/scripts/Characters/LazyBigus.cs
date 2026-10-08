@@ -42,6 +42,7 @@ public class LazyBigus : Character
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -62,6 +63,7 @@ public class LazyBigus : Character
         }
         else
         {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Heavy);
             //audioManager.PlaySFX(audioManager.swoosh, 1f);
         }
 
@@ -71,6 +73,7 @@ public class LazyBigus : Character
     #region Spell
     override public void Spell()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Special");
         IgnoreUpdate(true);
         stayStatic();
         UsingAbility(cooldown);
@@ -89,7 +92,8 @@ public class LazyBigus : Character
         if (target != null && beamTargetsHitThisCast.Add(target))
         {
             SetEnemy(target);
-            target.SetIncomingDamageContext(PlayerId, MoveType.Projectile, SourceType.Projectile);
+            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Special);
+            target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Projectile);
             target.TakeDamage(beamDamage,true);
             target.StopPunching();
             target.BreakCharge();
@@ -131,10 +135,15 @@ public class LazyBigus : Character
 
     public void BeamEnd()
     {
-         beamTargetsHitThisCast.Clear();
-         OnCooldown(cooldown);
-         IgnoreUpdate(false);
-         stayDynamic();
+        if (beamTargetsHitThisCast.Count == 0)
+        {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);
+        }
+
+        beamTargetsHitThisCast.Clear();
+        OnCooldown(cooldown);
+        IgnoreUpdate(false);
+        stayDynamic();
         ignoreDamage=false;
     }
     
@@ -162,7 +171,7 @@ public class LazyBigus : Character
         bulletParent = resources.bulletParent;
 
         audioManager.PlaySFX(audioManager.volchSpit, audioManager.doubleVol);
-        TelemetryManager.Instance?.LogAction(PlayerId,"Projectile");
+        TelemetryManager.Instance?.LogAction(PlayerId,"Quick");
         GameObject bullet = Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
 
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
@@ -170,8 +179,6 @@ public class LazyBigus : Character
 
         bulletScript = bullet.GetComponent<BulletScript>();
         bulletScript.Init(this);
-
-        Destroy(bullet, 2f);
     }
 
     public void firstShootFrame()

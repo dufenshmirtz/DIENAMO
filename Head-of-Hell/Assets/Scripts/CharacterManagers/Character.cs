@@ -22,6 +22,7 @@ public enum MoveType
     Special,
     Charge,
     Projectile,
+    PassiveBonus,
     ParryCounter,
     PoisonTick
 }
@@ -2011,6 +2012,7 @@ public abstract class Character : MonoBehaviour
         ResetQuickPunch();
 
         int hpBefore = currHealth;
+        int hpAfterBeforeCrit = currHealth;
 
         if (isBlocking && blockable)
         {
@@ -2022,6 +2024,7 @@ public abstract class Character : MonoBehaviour
             if (dmg == heavyDamage) // heavy attack: half-ish damage (your rule)
             {
                 currHealth -= 5;
+                hpAfterBeforeCrit = currHealth;
                 //Debug.Log("Took 5 damage.");
                 SetHealthbarSafe(currHealth);
                 StartCoroutine(TriggerDamageCounter(5));
@@ -2030,6 +2033,7 @@ public abstract class Character : MonoBehaviour
             if (dmg == chargeDmg)
             {
                 currHealth -= dmg;
+                hpAfterBeforeCrit = currHealth;
                 //Debug.Log("Took " + dmg + " damage.");
                 SetHealthbarSafe(currHealth);
                 moveSpeed = OGMoveSpeed;
@@ -2063,6 +2067,7 @@ public abstract class Character : MonoBehaviour
             }
 
             currHealth -= dmg;
+            hpAfterBeforeCrit = currHealth;
             CheckForCrit(canCrit);
             animator.SetTrigger("tookDmg");
             SetHealthbarSafe(currHealth);
@@ -2071,7 +2076,7 @@ public abstract class Character : MonoBehaviour
             //Debug.Log("Took " + dmg + " damage.");
         }
 
-        int hpAfter = currHealth;
+        int hpAfter = hpAfterBeforeCrit;
         int actualDamage = hpBefore - hpAfter;
 
         // Log outcome (always meaningful: damage, or blocked 0)
@@ -2543,7 +2548,9 @@ public abstract class Character : MonoBehaviour
     {
         if (CriticalChance() && !gameManager.trainingMode && canCrit)
         {
-            TakeDamageNoAnimation(10,false);
+            currHealth -= 10;
+            SetHealthbarSafe(currHealth);
+            StartCoroutine(TriggerDamageCounter(10));
             if (deferCritFeedback)
             {
                 deferredCritFeedbackPending = true;
@@ -2551,6 +2558,11 @@ public abstract class Character : MonoBehaviour
             else
             {
                 PlayCritFeedback();
+            }
+
+            if (currHealth <= 0)
+            {
+                Die();
             }
         }
     }

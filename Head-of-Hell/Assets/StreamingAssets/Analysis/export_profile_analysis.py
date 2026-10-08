@@ -111,6 +111,10 @@ def classify_style(row: pd.Series) -> str:
 # Style computation
 # --------------------------------------------------
 def compute_style_axes_from_profile_df(df: pd.DataFrame) -> pd.DataFrame:
+    out = df.copy()
+    if "ema_parry_attempt_rate" not in out.columns and "ema_parry_rate" in out.columns:
+        out["ema_parry_attempt_rate"] = out["ema_parry_rate"]
+
     required = [
         "ema_attack_rate",
         "ema_mobility_rate",
@@ -126,10 +130,9 @@ def compute_style_axes_from_profile_df(df: pd.DataFrame) -> pd.DataFrame:
         "ema_special_rate",
         "ema_charge_rate",
         "ema_parry_rate",
+        "ema_parry_attempt_rate",
     ]
-    validate_required_columns(df, required)
-
-    out = df.copy()
+    validate_required_columns(out, required)
 
     for col in required:
         out[col] = pd.to_numeric(out[col], errors="coerce").fillna(0.0)
@@ -161,7 +164,7 @@ def compute_style_axes_from_profile_df(df: pd.DataFrame) -> pd.DataFrame:
     out["Risk"] = (
         0.20 * out["ema_miss_rate"]
         + 0.20 * out["norm_ema_dps_taken"]
-        + 0.30 * out["ema_parry_rate"]
+        + 0.30 * out["ema_parry_attempt_rate"]
         + 0.30 * out["ema_charge_rate"]
     )
 
@@ -179,6 +182,10 @@ def compute_style_axes_from_profile_df(df: pd.DataFrame) -> pd.DataFrame:
 # Aggregation
 # --------------------------------------------------
 def build_profile_summary(df: pd.DataFrame) -> pd.DataFrame:
+    work = df.copy()
+    if "parry_attempt_rate" not in work.columns and "parry_rate" in work.columns:
+        work["parry_attempt_rate"] = work["parry_rate"]
+
     required = [
         "match_id",
         "profile_id",
@@ -188,24 +195,21 @@ def build_profile_summary(df: pd.DataFrame) -> pd.DataFrame:
         "miss_rate",
         "damage_dealt",
         "damage_taken",
-        "ema_attack_rate",
-        "ema_mobility_rate",
-        "ema_defense_rate",
-        "ema_hit_rate",
-        "ema_miss_rate",
-        "ema_dps_dealt",
-        "ema_dps_taken",
-        "ema_block_rate",
-        "ema_dodge_rate",
-        "ema_quick_rate",
-        "ema_heavy_rate",
-        "ema_special_rate",
-        "ema_charge_rate",
-        "ema_parry_rate",
+        "attack_rate",
+        "mobility_rate",
+        "defense_rate",
+        "dps_dealt",
+        "dps_taken",
+        "block_rate",
+        "dodge_rate",
+        "quick_rate",
+        "heavy_rate",
+        "special_rate",
+        "charge_rate",
+        "parry_rate",
+        "parry_attempt_rate",
     ]
-    validate_required_columns(df, required)
-
-    work = df.copy()
+    validate_required_columns(work, required)
 
     work["profile_id"] = work["profile_id"].fillna("UNKNOWN_PROFILE").astype(str)
     work["profile_name"] = work["profile_name"].fillna("UNKNOWN").astype(str)
@@ -216,20 +220,19 @@ def build_profile_summary(df: pd.DataFrame) -> pd.DataFrame:
         "miss_rate",
         "damage_dealt",
         "damage_taken",
-        "ema_attack_rate",
-        "ema_mobility_rate",
-        "ema_defense_rate",
-        "ema_hit_rate",
-        "ema_miss_rate",
-        "ema_dps_dealt",
-        "ema_dps_taken",
-        "ema_block_rate",
-        "ema_dodge_rate",
-        "ema_quick_rate",
-        "ema_heavy_rate",
-        "ema_special_rate",
-        "ema_charge_rate",
-        "ema_parry_rate",
+        "attack_rate",
+        "mobility_rate",
+        "defense_rate",
+        "dps_dealt",
+        "dps_taken",
+        "block_rate",
+        "dodge_rate",
+        "quick_rate",
+        "heavy_rate",
+        "special_rate",
+        "charge_rate",
+        "parry_rate",
+        "parry_attempt_rate",
     ]
     for col in numeric_cols:
         work[col] = pd.to_numeric(work[col], errors="coerce").fillna(0.0)
@@ -248,20 +251,23 @@ def build_profile_summary(df: pd.DataFrame) -> pd.DataFrame:
             miss_rate=("miss_rate", "mean"),
             avg_damage_dealt=("damage_dealt", "mean"),
             avg_damage_taken=("damage_taken", "mean"),
-            ema_attack_rate=("ema_attack_rate", "last"),
-            ema_mobility_rate=("ema_mobility_rate", "last"),
-            ema_defense_rate=("ema_defense_rate", "last"),
-            ema_hit_rate=("ema_hit_rate", "last"),
-            ema_miss_rate=("ema_miss_rate", "last"),
-            ema_dps_dealt=("ema_dps_dealt", "last"),
-            ema_dps_taken=("ema_dps_taken", "last"),
-            ema_block_rate=("ema_block_rate", "last"),
-            ema_dodge_rate=("ema_dodge_rate", "last"),
-            ema_quick_rate=("ema_quick_rate", "last"),
-            ema_heavy_rate=("ema_heavy_rate", "last"),
-            ema_special_rate=("ema_special_rate", "last"),
-            ema_charge_rate=("ema_charge_rate", "last"),
-            ema_parry_rate=("ema_parry_rate", "last"),
+            # Keep these column names so the rest of the pipeline and Unity UI
+            # stay unchanged, but feed the chart from lifetime profile averages.
+            ema_attack_rate=("attack_rate", "mean"),
+            ema_mobility_rate=("mobility_rate", "mean"),
+            ema_defense_rate=("defense_rate", "mean"),
+            ema_hit_rate=("hit_rate", "mean"),
+            ema_miss_rate=("miss_rate", "mean"),
+            ema_dps_dealt=("dps_dealt", "mean"),
+            ema_dps_taken=("dps_taken", "mean"),
+            ema_block_rate=("block_rate", "mean"),
+            ema_dodge_rate=("dodge_rate", "mean"),
+            ema_quick_rate=("quick_rate", "mean"),
+            ema_heavy_rate=("heavy_rate", "mean"),
+            ema_special_rate=("special_rate", "mean"),
+            ema_charge_rate=("charge_rate", "mean"),
+            ema_parry_rate=("parry_rate", "mean"),
+            ema_parry_attempt_rate=("parry_attempt_rate", "mean"),
         )
         .reset_index()
     )

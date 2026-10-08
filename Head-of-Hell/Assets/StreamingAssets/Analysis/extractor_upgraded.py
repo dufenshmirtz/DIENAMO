@@ -17,7 +17,6 @@ ACTION_CATEGORY_MAP = {
     "Quick": "attack",
     "Heavy": "attack",
     "Special": "attack",
-    "ChargeStart": "attack",
     "ChargeRelease": "attack",
 
     "Dash": "mobility",
@@ -25,15 +24,19 @@ ACTION_CATEGORY_MAP = {
     "Jump": "mobility",
     "MoveLeft": "mobility",
     "MoveRight": "mobility",
-    "MoveStop": "mobility",
     "DropPlatform": "mobility",
 
-    "BlockStart": "defense",
     "BlockHold": "defense",
     "Parry": "defense",
-    "ParryAttempt": "defense",
     "Dodge": "defense",
-    "Roll": "defense",
+}
+
+IGNORED_ACTION_TYPES = {
+    "ChargeStart",
+    "MoveStop",
+    "Roll",
+    "BlockStart",
+    "BlockEnd",
 }
 
 ACTION_SUBTYPE_MAP = {
@@ -71,6 +74,7 @@ FEATURE_COLS = [
     "projectile_rate",
     "risk_index",
     "parry_rate",
+    "parry_attempt_rate",
 ]
 
 
@@ -129,6 +133,77 @@ def normalize_rate(count: float, duration: float) -> float:
     if duration <= 1e-9:
         return 0.0
     return count / duration
+
+
+def as_optional_float(x) -> Optional[float]:
+    try:
+        if x is None or x == "":
+            return None
+        return float(x)
+    except Exception:
+        return None
+
+
+def build_effective_damage_map(events: List[Dict[str, Any]]) -> Dict[int, float]:
+    groups: Dict[Tuple[Any, ...], List[Tuple[int, Dict[str, Any], float]]] = {}
+
+    for idx, e in enumerate(events):
+        if not isinstance(e, dict):
+            continue
+
+        etype = e.get("eventType") or e.get("type")
+        if etype != "DamageApplied":
+            continue
+
+        raw_damage = max(0.0, as_float(e.get("actualDamage") or e.get("finalDamage") or 0.0))
+        defender = e.get("defenderId") or e.get("defender") or ""
+        frame = e.get("frame")
+        t = as_optional_float(e.get("t"))
+
+        if defender and frame not in (None, ""):
+            key = ("frame", defender, str(frame))
+        elif defender and t is not None:
+            key = ("time", defender, round(t, 3))
+        else:
+            key = ("event", idx)
+
+        groups.setdefault(key, []).append((idx, e, raw_damage))
+
+    effective_damage_by_index: Dict[int, float] = {}
+
+    for entries in groups.values():
+        valid_hp_entries = [
+            (idx, e, raw_damage)
+            for idx, e, raw_damage in entries
+            if as_optional_float(e.get("hpDefenderBefore")) is not None
+            and as_optional_float(e.get("hpDefenderAfter")) is not None
+        ]
+
+        if not valid_hp_entries:
+            for idx, _e, raw_damage in entries:
+                effective_damage_by_index[idx] = raw_damage
+            continue
+
+        group_before = max(
+            max(0.0, as_float(e.get("hpDefenderBefore")))
+            for _idx, e, _raw_damage in valid_hp_entries
+        )
+        group_after = min(
+            max(0.0, as_float(e.get("hpDefenderAfter")))
+            for _idx, e, _raw_damage in valid_hp_entries
+        )
+        group_effective_damage = max(0.0, group_before - group_after)
+        group_raw_damage = sum(raw_damage for _idx, _e, raw_damage in entries)
+
+        if group_raw_damage <= 1e-9:
+            for idx, _e, _raw_damage in entries:
+                effective_damage_by_index[idx] = 0.0
+            continue
+
+        for idx, _e, raw_damage in entries:
+            effective_damage_by_index[idx] = group_effective_damage * (raw_damage / group_raw_damage)
+
+    return effective_damage_by_index
 
 
 def ratio(num: float, den: float) -> float:
@@ -224,6 +299,8 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
     winner_id = infer_winner_id(meta)
 
     p1_profile_id, p1_profile_name, p2_profile_id, p2_profile_name = infer_profile_info(meta)
+    p1_character = str(meta.get("p1Character") or "").strip().lower()
+    p2_character = str(meta.get("p2Character") or "").strip().lower()
 
     def identity_for_slot(slot_id: str):
         if slot_id == p1_seat:
@@ -236,6 +313,28 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         if profile_id and profile_id not in ("GUEST", "NONE", "UNKNOWN"):
             return profile_id
         return slot_id
+
+    def character_for_slot(slot_id: str) -> str:
+        if slot_id == p1_seat:
+            return p1_character
+        if slot_id == p2_seat:
+            return p2_character
+        return ""
+
+    def special_hit_counted_from_attempt(attacker_id: str, move_type: str) -> bool:
+        return (
+            move_type == "Special"
+            and character_for_slot(attacker_id) in {"rager", "visvia"}
+        )
+
+    def is_special_damage_counted_from_attempt(attacker_id: str, move_type: str, source_type: str) -> bool:
+        return (
+            special_hit_counted_from_attempt(attacker_id, move_type)
+            and source_type == "Spell"
+        )
+
+    def is_damage_only_move(move_type: str, source_type: str) -> bool:
+        return move_type == "PassiveBonus"
 
     agg: Dict[str, Dict[str, float]] = {}
 
@@ -252,6 +351,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 "actions_charge": 0,
                 "actions_projectile": 0,
                 "actions_parry": 0,
+                "actions_parry_attempt": 0,
                 "hit_attempts": 0,
                 "misses": 0,
                 "damage_dealt": 0.0,
@@ -262,7 +362,9 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 "hits_landed": 0,
             }
 
-    for e in events:
+    effective_damage_by_event = build_effective_damage_map(events)
+
+    for event_index, e in enumerate(events):
         etype = e.get("eventType") or e.get("type")
 
         if etype == "Action":
@@ -271,12 +373,17 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 continue
 
             ensure(pid)
-            agg[pid]["actions_total"] += 1
 
             action_type = e.get("actionType") or e.get("action") or ""
+            if action_type in IGNORED_ACTION_TYPES:
+                continue
+
+            agg[pid]["actions_total"] += 1
 
             if action_type == "Parry":
                 agg[pid]["actions_parry"] += 1
+            elif action_type == "ParryAttempt":
+                agg[pid]["actions_parry_attempt"] += 1
             cat = ACTION_CATEGORY_MAP.get(action_type, None)
             if cat == "attack":
                 agg[pid]["actions_attack"] += 1
@@ -305,8 +412,15 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             ensure(attacker)
             agg[attacker]["hit_attempts"] += 1
 
-            _move = e.get("moveType") or ""
-            _ = MOVE_SUBTYPE_MAP.get(_move, None)
+            move_type = str(e.get("moveType") or "").strip()
+            _ = MOVE_SUBTYPE_MAP.get(move_type, None)
+
+            defender = e.get("defenderId") or e.get("targetId")
+            if special_hit_counted_from_attempt(attacker, move_type):
+                agg[attacker]["hits_landed"] += 1
+                if defender:
+                    ensure(defender)
+                    agg[defender]["hits_received"] += 1
 
         elif etype == "Miss":
             attacker = e.get("attackerId") or e.get("playerId")
@@ -319,24 +433,30 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         elif etype == "DamageApplied":
             attacker = e.get("attackerId")
             defender = e.get("defenderId")
-            dmg = as_float(e.get("actualDamage") or e.get("finalDamage") or 0.0)
+            raw_dmg = as_float(e.get("actualDamage") or e.get("finalDamage") or 0.0)
+            dmg = effective_damage_by_event.get(event_index, max(0.0, raw_dmg))
             blocked = bool(e.get("blocked") or e.get("wasBlocked") or False)
             dodged = bool(e.get("dodged") or e.get("wasDodged") or False)
 
             move_type = str(e.get("moveType", "")).strip()
             source_type = str(e.get("sourceType", "")).strip()
             is_dot = (move_type == "PoisonTick") or (source_type == "Dot")
+            count_as_hit = (
+                not is_dot
+                and not is_damage_only_move(move_type, source_type)
+                and not is_special_damage_counted_from_attempt(attacker, move_type, source_type)
+            )
 
             if attacker:
                 ensure(attacker)
                 agg[attacker]["damage_dealt"] += dmg
-                if dmg > 0 and not is_dot:
+                if raw_dmg > 0 and count_as_hit:
                     agg[attacker]["hits_landed"] += 1
 
             if defender:
                 ensure(defender)
                 agg[defender]["damage_taken"] += dmg
-                if not is_dot:
+                if count_as_hit:
                     agg[defender]["hits_received"] += 1
                     if blocked:
                         agg[defender]["blocked_hits_as_defender"] += 1
@@ -348,7 +468,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             ensure(pid)
 
     rows: List[Dict[str, Any]] = []
-    MIN_ACTIONS = 25
+    MIN_ACTIONS = 10
     MIN_DURATION = 5
     INVALID_PROFILES = {"GUEST", "UNKNOWN", "", "NONE", None}
 
@@ -375,6 +495,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         charge_rate = ratio(a["actions_charge"], a["actions_total"])
         projectile_rate = ratio(a["actions_projectile"], a["actions_total"])
         parry_rate = ratio(a["actions_parry"], a["actions_total"])
+        parry_attempt_rate = ratio(a["actions_parry_attempt"], a["actions_total"])
         total_offensive_outcomes = a["hits_landed"] + a["misses"]
         hit_rate = ratio(a["hits_landed"], total_offensive_outcomes)
         miss_rate = ratio(a["misses"], total_offensive_outcomes)
@@ -387,7 +508,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
 
         risk_index = (
             0.20 * miss_rate +
-            0.40 * parry_rate +
+            0.40 * parry_attempt_rate +
             0.40 * charge_rate
         )
 
@@ -437,6 +558,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             "projectile_rate": projectile_rate,
             "risk_index": risk_index,
             "parry_rate": parry_rate,
+            "parry_attempt_rate": parry_attempt_rate,
         })
 
     return rows
@@ -516,7 +638,7 @@ def run_extractor(
     if bad_files:
         print(f"[INFO] Bad files skipped: {bad_files}")
 
-    MIN_MATCHES_PER_PROFILE = 5
+    MIN_MATCHES_PER_PROFILE = 3
     profile_match_counts = df_round.groupby("profile_id").size().reset_index(name="match_count")
 
     print("\n--- profile_match_counts ---")

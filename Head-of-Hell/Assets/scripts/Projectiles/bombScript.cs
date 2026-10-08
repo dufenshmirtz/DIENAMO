@@ -93,8 +93,8 @@ public class bombScript : MonoBehaviour
 
         if (validEnemy && exploded && !dmgEnd && !damageDealt)
         {
-            TelemetryManager.Instance?.LogHitAttempt(playa.PlayerId, character.PlayerId, MoveType.Projectile);
-            character.SetIncomingDamageContext(playa.PlayerId, MoveType.Projectile, SourceType.Projectile);
+            TelemetryManager.Instance?.LogHitAttempt(playa.PlayerId, character.PlayerId, MoveType.Quick);
+            character.SetIncomingDamageContext(playa.PlayerId, MoveType.Quick, SourceType.Projectile);
 
             character.TakeDamage(6, true);
             damageDealt = true;
@@ -104,8 +104,8 @@ public class bombScript : MonoBehaviour
         {
             Explode();
 
-            TelemetryManager.Instance?.LogHitAttempt(playa.PlayerId, character.PlayerId, MoveType.Projectile);
-            character.SetIncomingDamageContext(playa.PlayerId, MoveType.Projectile, SourceType.Projectile);
+            TelemetryManager.Instance?.LogHitAttempt(playa.PlayerId, character.PlayerId, MoveType.Quick);
+            character.SetIncomingDamageContext(playa.PlayerId, MoveType.Quick, SourceType.Projectile);
 
             character.TakeDamage(6, true);
             damageDealt = true;
@@ -194,6 +194,11 @@ public class bombScript : MonoBehaviour
 
     public void DestroyBomb()
     {
+        if (!damageDealt && !jumpDone && playa != null)
+        {
+            TelemetryManager.Instance?.LogMiss(playa.PlayerId, MoveType.Quick);
+        }
+
         Destroy(gameObject);
     }
 

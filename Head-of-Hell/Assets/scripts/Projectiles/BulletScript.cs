@@ -7,6 +7,7 @@ public class BulletScript : MonoBehaviour
 {
     private bool hasHit = false;
     private bool fireLogged = false;
+    private Coroutine lifetimeCoroutine;
 
     public LazyBigus initiator;
 
@@ -15,12 +16,26 @@ public class BulletScript : MonoBehaviour
         initiator = owner;
 
         if (fireLogged) return;
-        if (initiator == null) return;
 
         fireLogged = true;
 
-        
-        
+        if (lifetimeCoroutine != null)
+        {
+            StopCoroutine(lifetimeCoroutine);
+        }
+        lifetimeCoroutine = StartCoroutine(DestroyAfterLifetime(2f));
+    }
+
+    private IEnumerator DestroyAfterLifetime(float lifetime)
+    {
+        yield return new WaitForSeconds(lifetime);
+
+        if (!hasHit && initiator != null)
+        {
+            TelemetryManager.Instance?.LogMiss(initiator.PlayerId, MoveType.Quick);
+        }
+
+        Destroy(gameObject);
     }
 
     void OnTriggerEnter2D(Collider2D other)
@@ -45,12 +60,12 @@ public class BulletScript : MonoBehaviour
                 TelemetryManager.Instance?.LogHitAttempt(
                     initiator.PlayerId,
                     character.PlayerId,
-                    MoveType.Projectile
+                    MoveType.Quick
                 );
 
                 character.SetIncomingDamageContext(
                     initiator.PlayerId,
-                    MoveType.Projectile,
+                    MoveType.Quick,
                     SourceType.Projectile
                 );
 

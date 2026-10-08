@@ -34,13 +34,13 @@ public class Lithra : Character
     #region HeavyAttack
     override public void HeavyAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.heavyswoosh, audioManager.heavySwooshVolume);
     }
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -268,13 +268,13 @@ public class Lithra : Character
         }
         else
         {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
             if (chargeHitSound != null)
             {
                 audioManager.PlaySFX(chargeHitSound, 1.5f);
             }
             else
             {
-                TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
                 audioManager.PlaySFX(audioManager.swoosh, audioManager.swooshVolume);
             }
 

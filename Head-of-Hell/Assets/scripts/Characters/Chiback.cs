@@ -32,13 +32,13 @@ public class Chiback : Character
     #region HeavyAttack
     override public void HeavyAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         animator.SetTrigger("HeavyAttack");
         audioManager.PlaySFX(audioManager.heavyswoosh, audioManager.heavySwooshVolume);
     }
 
     override public void DealHeavyDamage()
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "Heavy");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
 
@@ -88,6 +88,7 @@ public class Chiback : Character
         // Only proceed if a direction is given
         if (moveDirection == 0f)
         {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);
             IgnoreUpdate(false);
             OnCooldown(cooldown);
             yield break;
@@ -280,7 +281,7 @@ public class Chiback : Character
     {
         if (timesHit == enragingNum && target != null)
         {
-            target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
+            target.SetIncomingDamageContext(PlayerId, MoveType.PassiveBonus, SourceType.Spell);
             target.TakeDamageNoAnimation(jumpDamage / 2,true);
             roarPlayed = false;
         }
