@@ -303,8 +303,8 @@ public class ProfileAnalysisRunner_PlugAndPlay : MonoBehaviour
         switch (Mathf.RoundToInt(roundedProgress * 100f))
         {
             case 5:
-                title = "Preparing dem filez";
-                hint = "O VROMOESOROUXAKIAS TON PAIRNEI";
+                title = "Preparing analysis";
+                hint = "Checking telemetry files";
                 return;
             case 20:
                 title = "Extracting features";

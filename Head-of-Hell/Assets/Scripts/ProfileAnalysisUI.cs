@@ -231,12 +231,16 @@ public class ProfileAnalysisPanelUI : MonoBehaviour
       
         
         if (profileNameText != null) profileNameText.text = p.profile_name;
+        // Axis values shown on the chart, as 0..1 (same values drive text, chart and style label)
+        float aggVal = Mathf.Clamp01(p.aggression_raw / ChartScale);
+        float defVal = Mathf.Clamp01(p.defense_raw / ChartScale);
+        float mobVal = Mathf.Clamp01(p.mobility_raw / 2f / ChartScale);
+        float riskVal = Mathf.Clamp01(p.risk_raw / ChartScale);
+
         if (styleLabelText != null)
         {
-            if (!string.IsNullOrWhiteSpace(p.elo_label))
-                styleLabelText.text = $"{p.style_label} {p.elo_label}";
-            else
-                styleLabelText.text = p.style_label;
+            string style = ClassifyStyle(aggVal, defVal, mobVal, riskVal);
+            styleLabelText.text = string.IsNullOrWhiteSpace(p.elo_label) ? style : $"{style} {p.elo_label}";
         }
         if (eloText != null)
             eloText.text = $"Elo: {Mathf.RoundToInt(p.elo_rating)}";
@@ -246,46 +250,50 @@ public class ProfileAnalysisPanelUI : MonoBehaviour
         if (missRateText != null) missRateText.text = $"Miss Rate: {p.miss_rate:P0}";
         if (avgDamageDealtText != null) avgDamageDealtText.text = $"Avg Damage Dealt: {p.avg_damage_dealt:F1}";
         if (avgDamageTakenText != null) avgDamageTakenText.text = $"Avg Damage Taken: {p.avg_damage_taken:F1}";
-        SetCombatValueTexts(
-            p.aggression_raw,
-            p.defense_raw,
-            p.mobility_raw / 2f,
-            p.risk_raw
-        );
+
+        SetCombatValueTexts(aggVal, defVal, mobVal, riskVal);
 
         if (combatChart != null)
+            combatChart.SetValues(aggVal, defVal, mobVal, riskVal);
+    }
+
+    // Style label derived from the same 0..1 values the chart shows,
+    // so the label always agrees with the radar.
+    private static string ClassifyStyle(float agg, float def, float mob, float risk)
+    {
+        var axes = new (string name, float value)[]
         {
-            float maxVal = Mathf.Max(
-                p.aggression_raw,
-                p.defense_raw,
-                p.mobility_raw / 2f,
-                p.risk_raw
-            );
+            ("Aggressive", agg),
+            ("Defensive", def),
+            ("Mobile", mob),
+            ("Risky", risk),
+        };
+        var sorted = axes.OrderByDescending(a => a.value).ToArray();
+        var top = sorted[0];
+        var second = sorted[1];
 
-            if (maxVal <= 0f)
-                maxVal = 1f;
+        if (top.value < 0.33f)
+            return "Balanced";
 
-            //float scale = maxVal * 1.2f; // <-- soft cap
+        if (second.value > 0.60f)
+        {
+            bool Has(string a, string b) =>
+                (top.name == a && second.name == b) || (top.name == b && second.name == a);
 
-            float scale = ChartScale; //temp random max for chart
+            if (Has("Aggressive", "Defensive")) return "Calculated Aggressor";
+            if (Has("Aggressive", "Risky")) return "Reckless Brawler";
+            if (Has("Aggressive", "Mobile")) return "Rushdown";
+            if (Has("Defensive", "Mobile")) return "Evasive Defender";
+            if (Has("Defensive", "Risky")) return "Counter Puncher";
+            if (Has("Mobile", "Risky")) return "Daredevil";
+        }
 
-            scale = 0.4f;
-
-            combatChart.SetValues(
-                p.aggression_raw / scale,
-                p.defense_raw / scale,
-                p.mobility_raw / 2f / scale,
-                p.risk_raw / scale
-            );
-
-            //NORMALIZED STATS SAME AS PIPELINE 
-            //combatChart.SetValues(
-            //    Mathf.Clamp01(p.aggression),
-            //    Mathf.Clamp01(p.defense),
-            //    Mathf.Clamp01(p.mobility),
-            //    Mathf.Clamp01(p.risk)
-            //);
-
+        switch (top.name)
+        {
+            case "Aggressive": return "Aggressor";
+            case "Defensive": return "Guardian";
+            case "Mobile": return "Runner";
+            default: return "Gambler";
         }
     }
 
@@ -297,12 +305,13 @@ public class ProfileAnalysisPanelUI : MonoBehaviour
         SetCombatValueText(riskValueText, "Risk", riskValue);
     }
 
-    private void SetCombatValueText(TMP_Text target, string label, float rawValue)
+    // value is already 0..1
+    private void SetCombatValueText(TMP_Text target, string label, float value)
     {
         if (target == null)
             return;
 
-        float percentValue = rawValue <= 0f ? 0f : (rawValue / ChartScale) * 100f;
+        float percentValue = Mathf.Clamp01(value) * 100f;
         target.text = $"{label}\n{percentValue:F0}%";
     }
 

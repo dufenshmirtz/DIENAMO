@@ -12,11 +12,11 @@ import pandas as pd
 # --------------------------------------------------
 
 ELO_LABELS = [
-    (0, 1375, "Moron"),
-    (1375, 1425, "Noob"),
-    (1425, 1475, "Irrelevant"),
-    (1475, 1525, "Tryhard"),
-    (1525, 999999, "Virgin"),
+    (0, 1375, "Beginner"),
+    (1375, 1425, "Novice"),
+    (1425, 1475, "Intermediate"),
+    (1475, 1525, "Advanced"),
+    (1525, 999999, "Expert"),
 ]
 
 
@@ -77,31 +77,31 @@ def classify_style(row: pd.Series) -> str:
     second_label, second_value = sorted_axes[1]
 
     if top_value < 0.33:
-        return "Scripted Bot"
+        return "Balanced"
 
     if top_label == "Aggressive" and second_label == "Defensive" and second_value > 0.60:
-        return "Braindead"
+        return "Calculated Aggressor"
 
     if top_label == "Aggressive" and second_label == "Risky" and second_value > 0.60:
-        return "Degenerate"
+        return "Reckless Brawler"
 
     if top_label == "Aggressive" and second_label == "Mobile" and second_value > 0.60:
-        return "Molesting"
+        return "Rushdown"
 
     if top_label == "Defensive" and second_label == "Mobile" and second_value > 0.60:
-        return "Pussy"
+        return "Evasive Defender"
 
     if top_label == "Defensive" and second_label == "Risky" and second_value > 0.60:
-        return "Traffic Cone"
+        return "Counter Puncher"
 
     if top_label == "Mobile" and second_label == "Risky" and second_value > 0.60:
-        return "Junkie"
+        return "Daredevil"
 
     solo_map = {
-        "Aggressive": "Rageaholic",
-        "Defensive": "Coward",
-        "Mobile": "Ballbuster",
-        "Risky": "Insecure",
+        "Aggressive": "Aggressor",
+        "Defensive": "Guardian",
+        "Mobile": "Runner",
+        "Risky": "Gambler",
     }
 
     return solo_map.get(top_label, top_label)

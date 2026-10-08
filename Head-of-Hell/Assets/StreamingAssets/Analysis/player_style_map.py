@@ -52,29 +52,29 @@ def classify_style(row: pd.Series) -> str:
 
     # COMBO styles
     if top_label == "Aggressive" and second_label == "Defensive" and second_value > 0.60:
-        return "Braindead"
+        return "Calculated Aggressor"
 
     if top_label == "Aggressive" and second_label == "Risky" and second_value > 0.60:
-        return "Degenerate"
+        return "Reckless Brawler"
 
     if top_label == "Aggressive" and second_label == "Mobile" and second_value > 0.60:
-        return "Molesting"
+        return "Rushdown"
 
     if top_label == "Defensive" and second_label == "Mobile" and second_value > 0.60:
-        return "Pussy"
+        return "Evasive Defender"
 
     if top_label == "Defensive" and second_label == "Risky" and second_value > 0.60:
-        return "Traffic Cone"
+        return "Counter Puncher"
 
     if top_label == "Mobile" and second_label == "Risky" and second_value > 0.60:
-        return "Junkie"
+        return "Daredevil"
 
     # SOLO styles
     solo_map = {
-        "Aggressive": "Rageaholic",
-        "Defensive": "Coward",
-        "Mobile": "Ballbuster",
-        "Risky": "Insecure",
+        "Aggressive": "Aggressor",
+        "Defensive": "Guardian",
+        "Mobile": "Runner",
+        "Risky": "Gambler",
     }
 
     return solo_map.get(top_label, top_label)
