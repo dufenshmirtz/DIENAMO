@@ -134,6 +134,8 @@ public class Lupen : Character
         cEvents.ChangeCharacterEvents(1);
         stolenCharacter = characterChoiceHandler.CharacterChoice(1);
         stolenCharacter.overrideDeath = true; //in case he dies in form
+        // Telemetry: player now controls another kit until TransformEnd
+        TelemetryManager.Instance?.LogAction(PlayerId, "Transform", randomCharacter);
         stayDynamic();
         Character currentTarget = GetCurrentCombatTarget();
         if (currentTarget != null)
@@ -152,6 +154,7 @@ public class Lupen : Character
 
     public void ReturnToLupen(int wdmg, int rc, int currentHealth)
     {
+        TelemetryManager.Instance?.LogAction(PlayerId, "TransformEnd", "Lupen");
         wipDamage = wdmg;
         robberyCountter = rc;
         currHealth = currentHealth;

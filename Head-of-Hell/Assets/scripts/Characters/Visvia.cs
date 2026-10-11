@@ -274,6 +274,8 @@ public class Visvia : Character
 
     IEnumerator Overheat(){
 
+        // Telemetry: forced state (only movement allowed, +2 speed). Analysis excludes movement inside it.
+        TelemetryManager.Instance?.LogAction(PlayerId, "OverheatStart");
         audioManager.PlaySFX(audioManager.alarm, 2f);
 
         robberyCountIndicator.text = "X";
@@ -295,6 +297,7 @@ public class Visvia : Character
             elapsed += overheatFrequency;
         }
 
+        TelemetryManager.Instance?.LogAction(PlayerId, "OverheatEnd");
         elapsed = 0;
         moveSpeed = OGMoveSpeed;
         canAlterSpeed = true;

@@ -33,8 +33,13 @@ ACTION_CATEGORY_MAP = {
 
 IGNORED_ACTION_TYPES = {
     "ChargeStart",
+    "HeavyStart",
+    "ChargeReleaseInput",
+    "ChargeCancel",
+    "ChargeBroken",
+    "BombDetonate",
+    "BombLaunch",
     "MoveStop",
-    "Roll",
     "BlockStart",
     "BlockEnd",
 }
@@ -291,7 +296,8 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
     duration = as_float(doc.get("durationSeconds") or meta.get("durationSeconds") or 0.0)
     match_id = doc.get("matchId") or meta.get("matchId") or os.path.basename(filename)
 
-    round_number = meta.get("roundNumber", None)
+    # Unity writes "roundNumber_" (field name in TelemetryMatchMeta)
+    round_number = meta.get("roundNumber", meta.get("roundNumber_", None))
     stage = meta.get("map") or meta.get("stage") or meta.get("mapName") or None
     mode = meta.get("mode") or None
 
@@ -321,10 +327,19 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             return p2_character
         return ""
 
+    def kit_for(slot_id: str) -> str:
+        # Character kit active right now (Lupen may be transformed into another character).
+        return lupen_form.get(slot_id) or character_for_slot(slot_id)
+
+    def outcome_excluded_from_accuracy(attacker_id: str, move_type: str) -> bool:
+        # Steelager's bomb (Quick) is also thrown for launches / zoning -> intent unknown,
+        # so it does not count as hit or miss (still counts as attack action and damage).
+        return move_type == "Quick" and kit_for(attacker_id) == "steelager"
+
     def special_hit_counted_from_attempt(attacker_id: str, move_type: str) -> bool:
         return (
             move_type == "Special"
-            and character_for_slot(attacker_id) in {"rager", "visvia"}
+            and kit_for(attacker_id) in {"rager", "visvia"}
         )
 
     def is_special_damage_counted_from_attempt(attacker_id: str, move_type: str, source_type: str) -> bool:
@@ -334,9 +349,12 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         )
 
     def is_damage_only_move(move_type: str, source_type: str) -> bool:
-        return move_type == "PassiveBonus"
+        # Damage that does not say anything about accuracy: passives and the automatic parry counter.
+        return move_type in ("PassiveBonus", "ParryCounter")
 
     agg: Dict[str, Dict[str, float]] = {}
+    lupen_form: Dict[str, str] = {}   # pid -> character Lupen is currently transformed into
+    overheated: Dict[str, bool] = {}
 
     def ensure(pid: str):
         if pid not in agg:
@@ -354,6 +372,8 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 "actions_parry_attempt": 0,
                 "hit_attempts": 0,
                 "misses": 0,
+                "attacks_parried": 0,
+                "parried_hits_as_defender": 0,
                 "damage_dealt": 0.0,
                 "damage_taken": 0.0,
                 "blocked_hits_as_defender": 0,
@@ -375,10 +395,44 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             ensure(pid)
 
             action_type = e.get("actionType") or e.get("action") or ""
+
+            # Lupen's special turns him into another character until TransformEnd.
+            # Only used to know which kit is active; not counted in any axis.
+            if action_type == "Transform":
+                lupen_form[pid] = str(e.get("detail") or "").strip().lower()
+                continue
+            if action_type == "TransformEnd":
+                lupen_form.pop(pid, None)
+                continue
+
+            # Visvia overheat: forced movement-only state -> movement inside it is kit, not style.
+            if action_type == "OverheatStart":
+                overheated[pid] = True
+                continue
+            if action_type == "OverheatEnd":
+                overheated[pid] = False
+                continue
+            if overheated.get(pid, False) and ACTION_CATEGORY_MAP.get(action_type) == "mobility":
+                continue
+
             if action_type in IGNORED_ACTION_TYPES:
                 continue
 
             agg[pid]["actions_total"] += 1
+
+            # Lupen's own special (push away + transform) is not an attack -> defense.
+            # Specials used while transformed belong to the other kit and stay attacks.
+            if (action_type == "Special"
+                    and kit_for(pid) == "lupen"):
+                agg[pid]["actions_defense"] += 1
+                continue
+
+            # Fin's quick slot is a Roll (i-frames, no damage): half evasion, half repositioning.
+            # Never counted as an attack.
+            if action_type == "Roll":
+                agg[pid]["actions_defense"] += 0.5
+                agg[pid]["actions_mobility"] += 0.5
+                continue
 
             if action_type == "Parry":
                 agg[pid]["actions_parry"] += 1
@@ -428,6 +482,8 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 continue
 
             ensure(attacker)
+            if outcome_excluded_from_accuracy(attacker, str(e.get("moveType") or "").strip()):
+                continue
             agg[attacker]["misses"] += 1
 
         elif etype == "DamageApplied":
@@ -440,6 +496,23 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
 
             move_type = str(e.get("moveType", "")).strip()
             source_type = str(e.get("sourceType", "")).strip()
+
+            # Attack caught by the defender's parry: failed attack for the attacker, not a hit received.
+            if bool(e.get("wasParried") or False):
+                if attacker and not outcome_excluded_from_accuracy(attacker, move_type):
+                    ensure(attacker)
+                    agg[attacker]["attacks_parried"] += 1
+                    # Rager/Visvia specials were already counted as a hit at HitAttempt -> undo it.
+                    if special_hit_counted_from_attempt(attacker, move_type):
+                        agg[attacker]["hits_landed"] = max(0, agg[attacker]["hits_landed"] - 1)
+                        if defender:
+                            ensure(defender)
+                            agg[defender]["hits_received"] = max(0, agg[defender]["hits_received"] - 1)
+                if defender:
+                    ensure(defender)
+                    agg[defender]["parried_hits_as_defender"] += 1
+                continue
+
             is_dot = (move_type == "PoisonTick") or (source_type == "Dot")
             count_as_hit = (
                 not is_dot
@@ -450,7 +523,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             if attacker:
                 ensure(attacker)
                 agg[attacker]["damage_dealt"] += dmg
-                if raw_dmg > 0 and count_as_hit:
+                if raw_dmg > 0 and count_as_hit and not outcome_excluded_from_accuracy(attacker, move_type):
                     agg[attacker]["hits_landed"] += 1
 
             if defender:
@@ -496,7 +569,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         projectile_rate = ratio(a["actions_projectile"], a["actions_total"])
         parry_rate = ratio(a["actions_parry"], a["actions_total"])
         parry_attempt_rate = ratio(a["actions_parry_attempt"], a["actions_total"])
-        total_offensive_outcomes = a["hits_landed"] + a["misses"]
+        total_offensive_outcomes = a["hits_landed"] + a["misses"] + a["attacks_parried"]
         hit_rate = ratio(a["hits_landed"], total_offensive_outcomes)
         miss_rate = ratio(a["misses"], total_offensive_outcomes)
 

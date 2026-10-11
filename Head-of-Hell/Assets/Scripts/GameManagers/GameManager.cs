@@ -664,7 +664,7 @@ public class GameManager : MonoBehaviour
                 winnerCharacter = GetWinnerCharacterName(winnerPlayerNum)
             });
 
-            TelemetryManager.Instance?.EndSession($"RoundEnded_LastAlive_winner={winnerName}");
+            TelemetryManager.Instance?.EndSession($"RoundEnded_LastAlive_winner={GetWinnerId(winnerPlayerNum)}", roundCompleted: true);
             roundTelemetryClosed = true;
         }
 
@@ -817,7 +817,7 @@ public class GameManager : MonoBehaviour
                 winnerCharacter = winnerCharacter
             });
 
-            TelemetryManager.Instance?.EndSession($"RoundEnded_KO_winner={winnerName}");
+            TelemetryManager.Instance?.EndSession($"RoundEnded_KO_winner={GetWinnerId(playerNum)}", roundCompleted: true);
             roundTelemetryClosed = true;
         }
 
@@ -858,7 +858,7 @@ public class GameManager : MonoBehaviour
                 winnerCharacter = ""
             });
 
-            TelemetryManager.Instance?.EndSession("RoundEnded_Tie");
+            TelemetryManager.Instance?.EndSession("RoundEnded_Tie", roundCompleted: true);
             roundTelemetryClosed = true;
         }
 
@@ -916,7 +916,7 @@ public class GameManager : MonoBehaviour
                 winnerCharacter = winnerCharacter
             });
 
-            TelemetryManager.Instance?.EndSession($"RoundEnded_Flawless_winner={winnerName}");
+            TelemetryManager.Instance?.EndSession($"RoundEnded_Flawless_winner={GetWinnerId(playerNum)}", roundCompleted: true);
             roundTelemetryClosed = true;
         }
 
@@ -1094,6 +1094,12 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        // Telemetry: first frame the round is live (after countdown). Idempotent per session.
+        if (roundOn)
+        {
+            TelemetryManager.Instance?.MarkFightStart();
+        }
+
         // Restart anytime during normal gameplay (not training)
         if (!trainingMode && Input.GetKeyDown(KeyCode.Return))
         {

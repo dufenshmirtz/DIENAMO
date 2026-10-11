@@ -15,7 +15,8 @@ public class TelemetryManager : MonoBehaviour
     [SerializeField] private bool enableTelemetry = true;
     [SerializeField] private bool debugToConsole = false;
     [SerializeField] private bool prettyPrintJson = true;
-    [SerializeField] private bool autoStartOnFirstEvent = true;
+    // NOTE: sessions are opened only by GameManager.StartSession(). Events that arrive while no session
+    // is running (DoT ticks after KO, death animation, quit...) are dropped instead of opening orphan sessions.
 
     [Tooltip("If true, will write a session file on quit/destroy if recording is active.")]
     [SerializeField] private bool autoSaveOnQuit = true;
@@ -24,6 +25,7 @@ public class TelemetryManager : MonoBehaviour
     private TelemetrySession currentSession;
     private bool isRecording = false;
     private float sessionStartTime;
+    private float fightStartTime = -1f; // Time.time when gameplay unlocked (after countdown); -1 = not yet
     private string pendingEndReason = null;
 
     // Root telemetry folder
@@ -85,6 +87,7 @@ public class TelemetryManager : MonoBehaviour
         }
 
         sessionStartTime = Time.time;
+        fightStartTime = -1f;
 
         TelemetryMatchMeta finalMeta = meta ?? new TelemetryMatchMeta();
 
@@ -94,7 +97,7 @@ public class TelemetryManager : MonoBehaviour
 
         currentSession = new TelemetrySession
         {
-            schemaVersion = "1.0",
+            schemaVersion = "2.0", // 2.0 = telemetry pass 2026-10-11 (FightStart, parry/crit outcomes, central block/charge/heavy rules)
             matchId = GenerateMatchId(),
             startedAtLocal = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
             startedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture),
@@ -102,6 +105,7 @@ public class TelemetryManager : MonoBehaviour
             appVersion = Application.version,
             platform = Application.platform.ToString(),
             meta = finalMeta,
+            fightStartT = -1f,
             events = new List<TelemetryEvent>(capacity: 2048)
         };
 
@@ -142,22 +146,44 @@ public class TelemetryManager : MonoBehaviour
         currentSession = null;
         isRecording = false;
         sessionStartTime = 0f;
+        fightStartTime = -1f;
     }
 
     /// <summary>
-    /// Ends current session and writes a JSON file to disk.
+    /// Ends current session. The JSON is written only for a finished round (roundCompleted == true)
+    /// that actually reached FightStart; quit/restart/destroy mid-round discards it.
     /// </summary>
-    public void EndSession(string reason = "MatchEnded")
+    public void EndSession(string reason = "MatchEnded", bool roundCompleted = false)
     {
         if (!enableTelemetry) return;
         if (!isRecording || currentSession == null) return;
 
+        if (!roundCompleted || fightStartTime < 0f)
+        {
+            DiscardCurrentSession($"not a completed round (reason={reason}, fightStarted={fightStartTime >= 0f})");
+            return;
+        }
+
         pendingEndReason = reason;
+
+        // winnerCharacter always derived from winnerId + the picked characters (never from a temporary form)
+        if (currentSession.meta != null)
+        {
+            var m = currentSession.meta;
+            if (m.winnerId == "P1") m.winnerCharacter = m.p1Character;
+            else if (m.winnerId == "P2") m.winnerCharacter = m.p2Character;
+            else if (m.winnerId == "P3") m.winnerCharacter = m.p3Character;
+            else m.winnerCharacter = "";
+        }
 
         currentSession.endedAtLocal = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         currentSession.endedAtUtc = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         currentSession.endReason = pendingEndReason;
-        currentSession.durationSeconds = Mathf.Max(0f, Time.time - sessionStartTime);
+        // durationSeconds = actual fight time (from FightStart). Falls back to whole session if FightStart never fired.
+        currentSession.sessionSeconds = Mathf.Max(0f, Time.time - sessionStartTime);
+        currentSession.durationSeconds = fightStartTime >= 0f
+            ? Mathf.Max(0f, Time.time - fightStartTime)
+            : currentSession.sessionSeconds;
 
         WriteSessionToDisk(currentSession);
 
@@ -192,11 +218,19 @@ public class TelemetryManager : MonoBehaviour
         // bool -> πάντα assign
         currentSession.meta.trainingMode = meta.trainingMode;
 
+        // Characters = the ones picked for the round (first value wins). At round end the managers may report
+        // a temporary form (e.g. Lupen transformed into Vander), which must not overwrite the real pick.
         if (!string.IsNullOrEmpty(meta.p1Id)) currentSession.meta.p1Id = meta.p1Id;
-        if (!string.IsNullOrEmpty(meta.p1Character)) currentSession.meta.p1Character = meta.p1Character;
+        if (!string.IsNullOrEmpty(meta.p1Character) && string.IsNullOrEmpty(currentSession.meta.p1Character))
+            currentSession.meta.p1Character = meta.p1Character;
 
         if (!string.IsNullOrEmpty(meta.p2Id)) currentSession.meta.p2Id = meta.p2Id;
-        if (!string.IsNullOrEmpty(meta.p2Character)) currentSession.meta.p2Character = meta.p2Character;
+        if (!string.IsNullOrEmpty(meta.p2Character) && string.IsNullOrEmpty(currentSession.meta.p2Character))
+            currentSession.meta.p2Character = meta.p2Character;
+
+        if (!string.IsNullOrEmpty(meta.p3Id)) currentSession.meta.p3Id = meta.p3Id;
+        if (!string.IsNullOrEmpty(meta.p3Character) && string.IsNullOrEmpty(currentSession.meta.p3Character))
+            currentSession.meta.p3Character = meta.p3Character;
 
         // winner μπορεί να είναι "" σε tie, οπότε assign και όταν είναι empty
         if (meta.winnerId != null) currentSession.meta.winnerId = meta.winnerId;
@@ -229,11 +263,31 @@ public class TelemetryManager : MonoBehaviour
         currentSession.meta.p2Character = p2Character;
     }
 
+    /// <summary>
+    /// Marks the moment gameplay is unlocked (end of countdown). Only the first call per session counts,
+    /// so pause/resume later in the round does not move it.
+    /// </summary>
+    public void MarkFightStart()
+    {
+        if (!enableTelemetry) return;
+        if (!isRecording || currentSession == null) return;
+        if (fightStartTime >= 0f) return;
+
+        fightStartTime = Time.time;
+        currentSession.fightStartT = Mathf.Max(0f, fightStartTime - sessionStartTime);
+
+        var ev = TelemetryEvent.CreateBase(EventType.FightStart, sessionStartTime);
+        AddEvent(ev);
+
+        if (debugToConsole)
+            Debug.Log($"[Telemetry] FightStart | t={ev.t:F3}");
+    }
+
     // ---------------------------
     // Public API (Existing Hooks)
     // ---------------------------
 
-    public void LogAction(string actorId, string actionType)
+    public void LogAction(string actorId, string actionType, string detail = "")
     {
         if (!enableTelemetry) return;
         EnsureSessionStarted();
@@ -241,11 +295,12 @@ public class TelemetryManager : MonoBehaviour
         var ev = TelemetryEvent.CreateBase(EventType.Action, sessionStartTime);
         ev.actorId = actorId;
         ev.actionType = actionType;
+        ev.detail = detail ?? "";
 
         AddEvent(ev);
 
         if (debugToConsole)
-            Debug.Log($"[Telemetry] Action | t={ev.t:F3} actor={actorId} action={actionType}");
+            Debug.Log($"[Telemetry] Action | t={ev.t:F3} actor={actorId} action={actionType} detail={ev.detail}");
     }
 
     public void LogHitAttempt(string attackerId, string defenderId, MoveType moveType)
@@ -289,7 +344,9 @@ public class TelemetryManager : MonoBehaviour
         int hpAfter,
         float distance,
         bool wasBlocked,
-        bool wasDodged
+        bool wasDodged,
+        bool wasParried = false,
+        bool wasCrit = false
     )
     {
         if (!enableTelemetry) return;
@@ -303,6 +360,8 @@ public class TelemetryManager : MonoBehaviour
         ev.finalDamage = finalDamage;
         ev.wasBlocked = wasBlocked;
         ev.wasDodged = wasDodged;
+        ev.wasParried = wasParried;
+        ev.wasCrit = wasCrit;
         ev.hpDefenderBefore = hpBefore;
         ev.hpDefenderAfter = hpAfter;
         ev.distance = distance;
@@ -310,7 +369,7 @@ public class TelemetryManager : MonoBehaviour
         AddEvent(ev);
 
         if (debugToConsole)
-            Debug.Log($"[Telemetry] DamageApplied | t={ev.t:F3} {attackerId}->{defenderId} move={ev.moveType} src={ev.sourceType} dmg={finalDamage} blocked={wasBlocked} dodged={wasDodged}");
+            Debug.Log($"[Telemetry] DamageApplied | t={ev.t:F3} {attackerId}->{defenderId} move={ev.moveType} src={ev.sourceType} dmg={finalDamage} blocked={wasBlocked} dodged={wasDodged} parried={wasParried} crit={wasCrit}");
     }
 
     // ---------------------------
@@ -319,12 +378,8 @@ public class TelemetryManager : MonoBehaviour
 
     private void EnsureSessionStarted()
     {
-        if (isRecording) return;
-
-        if (!autoStartOnFirstEvent)
-            return;
-
-        StartSession(); // empty meta by default
+        // Intentionally no auto-start (see note at the top). Kept so the call sites stay unchanged;
+        // AddEvent() drops events when no session is running.
     }
 
     private void AddEvent(TelemetryEvent ev)
@@ -390,7 +445,8 @@ public enum EventType
     Action,
     HitAttempt,
     Miss,
-    DamageApplied
+    DamageApplied,
+    FightStart
 }
 
 [Serializable]
@@ -449,7 +505,9 @@ public class TelemetrySession
     public string endedAtUtc;
 
     public string endReason;
-    public float durationSeconds;
+    public float durationSeconds;   // fight time: from FightStart to end (excludes countdown)
+    public float sessionSeconds;    // whole session incl. countdown
+    public float fightStartT;       // session-relative time (same clock as event t) of FightStart; -1 if none
 
     public string unityVersion;
     public string appVersion;
@@ -472,6 +530,7 @@ public class TelemetryEvent
     // Actor fields (varies by event)
     public string actorId;       // used by Action
     public string actionType;    // "Quick", "Heavy", "Special", "ChargeStart", etc.
+    public string detail;        // optional extra info (e.g. Transform -> character name)
 
     // Combat fields (varies by event)
     public string attackerId;
@@ -483,6 +542,8 @@ public class TelemetryEvent
     public int finalDamage;      // DamageApplied only
     public bool wasBlocked;      // DamageApplied only
     public bool wasDodged;       // DamageApplied only
+    public bool wasParried;      // DamageApplied only: hit was caught by the defender's parry (0 dmg)
+    public bool wasCrit;         // DamageApplied only: finalDamage includes the +10 crit
 
     public float distance;       // -1 if unknown
     public int hpDefenderBefore; // -1 if unknown
@@ -499,6 +560,7 @@ public class TelemetryEvent
             // defaults
             actorId = "",
             actionType = "",
+            detail = "",
 
             attackerId = "",
             defenderId = "",
@@ -508,6 +570,8 @@ public class TelemetryEvent
             finalDamage = 0,
             wasBlocked = false,
             wasDodged = false,
+            wasParried = false,
+            wasCrit = false,
 
             distance = -1f,
             hpDefenderBefore = -1,

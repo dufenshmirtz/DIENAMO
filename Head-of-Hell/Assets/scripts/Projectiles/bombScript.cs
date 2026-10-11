@@ -88,6 +88,8 @@ public class bombScript : MonoBehaviour
             }
             character.Knockback(13f, 0.3333f, true);
             jumpDone = true;
+            // Telemetry: Steelager launched toward the closest opponent by his own bomb (combo setup).
+            TelemetryManager.Instance?.LogAction(character.PlayerId, "BombLaunch", character.isGrounded ? "Ground" : "Air");
             return;
         }
 
@@ -112,6 +114,8 @@ public class bombScript : MonoBehaviour
         }
 
     }
+
+    public bool HasExploded => exploded; // read-only, used for telemetry
 
     public void InitializeOwner(Character owner)
     {

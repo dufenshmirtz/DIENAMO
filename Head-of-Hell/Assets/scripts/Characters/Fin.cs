@@ -215,7 +215,8 @@ public class Fin : Character
             return;
         }
 
-        target.SetIncomingDamageContext(PlayerId, MoveType.ParryCounter, SourceType.Parry);
+        // Fin's passive extra damage after a counter; the counter itself is logged as ParryCounter by base.
+        target.SetIncomingDamageContext(PlayerId, MoveType.PassiveBonus, SourceType.Parry);
         target.TakeDamageNoAnimation(passiveDamage,false,false);
     }
     #endregion

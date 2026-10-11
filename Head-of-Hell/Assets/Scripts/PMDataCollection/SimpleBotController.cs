@@ -454,6 +454,11 @@ public class SimpleBotController : MonoBehaviour
         botInput.SetAxis("Horizontal" + setup.playerNum, move);
         botInput.SetAxis("Horizontal", move);
 
+        // Character reads GetKey(left/right) when no physical gamepad is mapped to this side,
+        // so press the keys too. Otherwise the bot only moves when a gamepad happens to be plugged in.
+        botInput.SetKey(setup.left, move < -0.1f);
+        botInput.SetKey(setup.right, move > 0.1f);
+
         float vertical = forcedVerticalTimer > 0f ? forcedVerticalValue : 0f;
 
         botInput.SetAxis("Vertical" + suffix, vertical);

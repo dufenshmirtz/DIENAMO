@@ -146,6 +146,9 @@ public class Steelager : Character
         }
         else
         {
+            // Telemetry: manual detonation timing (player decision). Not logged if the bomb already blew up.
+            if (bomba != null && !bomba.HasExploded)
+                TelemetryManager.Instance?.LogAction(PlayerId, "BombDetonate");
             bomba.Explode();
         }
     }

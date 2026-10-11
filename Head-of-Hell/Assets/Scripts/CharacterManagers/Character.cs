@@ -51,12 +51,11 @@ public abstract class Character : MonoBehaviour
     }
     public bool CanDropPlatform => isonpad > 0;
     protected string incomingAttackerId;
+    private int pendingCritDamage = 0; // telemetry: crit applied in TakeDamage's charge-armor path, logged by TakeDamageNoAnimation
     protected MoveType incomingMoveType;
     protected SourceType incomingSourceType;
     // --- Telemetry: movement logging (edge-triggered) ---
     private int lastMoveDir = 0; // -1 = left, 0 = idle, +1 = right
-    [SerializeField] private float moveLogCooldown = 0.20f; // seconds, anti-spam
-    private float nextMoveLogTime = 0f;
     protected Character enemy;
     protected Animator animator;
     protected AudioManager audioManager;
@@ -708,7 +707,11 @@ public abstract class Character : MonoBehaviour
             return;
         }
         //charge attack specifics
-        if (ChargeCheck(charge))
+        bool wasCharging = charging;
+        bool wasCharged = charged;
+        bool chargeBusy = ChargeCheck(charge);
+        LogChargeInputTransition(wasCharging, wasCharged);
+        if (chargeBusy)
         {
             return;
         }
@@ -869,12 +872,10 @@ public abstract class Character : MonoBehaviour
     {
         if (TelemetryManager.Instance == null) return;
 
-        // log only on changes: idle->move, move->idle, left<->right
+        // log every change: idle->move, move->idle, left<->right
+        // No cooldown on purpose: dropping events left a stale direction in the log.
+        // Filtering of very short segments (animation cancels) is done in the analysis.
         if (dir == lastMoveDir) return;
-
-        // extra safety: anti-spam cooldown
-        if (Time.time < nextMoveLogTime) return;
-        nextMoveLogTime = Time.time + moveLogCooldown;
 
         if (dir == -1)
             TelemetryManager.Instance.LogAction(PlayerId, "MoveLeft");
@@ -1314,11 +1315,37 @@ public abstract class Character : MonoBehaviour
         }
     }
 
+    // ---------------- Charge telemetry (single rule for every character) ----------------
+    // Input side (ChargeReleaseInput / ChargeCancel) is derived from the state change around ChargeCheck(),
+    // so it also covers characters that override ChargeCheck (e.g. Lupen).
+    private void LogChargeInputTransition(bool wasCharging, bool wasCharged)
+    {
+        if (!wasCharging) return;
+
+        if (wasCharged && !charged)
+            TelemetryManager.Instance?.LogAction(PlayerId, "ChargeReleaseInput");   // released after full charge -> attack
+        else if (!wasCharged && !charged && !charging)
+            TelemetryManager.Instance?.LogAction(PlayerId, "ChargeCancel");         // released before full charge -> no attack
+    }
+
+    // Hit frame: every DealChargeDmg (base and overrides) calls this right after resolving the target.
+    protected void LogChargeOutcome(Character target)
+    {
+        var tm = TelemetryManager.Instance;
+        if (tm == null) return;
+
+        tm.LogAction(PlayerId, "ChargeRelease");
+        if (target != null)
+            tm.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Charge);
+        else
+            tm.LogMiss(PlayerId, MoveType.Charge);
+    }
+
     public virtual void DealChargeDmg()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "ChargeRelease");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
+        LogChargeOutcome(target);
 
         if (target != null)
         {
@@ -1326,7 +1353,6 @@ public abstract class Character : MonoBehaviour
             if (!target.counterIsOn) {
                 target.BreakCharge();
             }
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Charge);
             target.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
             target.TakeDamage(chargeDmg, false);
             target.Knockback(13f, 0.4f, false);
@@ -1344,7 +1370,6 @@ public abstract class Character : MonoBehaviour
             }
             else
             {
-                TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
                 audioManager.PlaySFX(audioManager.swoosh, audioManager.swooshVolume);
             }
 
@@ -1425,6 +1450,11 @@ public abstract class Character : MonoBehaviour
     {
         if (!casting)
         {
+            // Telemetry: only when a running charge is really lost (still holding, or released but the hit
+            // frame has not happened yet). BreakCharge() is called on every target hit, so no log otherwise.
+            if (charging || (chargeAttackActive && !chargeReset))
+                TelemetryManager.Instance?.LogAction(PlayerId, "ChargeBroken");
+
             chargeAttackActive = false;
             ignoreMovement = false;
             animator.SetBool("Charging", false);
@@ -1449,7 +1479,6 @@ public abstract class Character : MonoBehaviour
     #region Block
     public void Block()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "BlockStart");
         if (blockDisabled)
         {
             return;
@@ -1463,12 +1492,23 @@ public abstract class Character : MonoBehaviour
     }
     public void Unblock()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "BlockEnd");
         animator.SetBool("cWalk", false);
         animator.SetBool("Crouch", false);
         isBlocking = false;
 
         ResetQuickPunch();
+    }
+
+    // Telemetry: block is logged from the actual state, once per frame, after every script has run.
+    // Covers every way a block starts/ends (input, stun, blockBreaker, resets...) with no duplicates;
+    // Unblock() calls while not blocking produce nothing.
+    private bool lastLoggedBlocking = false;
+
+    private void LateUpdate()
+    {
+        if (isBlocking == lastLoggedBlocking) return;
+        lastLoggedBlocking = isBlocking;
+        TelemetryManager.Instance?.LogAction(PlayerId, isBlocking ? "BlockStart" : "BlockEnd");
     }
 
     public void blockBreaker()
@@ -1528,6 +1568,11 @@ public abstract class Character : MonoBehaviour
 
     virtual public void HeavyAttackStart()
     {
+        // Telemetry: StartHeavyAttackEvent (t=0.0 in every heavy clip) -> exactly one HeavyStart per heavy that
+        // actually starts, including heavies queued during the previous one. "Heavy" stays on the hit frame
+        // (DealDamageEvent, t=0.567), so a HeavyStart without Heavy = interrupted heavy.
+        TelemetryManager.Instance?.LogAction(PlayerId, "HeavyStart");
+
         if (canAlterSpeed)
         {
             moveSpeed = heavySpeed;
@@ -1575,6 +1620,22 @@ public abstract class Character : MonoBehaviour
         yield return new WaitForSeconds(5f);
         audioManager.PlaySFX(audioManager.rollReady, audioManager.lessVol);
         canParry = true;
+    }
+
+    // Telemetry: defender-side outcome of an attack that was caught by this character's parry.
+    // Single place for every character/projectile (all go through TakeDamage / TakeDamageNoAnimation).
+    private void LogParriedHit()
+    {
+        TelemetryManager.Instance?.LogDamageApplied(
+            incomingAttackerId, this.PlayerId, incomingMoveType, incomingSourceType,
+            0,
+            currHealth,
+            currHealth,
+            GetDistanceToEnemy(),
+            false,
+            false,
+            wasParried: true
+        );
     }
 
     public bool DetectCounter()
@@ -1640,7 +1701,7 @@ public abstract class Character : MonoBehaviour
 
         audioManager.PlaySFX(audioManager.counterClong, 0.5f);
 
-        target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Melee);
+        target.SetIncomingDamageContext(PlayerId, MoveType.ParryCounter, SourceType.Parry);
         target.TakeDamage(parryDamage, true);
 
         stayDynamic();
@@ -1963,6 +2024,7 @@ public abstract class Character : MonoBehaviour
         {
             if (DetectCounter())
             {
+                LogParriedHit();
                 return;
             }
         }
@@ -2003,8 +2065,16 @@ public abstract class Character : MonoBehaviour
             }
             else
             {
-                CheckForCrit(canAlterSpeed);
+                // crit is logged together with the hit inside TakeDamageNoAnimation
+                pendingCritDamage = CheckForCrit(canAlterSpeed, allowDie: false);
                 TakeDamageNoAnimation(dmg, blockable);
+                pendingCritDamage = 0;
+
+                // safety: TakeDamageNoAnimation can return early (shield) after the crit already hit
+                if (currHealth <= 0 && !animator.GetBool("isDead"))
+                {
+                    Die();
+                }
                 return;
             }
         }
@@ -2013,6 +2083,7 @@ public abstract class Character : MonoBehaviour
 
         int hpBefore = currHealth;
         int hpAfterBeforeCrit = currHealth;
+        int critDamage = 0;
 
         if (isBlocking && blockable)
         {
@@ -2067,8 +2138,8 @@ public abstract class Character : MonoBehaviour
             }
 
             currHealth -= dmg;
-            hpAfterBeforeCrit = currHealth;
-            CheckForCrit(canCrit);
+            critDamage = CheckForCrit(canCrit, allowDie: false); // death handled at the end, after logging
+            hpAfterBeforeCrit = currHealth;                      // now includes the crit
             animator.SetTrigger("tookDmg");
             SetHealthbarSafe(currHealth);
             StartCoroutine(TriggerDamageCounter(dmg));
@@ -2089,7 +2160,8 @@ public abstract class Character : MonoBehaviour
                 hpAfter,
                 distance,
                 (isBlocking && blockable),
-                false
+                false,
+                wasCrit: critDamage > 0
             );
         }
         else if (isBlocking && blockable)
@@ -2221,6 +2293,7 @@ public abstract class Character : MonoBehaviour
         {
             if (DetectCounter())
             {
+                LogParriedHit();
                 return;
             }
         }
@@ -2245,7 +2318,10 @@ public abstract class Character : MonoBehaviour
             return;
         }
 
-        int hpBefore = currHealth;
+        // crit applied by TakeDamage's charge-armor path just before this call
+        int critCarry = pendingCritDamage;
+        pendingCritDamage = 0;
+        int hpBefore = currHealth + critCarry;
 
         if (isBlocking && blockable)
         {
@@ -2296,7 +2372,8 @@ public abstract class Character : MonoBehaviour
                 hpAfter,
                 distance,
                 (isBlocking && blockable),
-                false
+                false,
+                wasCrit: critCarry > 0
             );
         }
         else if (isBlocking && blockable)
@@ -2544,7 +2621,10 @@ public abstract class Character : MonoBehaviour
 
     }
 
-    void CheckForCrit(bool canCrit = true)
+    // Returns the crit damage applied (0 if no crit).
+    // allowDie=false: the caller logs the hit first and then calls Die() itself, so the killing blow
+    // is written before the round/telemetry session closes.
+    int CheckForCrit(bool canCrit = true, bool allowDie = true)
     {
         if (CriticalChance() && !gameManager.trainingMode && canCrit)
         {
@@ -2560,11 +2640,13 @@ public abstract class Character : MonoBehaviour
                 PlayCritFeedback();
             }
 
-            if (currHealth <= 0)
+            if (allowDie && currHealth <= 0)
             {
                 Die();
             }
+            return 10;
         }
+        return 0;
     }
     virtual protected bool CriticalChance()
     {
@@ -2998,7 +3080,6 @@ public abstract class Character : MonoBehaviour
         sb.AppendLine($"ogRange: {ogRange:F3}");
         sb.AppendLine($"jumpAxisHeld: {jumpAxisHeld}");
         sb.AppendLine($"lastMoveDir: {lastMoveDir}");
-        sb.AppendLine($"nextMoveLogTime: {nextMoveLogTime:F3}");
 
         sb.AppendLine("-------------- Charge State --------------");
         sb.AppendLine($"charging: {charging}");

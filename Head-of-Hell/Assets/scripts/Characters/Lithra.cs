@@ -242,9 +242,9 @@ public class Lithra : Character
 
     public override void DealChargeDmg()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "ChargeRelease");
         Collider2D hitEnemy = Physics2D.OverlapCircle(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemy);
+        LogChargeOutcome(target);
 
         if (target != null)
         {
@@ -253,7 +253,6 @@ public class Lithra : Character
             {
                 target.BreakCharge();
             }
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Charge);
             target.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
 
             target.TakeDamage(chargeDmg, false);
@@ -268,7 +267,6 @@ public class Lithra : Character
         }
         else
         {
-            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
             if (chargeHitSound != null)
             {
                 audioManager.PlaySFX(chargeHitSound, 1.5f);

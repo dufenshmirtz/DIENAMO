@@ -206,9 +206,9 @@ public class LazyBigus : Character
 
     public override void DealChargeDmg()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "ChargeRelease");
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(attackPoint.position, attackRange, enemyLayer);
         Character target = ResolveTargetFromHit(hitEnemies);
+        LogChargeOutcome(target);
 
         if (target != null)
         {
@@ -217,7 +217,6 @@ public class LazyBigus : Character
             {
                 target.BreakCharge();
             }
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Charge);
             target.SetIncomingDamageContext(PlayerId, MoveType.Charge, SourceType.Melee);
             target.TakeDamage(chargeDmg, false);
             target.Knockback(13f, 0.4f, false);
@@ -236,7 +235,6 @@ public class LazyBigus : Character
             }
             else
             {
-                TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Charge);
                 audioManager.PlaySFX(audioManager.swoosh, audioManager.swooshVolume);
             }
 
