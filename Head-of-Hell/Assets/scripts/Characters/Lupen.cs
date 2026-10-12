@@ -410,7 +410,7 @@ public class Lupen : Character
 
     public override void TakeDamage(int dmg, bool blockable, bool parryable=true, bool canCrit = true)
     {
-        base.TakeDamage(dmg, blockable);       
+        base.TakeDamage(dmg, blockable, parryable, canCrit); // forward all flags (was dropping parryable/canCrit)
 
         animator.SetTrigger(characterChoiceHandler.PickRandomCharacter());
     }

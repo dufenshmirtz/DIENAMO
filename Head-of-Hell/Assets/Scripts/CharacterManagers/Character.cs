@@ -1638,12 +1638,45 @@ public abstract class Character : MonoBehaviour
         );
     }
 
+    // Telemetry: remaining hit of the parried attack, absorbed (no damage, no new counter) -> tagged "ParryAbsorb" (ignored by the analysis).
+    private void LogAbsorbedDuringCounter()
+    {
+        TelemetryManager.Instance?.LogDamageApplied(
+            incomingAttackerId, this.PlayerId, incomingMoveType, incomingSourceType,
+            0,
+            currHealth,
+            currHealth,
+            GetDistanceToEnemy(),
+            false,
+            true,
+            false,
+            false,
+            "ParryAbsorb"   // rest of the parried attack; analysis ignores it
+        );
+    }
+
+    // Which attack the running counter caught (attacker + move). Used only to absorb that attack's
+    // remaining hits while counterDone is true.
+    private string counteredAttackerId;
+    private MoveType counteredMoveType;
+
+    private bool IsRestOfParriedAttack()
+    {
+        return counterDone
+            && incomingSourceType != SourceType.Dot
+            && !string.IsNullOrEmpty(counteredAttackerId)
+            && incomingAttackerId == counteredAttackerId
+            && incomingMoveType == counteredMoveType;
+    }
+
     public bool DetectCounter()
     {
         if (counterIsOn)
         {
             if (!counterDone)
             {
+                counteredAttackerId = incomingAttackerId;
+                counteredMoveType = incomingMoveType;
                 Countered();
                 return true;
             };
@@ -1837,6 +1870,34 @@ public abstract class Character : MonoBehaviour
         target.SetEnemy(this);
     }
 
+    /// <summary>
+    /// The ACTIVE Character on this object (or its parents). Lupen's transformation adds the form's component
+    /// next to the disabled Lupen component on the same GameObject; GetComponent<Character>() returned the
+    /// first (disabled) one, so every hit on a transformed Lupen was rejected as an invalid target.
+    /// With a single Character component (every other case) the result is identical to before.
+    /// </summary>
+    public static Character ResolveActiveCharacter(Component c)
+    {
+        if (c == null) return null;
+
+        Character[] own = c.GetComponents<Character>();
+        if (own.Length > 0) return PickActiveCharacter(own);
+
+        Character parent = c.GetComponentInParent<Character>();
+        if (parent == null) return null;
+        return PickActiveCharacter(parent.GetComponents<Character>());
+    }
+
+    private static Character PickActiveCharacter(Character[] list)
+    {
+        for (int i = 0; i < list.Length; i++)
+        {
+            if (list[i] != null && list[i].isActiveAndEnabled)
+                return list[i];
+        }
+        return list.Length > 0 ? list[0] : null; // none enabled: same as old behaviour (first one)
+    }
+
     protected Character GetCharacterFromCollider(Collider2D hit)
     {
         if (hit == null)
@@ -1844,11 +1905,7 @@ public abstract class Character : MonoBehaviour
             return null;
         }
 
-        Character target = hit.GetComponent<Character>();
-        if (target == null)
-        {
-            target = hit.GetComponentInParent<Character>();
-        }
+        Character target = Character.ResolveActiveCharacter(hit); // active Character (transformed Lupen keeps a disabled Lupen component)
 
         return target;
     }
@@ -2027,6 +2084,15 @@ public abstract class Character : MonoBehaviour
                 LogParriedHit();
                 return;
             }
+        }
+
+        // A successful parry is running: the remaining hits of the SAME attack that was parried
+        // (e.g. Vander katana 2nd hit) are absorbed, so they can't cancel the counter.
+        // Any other attack, and DoT ticks, behave exactly as before.
+        if (IsRestOfParriedAttack())
+        {
+            LogAbsorbedDuringCounter();
+            return;
         }
 
         // cache distance once for this damage call
@@ -2296,6 +2362,15 @@ public abstract class Character : MonoBehaviour
                 LogParriedHit();
                 return;
             }
+        }
+
+        // A successful parry is running: the remaining hits of the SAME attack that was parried
+        // (e.g. Vander katana 2nd hit) are absorbed, so they can't cancel the counter.
+        // Any other attack, and DoT ticks, behave exactly as before.
+        if (IsRestOfParriedAttack())
+        {
+            LogAbsorbedDuringCounter();
+            return;
         }
 
         float distance = GetDistanceToEnemy();

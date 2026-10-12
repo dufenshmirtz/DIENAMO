@@ -94,11 +94,7 @@ public class Steelager : Character
                 continue;
             }
 
-            Character target = hit.GetComponent<Character>();
-            if (target == null)
-            {
-                target = hit.GetComponentInParent<Character>();
-            }
+            Character target = Character.ResolveActiveCharacter(hit); // active Character (transformed Lupen keeps a disabled Lupen component)
 
             if (target == null || target == this || !target.isActiveAndEnabled || !hitTargets.Add(target))
             {

@@ -159,7 +159,13 @@ public class Vander : Character
 
         if (target != null)
         {
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+            // Telemetry: one quick = one attack event (2 animations). First connecting hit logs the
+            // HitAttempt and opens a damage aggregate; the second hit's damage is merged into it.
+            if (!katanaHitThisCast)
+            {
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+                TelemetryManager.Instance?.BeginDamageAggregate(PlayerId, target.PlayerId, MoveType.Quick);
+            }
             target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
             target.TakeDamage(katanaDmg, true);
             katanaHitThisCast = true;
@@ -179,7 +185,13 @@ public class Vander : Character
 
         if (target != null)
         {
-            TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+            // Telemetry: one quick = one attack event (2 animations). First connecting hit logs the
+            // HitAttempt and opens a damage aggregate; the second hit's damage is merged into it.
+            if (!katanaHitThisCast)
+            {
+                TelemetryManager.Instance?.LogHitAttempt(PlayerId, target.PlayerId, MoveType.Quick);
+                TelemetryManager.Instance?.BeginDamageAggregate(PlayerId, target.PlayerId, MoveType.Quick);
+            }
             target.SetIncomingDamageContext(PlayerId, MoveType.Quick, SourceType.Melee);
             target.TakeDamage(katanaDmg, true);
             katanaHitThisCast = true;
@@ -196,12 +208,17 @@ public class Vander : Character
             audioManager.PlaySFX(audioManager.katanaSwoosh, audioManager.swooshVolume);
         }
 
+        // end of the quick (second animation hit): write the merged damage event
+        TelemetryManager.Instance?.EndDamageAggregate(PlayerId);
+
     }
 
     IEnumerator ResetKatana()
     {
 
         yield return new WaitForSeconds(katanaCD);
+        if (katanaHitThisCast)
+            TelemetryManager.Instance?.EndDamageAggregate(PlayerId); // safety: quick interrupted before its 2nd hit
         audioManager.PlaySFX(audioManager.katanaSeath, audioManager.doubleVol);
         katanaready = true;
         QuickAttackIndicatorEnable();

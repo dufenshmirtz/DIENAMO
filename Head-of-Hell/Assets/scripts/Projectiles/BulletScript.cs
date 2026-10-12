@@ -42,11 +42,7 @@ public class BulletScript : MonoBehaviour
     {
         if (other.CompareTag("Player") && !hasHit)
         {
-            Character character = other.GetComponent<Character>();
-            if (character == null)
-            {
-                character = other.GetComponentInParent<Character>();
-            }
+            Character character = Character.ResolveActiveCharacter(other); // active Character (transformed Lupen keeps a disabled Lupen component)
             if (character == null || initiator == null || !initiator.CanDamageTarget(character))
             {
                 return;

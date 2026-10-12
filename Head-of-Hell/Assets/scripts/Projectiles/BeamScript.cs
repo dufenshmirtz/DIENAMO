@@ -78,11 +78,7 @@ public class BeamScript : MonoBehaviour
             return null;
         }
 
-        Character target = collision.GetComponent<Character>();
-        if (target == null)
-        {
-            target = collision.GetComponentInParent<Character>();
-        }
+        Character target = Character.ResolveActiveCharacter(collision); // active Character (transformed Lupen keeps a disabled Lupen component)
 
         return target;
     }

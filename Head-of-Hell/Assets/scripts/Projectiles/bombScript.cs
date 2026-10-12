@@ -50,11 +50,7 @@ public class bombScript : MonoBehaviour
         {
             if (other.CompareTag("Player"))
             {
-                playa = other.GetComponent<Character>();
-                if (playa == null)
-                {
-                    playa = other.GetComponentInParent<Character>();
-                }
+                playa = Character.ResolveActiveCharacter(other); // active Character (transformed Lupen keeps a disabled Lupen component)
                 if (playa != null)
                 {
                     player = playa.PlayerId == "P1" ? 1 : playa.PlayerId == "P2" ? 2 : 3;
@@ -65,11 +61,7 @@ public class bombScript : MonoBehaviour
             return;
         }
 
-        Character character = other.GetComponent<Character>();
-        if (character == null)
-        {
-            character = other.GetComponentInParent<Character>();
-        }
+        Character character = Character.ResolveActiveCharacter(other); // active Character (transformed Lupen keeps a disabled Lupen component)
         if (character == null)
         {
             return;

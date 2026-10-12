@@ -119,6 +119,9 @@ public class Rager : Character
             target.BreakCharge();
             SetCooldownSpriteSafe(activeSprite);
 
+            // Telemetry: the whole combo (ticks + final hit) is logged as ONE DamageApplied
+            TelemetryManager.Instance?.BeginDamageAggregate(PlayerId, target.PlayerId, MoveType.Special);
+
             // dmg and sound (0 damage "confirm" hit)
             target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
             target.TakeDamage(0, true, true, false);
@@ -237,6 +240,7 @@ public class Rager : Character
         finalHitConsumed = true;
         target.SetIncomingDamageContext(PlayerId, MoveType.Special, SourceType.Spell);
         target.TakeDamage(spellDamage2,true);
+        TelemetryManager.Instance?.EndDamageAggregate(PlayerId);
         target.EndDeferredCritFeedback(true);
         audioManager.PlaySFX(audioManager.klong, audioManager.doubleVol);
 
@@ -293,6 +297,7 @@ public class Rager : Character
 
     private void ResetComboState(bool restoreTargetState)
     {
+        TelemetryManager.Instance?.EndDamageAggregate(PlayerId); // combo interrupted -> write what was dealt so far
         Character target = comboTarget != null ? comboTarget : GetCurrentCombatTarget();
 
         if (target != null && target.isActiveAndEnabled)

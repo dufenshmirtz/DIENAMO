@@ -28,6 +28,17 @@ public class TelemetryManager : MonoBehaviour
     private float fightStartTime = -1f; // Time.time when gameplay unlocked (after countdown); -1 = not yet
     private string pendingEndReason = null;
 
+    // Damage aggregation (multi-hit moves logged as ONE DamageApplied, e.g. Rager combo, Vander katana).
+    // One open aggregate per attacker, so two players' moves never close each other.
+    private class DamageAggregate
+    {
+        public string defender;
+        public string move;
+        public TelemetryEvent ev;
+        public bool partiallyParried;   // a later/earlier hit of the same move was parried
+    }
+    private readonly Dictionary<string, DamageAggregate> aggregates = new Dictionary<string, DamageAggregate>();
+
     // Root telemetry folder
     private string telemetryRootFolderPath;
 
@@ -88,6 +99,7 @@ public class TelemetryManager : MonoBehaviour
 
         sessionStartTime = Time.time;
         fightStartTime = -1f;
+        aggregates.Clear();
 
         TelemetryMatchMeta finalMeta = meta ?? new TelemetryMatchMeta();
 
@@ -147,6 +159,7 @@ public class TelemetryManager : MonoBehaviour
         isRecording = false;
         sessionStartTime = 0f;
         fightStartTime = -1f;
+        aggregates.Clear();
     }
 
     /// <summary>
@@ -163,6 +176,9 @@ public class TelemetryManager : MonoBehaviour
             DiscardCurrentSession($"not a completed round (reason={reason}, fightStarted={fightStartTime >= 0f})");
             return;
         }
+
+        // a multi-hit move still running (e.g. KO during Rager combo) is written before the session closes
+        EndAllDamageAggregates();
 
         pendingEndReason = reason;
 
@@ -346,7 +362,8 @@ public class TelemetryManager : MonoBehaviour
         bool wasBlocked,
         bool wasDodged,
         bool wasParried = false,
-        bool wasCrit = false
+        bool wasCrit = false,
+        string detail = ""
     )
     {
         if (!enableTelemetry) return;
@@ -362,14 +379,86 @@ public class TelemetryManager : MonoBehaviour
         ev.wasDodged = wasDodged;
         ev.wasParried = wasParried;
         ev.wasCrit = wasCrit;
+        ev.detail = detail ?? "";
         ev.hpDefenderBefore = hpBefore;
         ev.hpDefenderAfter = hpAfter;
         ev.distance = distance;
+
+        // A hit of a multi-hit move was parried -> the merged event is tagged "PartiallyParried"
+        // (analysis keeps its damage but counts the attack only as parried).
+        if (wasParried && attackerId != null
+            && aggregates.TryGetValue(attackerId, out DamageAggregate pAgg)
+            && defenderId == pAgg.defender && ev.moveType == pAgg.move)
+        {
+            pAgg.partiallyParried = true;
+        }
+
+        // Part of a multi-hit move -> merge into one event (sum of damage = real HP loss).
+        // Tagged events (e.g. "ParryAbsorb") are never merged.
+        if (!wasParried && string.IsNullOrEmpty(detail) && attackerId != null
+            && aggregates.TryGetValue(attackerId, out DamageAggregate agg)
+            && defenderId == agg.defender && ev.moveType == agg.move)
+        {
+            if (agg.ev == null)
+            {
+                agg.ev = ev;                         // keeps first hpBefore / distance
+            }
+            else
+            {
+                agg.ev.finalDamage += finalDamage;
+                agg.ev.hpDefenderAfter = hpAfter;    // HP at the end of the move
+                agg.ev.wasCrit |= wasCrit;
+                agg.ev.wasBlocked |= wasBlocked;
+                agg.ev.wasDodged |= wasDodged;
+            }
+            return;
+        }
 
         AddEvent(ev);
 
         if (debugToConsole)
             Debug.Log($"[Telemetry] DamageApplied | t={ev.t:F3} {attackerId}->{defenderId} move={ev.moveType} src={ev.sourceType} dmg={finalDamage} blocked={wasBlocked} dodged={wasDodged} parried={wasParried} crit={wasCrit}");
+    }
+
+    /// <summary>
+    /// Start merging every DamageApplied of attacker->defender with this moveType into ONE event
+    /// (written by EndDamageAggregate). Gameplay is unaffected; only the log is merged.
+    /// </summary>
+    public void BeginDamageAggregate(string attackerId, string defenderId, MoveType moveType)
+    {
+        if (string.IsNullOrEmpty(attackerId)) return;
+        EndDamageAggregate(attackerId);
+        if (!enableTelemetry || !isRecording) return;
+
+        aggregates[attackerId] = new DamageAggregate
+        {
+            defender = defenderId,
+            move = moveType.ToString(),
+            ev = null
+        };
+    }
+
+    /// <summary>Writes this attacker's merged event (timestamped at the end of the move). Safe to call twice.</summary>
+    public void EndDamageAggregate(string attackerId)
+    {
+        if (string.IsNullOrEmpty(attackerId)) return;
+        if (!aggregates.TryGetValue(attackerId, out DamageAggregate agg)) return;
+        aggregates.Remove(attackerId);
+
+        if (agg.ev != null && currentSession != null)
+        {
+            if (agg.partiallyParried) agg.ev.detail = "PartiallyParried";
+            agg.ev.t = Mathf.Max(0f, Time.time - sessionStartTime);
+            agg.ev.frame = Time.frameCount;
+            AddEvent(agg.ev);
+        }
+    }
+
+    private void EndAllDamageAggregates()
+    {
+        var attackers = new List<string>(aggregates.Keys);
+        foreach (var a in attackers)
+            EndDamageAggregate(a);
     }
 
     // ---------------------------

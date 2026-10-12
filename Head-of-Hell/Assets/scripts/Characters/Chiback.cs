@@ -179,9 +179,10 @@ public class Chiback : Character
     #region LightAttack
     public override void LightAttack()
     {
-        TelemetryManager.Instance?.LogAction(PlayerId, "Quick");
         if (fireReady)
         {
+            // Telemetry: only when the fire actually comes out (not on presses during its 1s cooldown)
+            TelemetryManager.Instance?.LogAction(PlayerId, "Quick");
             QuickAttackIndicatorDisable();
             animator.SetTrigger("QuickAttack");
             fireReady = false;
@@ -274,7 +275,7 @@ public class Chiback : Character
             audioManager.PlaySFX(audioManager.growl, 0.5f);
             roarPlayed = true;
         }
-        base.TakeDamage(dmg, blockable);
+        base.TakeDamage(dmg, blockable, parryable, canCrit); // forward all flags (was dropping parryable/canCrit)
     }
 
     void Enraged(Character target, int jumpDamage)

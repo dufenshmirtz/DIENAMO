@@ -331,10 +331,26 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         # Character kit active right now (Lupen may be transformed into another character).
         return lupen_form.get(slot_id) or character_for_slot(slot_id)
 
-    def outcome_excluded_from_accuracy(attacker_id: str, move_type: str) -> bool:
-        # Steelager's bomb (Quick) is also thrown for launches / zoning -> intent unknown,
-        # so it does not count as hit or miss (still counts as attack action and damage).
-        return move_type == "Quick" and kit_for(attacker_id) == "steelager"
+    PROJECTILE_QUICK_KITS = {"steelager", "lazy bigus", "lazybigus"}
+
+    def attack_counted_at_outcome(attacker_id: str, move_type: str) -> bool:
+        # Rule: an attack counts for Aggression only when it is actually executed.
+        # Melee Quick/Special -> when it reaches its outcome (HitAttempt / Miss); cancelled ones don't count.
+        # Projectile Quick (Steelager bomb, LazyBigus bullet) -> at spawn (the "Quick" action), since it
+        # cannot be cancelled once it exists. Heavy / ChargeRelease are already logged on the hit frame.
+        if move_type == "Special":
+            return kit_for(attacker_id) != "lupen"
+        if move_type == "Quick":
+            return kit_for(attacker_id) not in PROJECTILE_QUICK_KITS
+        return False
+
+    def count_attack(pid: str, move_type: str):
+        agg[pid]["actions_total"] += 1
+        agg[pid]["actions_attack"] += 1
+        if move_type == "Quick":
+            agg[pid]["actions_quick"] += 1
+        elif move_type == "Special":
+            agg[pid]["actions_special"] += 1
 
     def special_hit_counted_from_attempt(attacker_id: str, move_type: str) -> bool:
         return (
@@ -418,6 +434,10 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             if action_type in IGNORED_ACTION_TYPES:
                 continue
 
+            # Melee Quick / attack Special: counted when executed (at their outcome), not at the press.
+            if action_type in ("Quick", "Special") and attack_counted_at_outcome(pid, action_type):
+                continue
+
             agg[pid]["actions_total"] += 1
 
             # Lupen's own special (push away + transform) is not an attack -> defense.
@@ -469,6 +489,9 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             move_type = str(e.get("moveType") or "").strip()
             _ = MOVE_SUBTYPE_MAP.get(move_type, None)
 
+            if attack_counted_at_outcome(attacker, move_type):
+                count_attack(attacker, move_type)
+
             defender = e.get("defenderId") or e.get("targetId")
             if special_hit_counted_from_attempt(attacker, move_type):
                 agg[attacker]["hits_landed"] += 1
@@ -482,8 +505,9 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 continue
 
             ensure(attacker)
-            if outcome_excluded_from_accuracy(attacker, str(e.get("moveType") or "").strip()):
-                continue
+            miss_move = str(e.get("moveType") or "").strip()
+            if attack_counted_at_outcome(attacker, miss_move):
+                count_attack(attacker, miss_move)
             agg[attacker]["misses"] += 1
 
         elif etype == "DamageApplied":
@@ -496,10 +520,15 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
 
             move_type = str(e.get("moveType", "")).strip()
             source_type = str(e.get("sourceType", "")).strip()
+            dmg_detail = str(e.get("detail") or "").strip()
+
+            # Rest of an attack that was already parried (absorbed during the counter): not a hit, not a dodge.
+            if dmg_detail == "ParryAbsorb":
+                continue
 
             # Attack caught by the defender's parry: failed attack for the attacker, not a hit received.
             if bool(e.get("wasParried") or False):
-                if attacker and not outcome_excluded_from_accuracy(attacker, move_type):
+                if attacker:
                     ensure(attacker)
                     agg[attacker]["attacks_parried"] += 1
                     # Rager/Visvia specials were already counted as a hit at HitAttempt -> undo it.
@@ -518,12 +547,14 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 not is_dot
                 and not is_damage_only_move(move_type, source_type)
                 and not is_special_damage_counted_from_attempt(attacker, move_type, source_type)
+                # Multi-hit move with a parried part: damage counts, the attack counts only as parried.
+                and dmg_detail != "PartiallyParried"
             )
 
             if attacker:
                 ensure(attacker)
                 agg[attacker]["damage_dealt"] += dmg
-                if raw_dmg > 0 and count_as_hit and not outcome_excluded_from_accuracy(attacker, move_type):
+                if raw_dmg > 0 and count_as_hit:
                     agg[attacker]["hits_landed"] += 1
 
             if defender:

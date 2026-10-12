@@ -121,6 +121,12 @@ public class Visvia : Character
         {
             audioManager.PlaySFX(audioManager.bellPunch, audioManager.swooshVolume);
         }
+
+        // Telemetry: last damage frame of the grab -> if neither frame connected, count as a miss
+        if (!grabLandedThisCast)
+        {
+            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);
+        }
     }
 
     public void GrabStartDmg()
@@ -158,14 +164,9 @@ public class Visvia : Character
     {
         yield return new WaitForSeconds(0.59f);
 
-        // Telemetry: if neither damage frame connected, count as a miss
-        if (!grabLandedThisCast)
-        {
-            TelemetryManager.Instance?.LogMiss(PlayerId, MoveType.Special);
-        }
-
+        // Telemetry: the hit/miss outcome is decided in GrabDmg (last damage frame, ~0.85s),
+        // so nothing is logged or cleared here. The per-cast set is reset in Spell().
         OnCooldown(cooldown);
-        grabTargetsHitThisCast.Clear();
         OverheatCheck();
     }
     #endregion
