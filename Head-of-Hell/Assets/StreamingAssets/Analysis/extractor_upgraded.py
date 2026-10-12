@@ -27,7 +27,7 @@ ACTION_CATEGORY_MAP = {
     "DropPlatform": "mobility",
 
     "BlockHold": "defense",
-    "Parry": "defense",
+    "ParryAttempt": "defense",   # the decision; the successful "Parry" is its outcome (not counted again)
     "Dodge": "defense",
 }
 
@@ -62,9 +62,18 @@ MOVE_SUBTYPE_MAP = {
 
 EMA_ALPHA = 0.35
 
+# Movement: a MoveLeft/MoveRight segment counts as ONE mobility action only if it lasts at least this long
+# (filters taps, jitter and animation cancels). Chosen from the segment-duration histogram (2026-10-12):
+# segments < 0.2 s were ~1/3 of all segments but only ~7% of the time spent moving.
+# Blocking (BlockStart -> BlockEnd) uses the same rule.
+MIN_MOVE_SEGMENT_S = 0.2
+WALK_ACTIONS = ("MoveLeft", "MoveRight")
+
 FEATURE_COLS = [
     "attack_rate",
     "mobility_rate",
+    "mobility_time_ratio",
+    "block_time_ratio",
     "defense_rate",
     "hit_rate",
     "miss_rate",
@@ -209,6 +218,80 @@ def build_effective_damage_map(events: List[Dict[str, Any]]) -> Dict[int, float]
             effective_damage_by_index[idx] = group_effective_damage * (raw_damage / group_raw_damage)
 
     return effective_damage_by_index
+
+
+def compute_walk_segments(events: List[Dict[str, Any]], fight_start: float, fight_end: float) -> Dict[str, Dict[str, float]]:
+    """Per player: walking segments from MoveLeft/MoveRight until the next MoveLeft/MoveRight/MoveStop
+    of the same player (or the end of the round). Time inside Visvia's overheat (forced movement-only
+    state) is removed from both the segment and the fight time.
+    Returns pid -> {"segments": count of segments >= MIN_MOVE_SEGMENT_S, "moving_s": seconds walking,
+                    "overheat_s": seconds in overheat}."""
+    out: Dict[str, Dict[str, float]] = {}
+    seg_start: Dict[str, Optional[float]] = {}
+    oh_start: Dict[str, Optional[float]] = {}
+    oh_intervals: Dict[str, List[Tuple[float, float]]] = {}
+    raw_segments: Dict[str, List[Tuple[float, float]]] = {}
+    blk_start: Dict[str, Optional[float]] = {}
+    blk_segments: Dict[str, List[Tuple[float, float]]] = {}
+
+    def clip(t: float) -> float:
+        return min(max(t, fight_start), fight_end)
+
+    for e in events:
+        if (e.get("eventType") or e.get("type")) != "Action":
+            continue
+        pid = e.get("playerId") or e.get("actorId") or e.get("attackerId")
+        if not pid:
+            continue
+        a = e.get("actionType") or e.get("action") or ""
+        t = clip(as_float(e.get("t"), fight_start))
+        if a == "OverheatStart":
+            oh_start[pid] = t
+        elif a == "OverheatEnd" and oh_start.get(pid) is not None:
+            oh_intervals.setdefault(pid, []).append((oh_start[pid], t))
+            oh_start[pid] = None
+        if a == "BlockStart":
+            if blk_start.get(pid) is None:
+                blk_start[pid] = t
+        elif a == "BlockEnd" and blk_start.get(pid) is not None:
+            blk_segments.setdefault(pid, []).append((blk_start[pid], t))
+            blk_start[pid] = None
+        if a in WALK_ACTIONS or a == "MoveStop":
+            if seg_start.get(pid) is not None:
+                raw_segments.setdefault(pid, []).append((seg_start[pid], t))
+            seg_start[pid] = t if a in WALK_ACTIONS else None
+
+    for pid, st in seg_start.items():
+        if st is not None:
+            raw_segments.setdefault(pid, []).append((st, fight_end))
+    for pid, st in blk_start.items():
+        if st is not None:
+            blk_segments.setdefault(pid, []).append((st, fight_end))
+    for pid, st in oh_start.items():
+        if st is not None:
+            oh_intervals.setdefault(pid, []).append((st, fight_end))
+
+    for pid in set(raw_segments) | set(oh_intervals) | set(blk_segments):
+        ohs = oh_intervals.get(pid, [])
+        count = 0
+        moving = 0.0
+        for a0, a1 in raw_segments.get(pid, []):
+            length = max(0.0, a1 - a0)
+            for o0, o1 in ohs:
+                length -= max(0.0, min(a1, o1) - max(a0, o0))
+            length = max(0.0, length)
+            moving += length
+            if length >= MIN_MOVE_SEGMENT_S:
+                count += 1
+        blocks = [max(0.0, b1 - b0) for b0, b1 in blk_segments.get(pid, [])]
+        out[pid] = {
+            "block_segments": sum(1 for b in blocks if b >= MIN_MOVE_SEGMENT_S),
+            "blocking_s": sum(blocks),
+            "segments": count,
+            "moving_s": moving,
+            "overheat_s": sum(max(0.0, o1 - o0) for o0, o1 in ohs),
+        }
+    return out
 
 
 def ratio(num: float, den: float) -> float:
@@ -400,6 +483,13 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
 
     effective_damage_by_event = build_effective_damage_map(events)
 
+    # Walking is measured in segments (see compute_walk_segments), not per MoveLeft/MoveRight event.
+    fight_start = as_float(doc.get("fightStartT"), 0.0)
+    fight_end = as_float(doc.get("sessionSeconds"), 0.0)
+    if fight_end <= fight_start:
+        fight_end = max([as_float(ev.get("t"), 0.0) for ev in events] + [fight_start])
+    walk = compute_walk_segments(events, fight_start, fight_end)
+
     for event_index, e in enumerate(events):
         etype = e.get("eventType") or e.get("type")
 
@@ -434,6 +524,10 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             if action_type in IGNORED_ACTION_TYPES:
                 continue
 
+            # Walking: counted from segments after the loop.
+            if action_type in WALK_ACTIONS:
+                continue
+
             # Melee Quick / attack Special: counted when executed (at their outcome), not at the press.
             if action_type in ("Quick", "Special") and attack_counted_at_outcome(pid, action_type):
                 continue
@@ -455,7 +549,10 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 continue
 
             if action_type == "Parry":
+                # Outcome of a ParryAttempt (already counted as the defense action) -> stat only.
+                agg[pid]["actions_total"] -= 1
                 agg[pid]["actions_parry"] += 1
+                continue
             elif action_type == "ParryAttempt":
                 agg[pid]["actions_parry_attempt"] += 1
             cat = ACTION_CATEGORY_MAP.get(action_type, None)
@@ -586,6 +683,14 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         if profile_id in INVALID_PROFILES:
             continue
 
+        w = walk.get(pid, {"segments": 0, "moving_s": 0.0, "overheat_s": 0.0, "block_segments": 0, "blocking_s": 0.0})
+        a["actions_mobility"] += w["segments"]
+        a["actions_defense"] += w["block_segments"]
+        a["actions_total"] += w["segments"] + w["block_segments"]
+        fight_time = max(0.0, duration - w["overheat_s"])
+        mobility_time_ratio = min(1.0, ratio(w["moving_s"], fight_time))
+        block_time_ratio = min(1.0, ratio(w["blocking_s"], fight_time))
+
         if a["actions_total"] < MIN_ACTIONS or duration < MIN_DURATION:
             continue
 
@@ -648,6 +753,12 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             "dodged_hits_as_defender": a["dodged_hits_as_defender"],
             "attack_rate": attack_rate,
             "mobility_rate": mobility_rate,
+            "mobility_time_ratio": mobility_time_ratio,
+            "moving_s": round(w["moving_s"], 3),
+            "walk_segments": w["segments"],
+            "block_time_ratio": block_time_ratio,
+            "blocking_s": round(w["blocking_s"], 3),
+            "block_segments": w["block_segments"],
             "defense_rate": defense_rate,
             "hit_rate": hit_rate,
             "miss_rate": miss_rate,
