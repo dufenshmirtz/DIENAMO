@@ -11,6 +11,27 @@ public class TelemetryManager : MonoBehaviour
 {
     public static TelemetryManager Instance { get; private set; }
 
+    // ---- Read-only access for other recorders (ImitationLoggerV2). No effect on telemetry. ----
+    public string CurrentMatchId => currentSession != null ? currentSession.matchId : null;
+    public TelemetryMatchMeta CurrentMeta => currentSession != null ? currentSession.meta : null;
+    public bool FightStarted => currentSession != null && fightStartTime >= 0f;
+
+    /// <summary>
+    /// Thesis data generation: when set (e.g. "Synthetic"), sessions are written to Telemetry/&lt;this&gt; instead of
+    /// Telemetry/Build or Telemetry/Editor. Empty/null (default) = normal behaviour. Set only by ILDataGenDirector.
+    /// </summary>
+    public static string OutputFolderOverride = null;
+
+    /// <summary>Raised when a session closes: (matchId, saved). saved = JSON written; false = discarded.</summary>
+    public static event Action<string, bool> SessionClosed;
+
+    private static void RaiseSessionClosed(string matchId, bool saved)
+    {
+        if (string.IsNullOrEmpty(matchId) || SessionClosed == null) return;
+        try { SessionClosed(matchId, saved); }
+        catch (Exception ex) { Debug.LogWarning("[Telemetry] SessionClosed listener failed: " + ex.Message); }
+    }
+
     [Header("Telemetry Settings")]
     [SerializeField] private bool enableTelemetry = true;
     [SerializeField] private bool debugToConsole = false;
@@ -155,11 +176,15 @@ public class TelemetryManager : MonoBehaviour
         if (debugToConsole)
             Debug.Log($"[Telemetry] Session DISCARD: {reason}");
 
+        string discardedId = currentSession != null ? currentSession.matchId : null;
+
         currentSession = null;
         isRecording = false;
         sessionStartTime = 0f;
         fightStartTime = -1f;
         aggregates.Clear();
+
+        RaiseSessionClosed(discardedId, false);
     }
 
     /// <summary>
@@ -206,10 +231,14 @@ public class TelemetryManager : MonoBehaviour
         if (debugToConsole)
             Debug.Log($"[Telemetry] Session END: {currentSession.matchId} | reason={reason} | events={currentSession.events?.Count ?? 0}");
 
+        string savedId = currentSession.matchId;
+
         // Reset
         currentSession = null;
         isRecording = false;
         pendingEndReason = null;
+
+        RaiseSessionClosed(savedId, true);
     }
 
     /// <summary>
@@ -262,6 +291,17 @@ public class TelemetryManager : MonoBehaviour
         // Keep runtime environment auto-consistent
         currentSession.meta.runtimeEnvironment = Application.isEditor ? "Editor" : "Build";
         currentSession.meta.isEditorSession = Application.isEditor;
+    }
+
+    /// <summary>
+    /// Thesis data generation: labels a slot of the CURRENT session as a scripted persona.
+    /// Only writes p1PersonaId / p2PersonaId; nothing else in the session changes.
+    /// </summary>
+    public void SetPersona(string playerId, string personaId)
+    {
+        if (!enableTelemetry || currentSession == null || currentSession.meta == null) return;
+        if (playerId == "P1") currentSession.meta.p1PersonaId = personaId ?? "";
+        else if (playerId == "P2") currentSession.meta.p2PersonaId = personaId ?? "";
     }
 
     /// <summary>
@@ -482,9 +522,11 @@ public class TelemetryManager : MonoBehaviour
         try
         {
             string runtimeFolder =
-                session.meta != null && !string.IsNullOrWhiteSpace(session.meta.runtimeEnvironment)
-                    ? session.meta.runtimeEnvironment
-                    : (Application.isEditor ? "Editor" : "Build");
+                !string.IsNullOrWhiteSpace(OutputFolderOverride)
+                    ? OutputFolderOverride
+                    : (session.meta != null && !string.IsNullOrWhiteSpace(session.meta.runtimeEnvironment)
+                        ? session.meta.runtimeEnvironment
+                        : (Application.isEditor ? "Editor" : "Build"));
 
             string finalFolder = Path.Combine(telemetryRootFolderPath, runtimeFolder);
             Directory.CreateDirectory(finalFolder);
@@ -574,6 +616,11 @@ public class TelemetryMatchMeta
 
     public string p3ProfileId = "";
     public string p3ProfileName = "";
+
+    // Thesis data generation: id of the scripted persona playing in this slot.
+    // Empty for humans and normal bots. Set ONLY by SetPersona(); SetMatchMeta never touches it.
+    public string p1PersonaId = "";
+    public string p2PersonaId = "";
 
     // NEW: runtime separation
     public string runtimeEnvironment = "";   // "Editor" / "Build"

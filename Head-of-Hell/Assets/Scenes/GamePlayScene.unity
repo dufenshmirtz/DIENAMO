@@ -326,7 +326,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -5047,7 +5046,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -5715,7 +5713,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -8092,7 +8089,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -10199,7 +10195,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -11132,7 +11127,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -13228,7 +13222,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -15083,7 +15076,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -16054,7 +16046,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -18493,7 +18484,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -21599,7 +21589,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -24901,7 +24890,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -25350,7 +25338,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -29734,7 +29721,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -32840,7 +32826,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -33084,7 +33069,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -34197,7 +34181,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -35014,7 +34997,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -35341,7 +35323,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -35820,7 +35801,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -36735,7 +36715,6 @@ MonoBehaviour:
   enableTelemetry: 1
   debugToConsole: 0
   prettyPrintJson: 1
-  autoStartOnFirstEvent: 1
   autoSaveOnQuit: 1
 --- !u!4 &1291379660
 Transform:
@@ -37085,7 +37064,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -37640,7 +37618,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -42115,7 +42092,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -43603,7 +43579,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -46040,7 +46015,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -46536,7 +46510,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -49004,7 +48977,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -50784,7 +50756,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -54738,7 +54709,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -55793,7 +55763,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -56400,7 +56369,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -59637,7 +59605,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0

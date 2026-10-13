@@ -67,7 +67,39 @@ public class SimpleBotController : MonoBehaviour
     [SerializeField] private float headStackMaxY = 2.2f;
     [SerializeField] private float headStackEscapeMin = 0.18f;
     [SerializeField] private float headStackEscapeMax = 0.32f;
-    [SerializeField] private float crossLevelFollowXThreshold = 1.6f;
+    [SerializeField] private float crossLevelFollowXThreshold = 1.6f;   // (no longer used by HandleMovement, kept for the Inspector)
+
+    [Header("Cross-Level Pursuit")]
+    [Tooltip("Target below: drop through the platform when closer than this in X (was 0.6).")]
+    [SerializeField] private float crossLevelDropRange = 1.2f;
+    [Tooltip("Target above: jump towards it when closer than this in X.")]
+    [SerializeField] private float crossLevelJumpRange = 1.2f;
+    [Tooltip("Chance to jump up per movement update, scaled by mobility (min..max).")]
+    [SerializeField] private float jumpUpChanceMin = 0.35f;
+    [SerializeField] private float jumpUpChanceMax = 0.80f;
+    [Tooltip("The bot never holds a charge longer than this (s): release if the target is in range, else cancel.")]
+    [SerializeField] private float maxBotChargeHold = 1.5f;
+    [Tooltip("Character still charging although the bot already released/stopped (key-up lost) -> after this many seconds the bot takes the charge back and releases or cancels it.")]
+    [SerializeField] private float orphanChargeTimeout = 0.3f;
+    [Tooltip("Release a charged attack only when the target is this close in X (the character cannot move while charging; charge hits ~0.8, heavy up to ~1.3 in telemetry).")]
+    [SerializeField] private float chargeHitRange = 1.1f;
+    private float orphanChargeTimer;
+
+    [Header("Heavy = main attack (2026-10-13)")]
+    [Tooltip("After pressing heavy the bot makes no new decision for this long. The heavy hits at ~0.57 s and ANY other action (block, quick, special, parry, charge, heavy) cancels it; before this most bot heavies were cancelled by the bot itself.")]
+    [SerializeField] private float heavyCommitTime = 0.62f;
+    private float heavyCommitTimer;
+
+    [Header("Persona strength (thesis; only after SetPersonality, knob 0.5 = x1)")]
+    [Tooltip("Multiplier at knob 1.0 (knob 0.0 = 1/strength, 0.9 ~ strength^0.8). 1 = knobs behave as before.")]
+    [SerializeField] private float personaStrengthAggression = 4f;
+    [SerializeField] private float personaStrengthDefense = 4f;
+    [SerializeField] private float personaStrengthMobility = 4f;
+    [Tooltip("Preferred distance shift at aggression 0 (+) / 1 (-).")]
+    [SerializeField] private float personaRangeShift = 0.4f;
+    [Tooltip("Mobility 0: waits up to this long before chasing an opponent out of range (mobility >= 0.5: no waiting).")]
+    [SerializeField] private float holdGroundMaxTime = 1.5f;
+    private float outOfRangeSince = -1f;
 
     [Header("Anti-Charge Danger")]
     [SerializeField] private float antiChargeDangerRange = 1.35f;
@@ -130,6 +162,71 @@ public class SimpleBotController : MonoBehaviour
     private float defenseBias;
     private float mobilityBias;
     private float patience;
+
+    // ---- Persona (thesis): a fixed, named personality instead of the per-round random one ----
+    // Only active after SetPersonality() is called; otherwise the bot behaves exactly as before.
+    private bool personalityLocked;
+    private string personaId = "";
+    private string personaReportedForMatch;
+
+    public string PersonaId => personaId;
+    public float Aggression => aggression;
+    public float DefenseBias => defenseBias;
+    public float MobilityBias => mobilityBias;
+    public float Patience => patience;
+    public float Skill => skill;
+
+    public void SetPersonality(float aggression, float defense, float mobility, float patience, string personaId)
+    {
+        this.aggression = Mathf.Clamp01(aggression);
+        this.defenseBias = Mathf.Clamp01(defense);
+        this.mobilityBias = Mathf.Clamp01(mobility);
+        this.patience = Mathf.Clamp01(patience);
+        this.personaId = personaId ?? "";
+        personalityLocked = true;
+        personaReportedForMatch = null;
+    }
+
+    // Persona multiplier: strength^((knob-0.5)*2). Exactly 1 at knob 0.5 and whenever no persona is set
+    // (normal PvE), so those bots are unchanged; symmetric: knob 0.9 multiplies by as much as 0.1 divides.
+    private float PersonaMul(float knob, float strength)
+    {
+        if (!personalityLocked || strength <= 1f) return 1f;
+        return Mathf.Pow(strength, (knob - 0.5f) * 2f);
+    }
+    private float AggrMul => PersonaMul(aggression, personaStrengthAggression);
+    private float DefMul => PersonaMul(defenseBias, personaStrengthDefense);
+    private float MobMul => PersonaMul(mobilityBias, personaStrengthMobility);
+    private float BlockHoldMul => Mathf.Sqrt(DefMul);
+
+    // Quick attacks with a cooldown (e.g. Skipler's Blink, 3 s) hide the quick indicator while recharging.
+    // Pressing quick then does nothing, so the bot only picks quick when it is ready (no indicator -> assume ready).
+    private bool QuickReady => setup == null || setup.quickAttackIndicator == null || setup.quickAttackIndicator.activeSelf;
+    private float QuickReadyMul => QuickReady ? 1f : 0f;
+
+    private float HoldGroundLimit()
+    {
+        if (!personalityLocked || mobilityBias >= 0.5f) return 0f;
+        return holdGroundMaxTime * (0.5f - mobilityBias) * 2f;
+    }
+
+    // Heavy press + commitment: no new decision until the swing has hit.
+    private void PressHeavy(float cooldownMin, float cooldownMax)
+    {
+        PressOneFrame(setup.heavyAttack);
+        heavyCommitTimer = heavyCommitTime;
+        actionTimer = Mathf.Max(Random.Range(cooldownMin, cooldownMax), heavyCommitTime);
+    }
+
+    // Writes the persona id into the current telemetry session once per match (p1PersonaId / p2PersonaId).
+    private void ReportPersonaToTelemetry()
+    {
+        if (!personalityLocked || string.IsNullOrEmpty(personaId) || character == null) return;
+        var tm = TelemetryManager.Instance;
+        if (tm == null || string.IsNullOrEmpty(tm.CurrentMatchId) || tm.CurrentMatchId == personaReportedForMatch) return;
+        tm.SetPersona(character.PlayerId, personaId);
+        personaReportedForMatch = tm.CurrentMatchId;
+    }
 
     private bool trackingEnemyCharge;
     private float enemyChargeTimer;
@@ -218,6 +315,8 @@ public class SimpleBotController : MonoBehaviour
             return;
         }
 
+        ReportPersonaToTelemetry();
+
         if (character == null || setup == null || target == null)
         {
             target = FindOpponent();
@@ -236,6 +335,7 @@ public class SimpleBotController : MonoBehaviour
         antiChargeReactionTimer -= dt;
         antiRushReactionTimer -= dt;
         botChargeCooldownTimer -= dt;
+        heavyCommitTimer -= dt;
 
         UpdateForcedVertical(dt);
         UpdateForcedHorizontal(dt);
@@ -243,6 +343,8 @@ public class SimpleBotController : MonoBehaviour
 
         if (blockHoldTimer <= 0f)
             botInput.SetKey(setup.block, false);
+
+        CheckOrphanCharge(dt);
 
         if (HandleBotChargeState(dt))
         {
@@ -258,7 +360,8 @@ public class SimpleBotController : MonoBehaviour
             return;
         }
 
-        if (TryReactToRush())
+        // Anti-rush ignores actionTimer, so it must not cancel our own heavy swing.
+        if (heavyCommitTimer <= 0f && TryReactToRush())
         {
             HandleMovement(dt);
             UpdateLastTargetDistance();
@@ -303,6 +406,8 @@ public class SimpleBotController : MonoBehaviour
 
     private void RandomizePersonality()
     {
+        if (personalityLocked) return;   // persona set explicitly -> keep it
+
         if (!randomizePersonality)
         {
             aggression = 0.5f;
@@ -372,7 +477,7 @@ public class SimpleBotController : MonoBehaviour
 
         float move = 0f;
 
-        if (targetBelow && dx < 0.6f && !isDroppingThroughPlatform && !headStacking)
+        if (targetBelow && dx < crossLevelDropRange && !isDroppingThroughPlatform && !headStacking)
         {
             bool enemyChargingOrReady =
                 target != null &&
@@ -404,7 +509,8 @@ public class SimpleBotController : MonoBehaviour
             float desiredRange =
                 preferredRange
                 + Mathf.Lerp(0.22f, -0.18f, aggression)
-                + Mathf.Lerp(-0.05f, 0.18f, defenseBias);
+                + Mathf.Lerp(-0.05f, 0.18f, defenseBias)
+                + (personalityLocked ? (0.5f - aggression) * 2f * personaRangeShift : 0f);
 
             float retreatRange =
                 tooCloseRange
@@ -414,21 +520,38 @@ public class SimpleBotController : MonoBehaviour
 
             if (!sameLevel)
             {
-                if (dx > crossLevelFollowXThreshold)
-                    move = Mathf.Sign(dxSigned);
+                // Cross-level pursuit (was: stand still when 0.6 < dx < 1.6 -> two bots on different levels froze).
+                bool targetAbove = dySigned > sameLevelTolerance;
+
+                if (targetAbove && dx <= crossLevelJumpRange)
+                {
+                    // Platforms are one-way: jump straight up through them, drifting towards the target.
+                    move = dx > 0.15f ? Mathf.Sign(dxSigned) : 0f;
+
+                    float jumpUpChance = Mathf.Lerp(jumpUpChanceMin, jumpUpChanceMax, mobilityBias);
+                    if (character.IsGrounded && !character.JumpDisabled && Random.value < jumpUpChance)
+                        PressOneFrame(setup.up);
+                }
                 else
-                    move = 0f;
+                {
+                    // Line up in X with the target (then the drop / jump rules above take over).
+                    move = Mathf.Sign(dxSigned);
+                }
             }
             else if (!inEngageRange)
             {
+                if (outOfRangeSince < 0f) outOfRangeSince = Time.time;
+
                 if (dx > desiredRange)
-                    move = Mathf.Sign(dxSigned);
+                    // Low-mobility persona: hold ground for a while before chasing (time-limited -> no stalemate).
+                    move = (Time.time - outOfRangeSince < HoldGroundLimit()) ? 0f : Mathf.Sign(dxSigned);
                 else if (dx < retreatRange)
                     move = -Mathf.Sign(dxSigned);
             }
             else
             {
-                float shimmyChance = idleShimmyChance * Mathf.Lerp(0.7f, 1.5f, mobilityBias);
+                outOfRangeSince = -1f;
+                float shimmyChance = Mathf.Min(0.9f, idleShimmyChance * Mathf.Lerp(0.7f, 1.5f, mobilityBias) * MobMul);
 
                 if (Random.value < shimmyChance)
                 {
@@ -506,19 +629,20 @@ public class SimpleBotController : MonoBehaviour
         float defendChance =
             Mathf.Lerp(blockChance, blockChance + 0.28f, defenseBias) *
             Mathf.Lerp(0.75f, 1.15f, skill);
+        defendChance = Mathf.Min(0.6f, defendChance * DefMul);
 
         if (inEngageRange && Random.value < defendChance)
         {
             botInput.SetKey(setup.block, true);
-            blockHoldTimer = Random.Range(0.10f, 0.24f);
-            actionTimer = Random.Range(0.16f, 0.28f);
+            blockHoldTimer = Random.Range(0.10f, 0.24f) * BlockHoldMul;
+            actionTimer = Random.Range(0.16f, 0.28f) * BlockHoldMul;
             MaybeRepositionAfterAction(dxSigned, false);
             return;
         }
 
         if (!inPokeRange)
         {
-            float jumpInChance = jumpChance * Mathf.Lerp(0.7f, 2.0f, mobilityBias);
+            float jumpInChance = jumpChance * Mathf.Lerp(0.7f, 2.0f, mobilityBias) * MobMul;
 
             if (character.IsGrounded && !character.JumpDisabled && Random.value < jumpInChance)
             {
@@ -532,11 +656,11 @@ public class SimpleBotController : MonoBehaviour
 
         if (inCloseRange)
         {
-            float quickW = quickChance * Mathf.Lerp(1.00f, 1.50f, aggression);
-            float heavyW = heavyChance * Mathf.Lerp(0.95f, 1.45f, aggression);
-            float retreatW = Mathf.Lerp(0.04f, 0.18f, defenseBias);
-            float specialW = CanUseSpecialNow() ? specialChance * Mathf.Lerp(0.75f, 1.35f, aggression) : 0f;
-            float waitW = Mathf.Lerp(0.01f, 0.08f, patience);
+            float quickW = quickChance * Mathf.Lerp(1.00f, 1.50f, aggression) * AggrMul * QuickReadyMul;
+            float heavyW = heavyChance * Mathf.Lerp(0.95f, 1.45f, aggression) * AggrMul;
+            float retreatW = Mathf.Lerp(0.04f, 0.18f, defenseBias) * DefMul / AggrMul;
+            float specialW = CanUseSpecialNow() ? specialChance * Mathf.Lerp(0.75f, 1.35f, aggression) * AggrMul : 0f;
+            float waitW = Mathf.Lerp(0.01f, 0.08f, patience) / AggrMul;
 
             float total = quickW + heavyW + retreatW + specialW + waitW;
             float roll = Random.value * total;
@@ -552,8 +676,7 @@ public class SimpleBotController : MonoBehaviour
 
             if (roll < heavyW)
             {
-                PressOneFrame(setup.heavyAttack);
-                actionTimer = Random.Range(0.22f, 0.36f);
+                PressHeavy(0.22f, 0.36f);
                 MaybeRepositionAfterAction(dxSigned, true);
                 return;
             }
@@ -580,12 +703,12 @@ public class SimpleBotController : MonoBehaviour
         }
 
         {
-            float quickW = quickChance * Mathf.Lerp(0.80f, 1.20f, aggression);
-            float heavyW = heavyChance * Mathf.Lerp(0.70f, 1.15f, aggression) * Mathf.Lerp(0.85f, 1.15f, patience);
-            float specialW = CanUseSpecialNow() ? specialChance * Mathf.Lerp(0.75f, 1.35f, aggression) : 0f;
-            float jumpW = jumpChance * Mathf.Lerp(0.60f, 1.80f, mobilityBias);
-            float blockW = blockChance * Mathf.Lerp(0.80f, 1.80f, defenseBias);
-            float waitW = Mathf.Lerp(0.05f, 0.22f, patience);
+            float quickW = quickChance * Mathf.Lerp(0.80f, 1.20f, aggression) * AggrMul * QuickReadyMul;
+            float heavyW = heavyChance * Mathf.Lerp(0.70f, 1.15f, aggression) * Mathf.Lerp(0.85f, 1.15f, patience) * AggrMul;
+            float specialW = CanUseSpecialNow() ? specialChance * Mathf.Lerp(0.75f, 1.35f, aggression) * AggrMul : 0f;
+            float jumpW = jumpChance * Mathf.Lerp(0.60f, 1.80f, mobilityBias) * MobMul;
+            float blockW = blockChance * Mathf.Lerp(0.80f, 1.80f, defenseBias) * DefMul;
+            float waitW = Mathf.Lerp(0.05f, 0.22f, patience) / AggrMul;
 
             float total = quickW + heavyW + specialW + jumpW + blockW + waitW;
             float roll = Random.value * total;
@@ -601,8 +724,7 @@ public class SimpleBotController : MonoBehaviour
 
             if (roll < heavyW)
             {
-                PressOneFrame(setup.heavyAttack);
-                actionTimer = Random.Range(0.28f, 0.46f);
+                PressHeavy(0.28f, 0.46f);
                 MaybeRepositionAfterAction(dxSigned, true);
                 return;
             }
@@ -632,8 +754,8 @@ public class SimpleBotController : MonoBehaviour
             if (roll < blockW)
             {
                 botInput.SetKey(setup.block, true);
-                blockHoldTimer = Random.Range(0.10f, 0.22f);
-                actionTimer = Random.Range(0.15f, 0.26f);
+                blockHoldTimer = Random.Range(0.10f, 0.22f) * BlockHoldMul;
+                actionTimer = Random.Range(0.15f, 0.26f) * BlockHoldMul;
                 MaybeRepositionAfterAction(dxSigned, false);
                 return;
             }
@@ -679,13 +801,13 @@ public class SimpleBotController : MonoBehaviour
 
         bool critical = dx <= antiRushCriticalRange;
 
-        float blockW = antiRushBlockWeight * Mathf.Lerp(1.0f, 1.25f, defenseBias);
-        float parryW = antiRushParryWeight * Mathf.Lerp(0.9f, 1.2f, skill);
-        float lightW = antiRushLightWeight * Mathf.Lerp(1.0f, 1.25f, aggression);
-        float heavyW = antiRushHeavyWeight * Mathf.Lerp(0.95f, 1.20f, aggression);
-        float specialW = CanUseSpecialNow() ? antiRushSpecialWeight : 0f;
+        float blockW = antiRushBlockWeight * Mathf.Lerp(1.0f, 1.25f, defenseBias) * DefMul;
+        float parryW = antiRushParryWeight * Mathf.Lerp(0.9f, 1.2f, skill) * DefMul;
+        float lightW = antiRushLightWeight * Mathf.Lerp(1.0f, 1.25f, aggression) * AggrMul * QuickReadyMul;
+        float heavyW = antiRushHeavyWeight * Mathf.Lerp(0.95f, 1.20f, aggression) * AggrMul;
+        float specialW = CanUseSpecialNow() ? antiRushSpecialWeight * AggrMul : 0f;
         float retreatW = antiRushRetreatWeight;
-        float chargeW = CanStartBotCharge() ? antiRushChargeWeight : 0f;
+        float chargeW = CanStartBotCharge() ? antiRushChargeWeight * AggrMul : 0f;
 
         if (critical)
         {
@@ -701,8 +823,8 @@ public class SimpleBotController : MonoBehaviour
         if (roll < blockW)
         {
             botInput.SetKey(setup.block, true);
-            blockHoldTimer = Random.Range(antiRushBlockHoldMin, antiRushBlockHoldMax);
-            actionTimer = Random.Range(0.12f, 0.22f);
+            blockHoldTimer = Random.Range(antiRushBlockHoldMin, antiRushBlockHoldMax) * BlockHoldMul;
+            actionTimer = Random.Range(0.12f, 0.22f) * BlockHoldMul;
             return true;
         }
         roll -= blockW;
@@ -728,8 +850,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (roll < heavyW)
         {
-            PressOneFrame(setup.heavyAttack);
-            actionTimer = Random.Range(0.18f, 0.32f);
+            PressHeavy(0.18f, 0.32f);
             return true;
         }
         roll -= heavyW;
@@ -910,8 +1031,8 @@ public class SimpleBotController : MonoBehaviour
         }
 
         botInput.SetKey(setup.block, true);
-        blockHoldTimer = Random.Range(0.18f, 0.32f);
-        actionTimer = 0.22f;
+        blockHoldTimer = Random.Range(0.18f, 0.32f) * BlockHoldMul;
+        actionTimer = 0.22f * BlockHoldMul;
         return true;
     }
 
@@ -926,10 +1047,10 @@ public class SimpleBotController : MonoBehaviour
         if (Random.value > punishChance)
             return false;
 
-        float quickW = rushPunishQuickWeight * Mathf.Lerp(0.95f, 1.25f, aggression);
-        float heavyW = rushPunishHeavyWeight * Mathf.Lerp(0.90f, 1.20f, aggression);
-        float specialW = CanUseSpecialNow() ? rushPunishSpecialWeight * Mathf.Lerp(0.9f, 1.15f, aggression) : 0f;
-        float retreatW = rushPunishRetreatWeight * Mathf.Lerp(0.8f, 1.2f, defenseBias);
+        float quickW = rushPunishQuickWeight * Mathf.Lerp(0.95f, 1.25f, aggression) * AggrMul * QuickReadyMul;
+        float heavyW = rushPunishHeavyWeight * Mathf.Lerp(0.90f, 1.20f, aggression) * AggrMul;
+        float specialW = CanUseSpecialNow() ? rushPunishSpecialWeight * Mathf.Lerp(0.9f, 1.15f, aggression) * AggrMul : 0f;
+        float retreatW = rushPunishRetreatWeight * Mathf.Lerp(0.8f, 1.2f, defenseBias) * DefMul;
         float waitW = rushPunishWaitWeight * Mathf.Lerp(0.7f, 1.2f, patience);
 
         float total = quickW + heavyW + specialW + retreatW + waitW;
@@ -945,8 +1066,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (roll < heavyW)
         {
-            PressOneFrame(setup.heavyAttack);
-            actionTimer = Random.Range(rushPunishHeavyCooldownMin, rushPunishHeavyCooldownMax);
+            PressHeavy(rushPunishHeavyCooldownMin, rushPunishHeavyCooldownMax);
             return true;
         }
         roll -= heavyW;
@@ -1015,8 +1135,8 @@ public class SimpleBotController : MonoBehaviour
         if (!inRange || !mashEntry)
             return false;
 
-        float chance = proactiveChargeChance * Mathf.Lerp(0.9f, 1.15f, skill);
-        chance = Mathf.Clamp01(chance);
+        float chance = proactiveChargeChance * Mathf.Lerp(0.9f, 1.15f, skill) * AggrMul;
+        chance = Mathf.Min(0.95f, chance);
 
         if (Random.value > chance)
             return false;
@@ -1056,13 +1176,23 @@ public class SimpleBotController : MonoBehaviour
         bool sameLevel = dy <= antiRushHeightTolerance;
         bool opponentCommitted = IsTargetAttackCommitted() || target.IsCharging || target.IsCharged;
 
-        bool shouldRelease =
-            (botChargeTimer >= proactiveChargeReleaseTime && dx <= proactiveChargeStartRangeMax && sameLevel) ||
-            (dx <= proactiveChargeEarlyReleaseRange && sameLevel && opponentCommitted);
+        // Hold limit: between StartRangeMax (1.85) and AbortRange (2.2) neither rule below fired -> charge held forever.
+        bool overHold = botChargeTimer >= maxBotChargeHold;
+
+        // Release ONLY a fully charged attack (Character.chargeTime = 0.5 s). Releasing earlier just cancels the charge;
+        // before this change most bot charges ended as ChargeCancel after 0.02-0.33 s (early release when the
+        // opponent attacked / charged). Until charged the bot keeps holding (charge has armor) or aborts below.
+        // (opponentCommitted and proactiveChargeReleaseTime are no longer needed for the release decision.)
+        bool charged = character.IsCharged;
+
+        // Release only when charged AND the target is within reach (was dx <= 1.85 -> every release whiffed).
+        // If the target never comes in reach, the hold limit below cancels the charge instead of whiffing it.
+        bool shouldRelease = charged && sameLevel && dx <= chargeHitRange;
 
         bool shouldAbort =
             dx >= proactiveChargeAbortRange ||
-            !sameLevel;
+            !sameLevel ||
+            overHold;
 
         if (shouldRelease)
         {
@@ -1132,6 +1262,34 @@ public class SimpleBotController : MonoBehaviour
         botChargeCooldownTimer = proactiveChargeCooldown;
     }
 
+    // Watchdog: the key-up that ends a charge exists for one frame only. If the character misses it, it stays
+    // charging while the bot thinks the charge is over (botCharging == false) -> nobody ever releases it.
+    // Adopt the charge as "over the hold limit": HandleBotChargeState then releases it (target in range) or cancels it.
+    private void CheckOrphanCharge(float dt)
+    {
+        if (botCharging || character == null)
+        {
+            orphanChargeTimer = 0f;
+            return;
+        }
+
+        if (character.IsCharging || character.IsCharged)
+        {
+            orphanChargeTimer += dt;
+            if (orphanChargeTimer >= orphanChargeTimeout)
+            {
+                botCharging = true;
+                botChargeTimer = maxBotChargeHold;
+                orphanChargeTimer = 0f;
+                Debug.Log($"[Bot] orphan charge recovered on {character.PlayerId}");
+            }
+        }
+        else
+        {
+            orphanChargeTimer = 0f;
+        }
+    }
+
     private void StopBotCharge()
     {
         if (botInput != null && setup != null)
@@ -1183,7 +1341,7 @@ public class SimpleBotController : MonoBehaviour
 
     private void MaybeRepositionAfterAction(float dxSigned, bool allowToward)
     {
-        float chance = repositionChance * Mathf.Lerp(0.7f, 1.5f, mobilityBias);
+        float chance = Mathf.Min(0.9f, repositionChance * Mathf.Lerp(0.7f, 1.5f, mobilityBias) * MobMul);
 
         if (Random.value > chance)
             return;

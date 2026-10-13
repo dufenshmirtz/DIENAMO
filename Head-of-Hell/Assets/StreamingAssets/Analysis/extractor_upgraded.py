@@ -15,7 +15,8 @@ from openpyxl.utils import get_column_letter
 # ----------------------------
 ACTION_CATEGORY_MAP = {
     "Quick": "attack",
-    "Heavy": "attack",
+    "Heavy": "attack",        # old files only (no HeavyStart); otherwise the outcome of a HeavyStart, not counted again
+    "HeavyStart": "attack",   # the decision: every heavy that starts counts, also when cancelled (feints are a tactic)
     "Special": "attack",
     "ChargeRelease": "attack",
 
@@ -33,7 +34,6 @@ ACTION_CATEGORY_MAP = {
 
 IGNORED_ACTION_TYPES = {
     "ChargeStart",
-    "HeavyStart",
     "ChargeReleaseInput",
     "ChargeCancel",
     "ChargeBroken",
@@ -47,6 +47,7 @@ IGNORED_ACTION_TYPES = {
 ACTION_SUBTYPE_MAP = {
     "Quick": "quick",
     "Heavy": "heavy",
+    "HeavyStart": "heavy",
     "Special": "special",
     "ChargeRelease": "charge",
     "Projectile": "projectile",
@@ -67,6 +68,12 @@ EMA_ALPHA = 0.35
 # segments < 0.2 s were ~1/3 of all segments but only ~7% of the time spent moving.
 # Blocking (BlockStart -> BlockEnd) uses the same rule.
 MIN_MOVE_SEGMENT_S = 0.2
+# Blocks are short reactive actions (block is instant and protects immediately), so they get their own threshold.
+# Block-duration histogram (2026-10-13): only 3/51 bot blocks < 0.1 s, and all 3 were cancelled within 1-2 frames
+# by another action (ParryAttempt / ChargeStart / Special) -> not real blocks. No merging of repeated blocks (decision):
+# block spam is a real defensive tactic; it is only monitored with block_rapid_repeats.
+MIN_BLOCK_SEGMENT_S = 0.1
+BLOCK_RAPID_REPEAT_GAP_S = 0.2
 WALK_ACTIONS = ("MoveLeft", "MoveRight")
 
 FEATURE_COLS = [
@@ -283,9 +290,13 @@ def compute_walk_segments(events: List[Dict[str, Any]], fight_start: float, figh
             moving += length
             if length >= MIN_MOVE_SEGMENT_S:
                 count += 1
-        blocks = [max(0.0, b1 - b0) for b0, b1 in blk_segments.get(pid, [])]
+        blk = sorted(blk_segments.get(pid, []))
+        blocks = [max(0.0, b1 - b0) for b0, b1 in blk]
+        # monitoring only (not in any axis): blocks that start < BLOCK_RAPID_REPEAT_GAP_S after the previous one ended
+        rapid = sum(1 for (p0, p1), (n0, n1) in zip(blk, blk[1:]) if n0 - p1 < BLOCK_RAPID_REPEAT_GAP_S)
         out[pid] = {
-            "block_segments": sum(1 for b in blocks if b >= MIN_MOVE_SEGMENT_S),
+            "block_segments": sum(1 for b in blocks if b >= MIN_BLOCK_SEGMENT_S),
+            "block_rapid_repeats": rapid,
             "blocking_s": sum(blocks),
             "segments": count,
             "moving_s": moving,
@@ -464,6 +475,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
                 "actions_defense": 0,
                 "actions_quick": 0,
                 "actions_heavy": 0,
+                "heavies_landed": 0,
                 "actions_special": 0,
                 "actions_charge": 0,
                 "actions_projectile": 0,
@@ -482,6 +494,19 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             }
 
     effective_damage_by_event = build_effective_damage_map(events)
+
+    # Heavy (2026-10-13): the decision is HeavyStart (start of the swing, logged since schema 2.0); "Heavy" is logged on
+    # the hit frame, so a heavy cancelled by another action has no "Heavy". Players with HeavyStart events -> count
+    # HeavyStart, "Heavy" = outcome only (heavies_landed). Older files without HeavyStart -> count "Heavy" as before.
+    # Schema 1.x files: HeavyStart had an older meaning (could be fewer than the heavies that landed) -> not used.
+    heavy_start_players = set()
+    if not str(doc.get("schemaVersion") or "").startswith("1"):
+        heavy_start_players = {
+            (ev.get("playerId") or ev.get("actorId") or ev.get("attackerId"))
+            for ev in events
+            if (ev.get("eventType") or ev.get("type")) == "Action"
+            and (ev.get("actionType") or ev.get("action")) == "HeavyStart"
+        }
 
     # Walking is measured in segments (see compute_walk_segments), not per MoveLeft/MoveRight event.
     fight_start = as_float(doc.get("fightStartT"), 0.0)
@@ -526,6 +551,10 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
 
             # Walking: counted from segments after the loop.
             if action_type in WALK_ACTIONS:
+                continue
+
+            if action_type == "Heavy" and pid in heavy_start_players:
+                agg[pid]["heavies_landed"] += 1   # outcome of a HeavyStart (already counted)
                 continue
 
             # Melee Quick / attack Special: counted when executed (at their outcome), not at the press.
@@ -705,6 +734,9 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
         projectile_rate = ratio(a["actions_projectile"], a["actions_total"])
         parry_rate = ratio(a["actions_parry"], a["actions_total"])
         parry_attempt_rate = ratio(a["actions_parry_attempt"], a["actions_total"])
+        # Share of started heavies that never reached the hit frame (cancelled / interrupted). Monitor only, no axis.
+        heavy_cancel_rate = (max(0.0, 1.0 - ratio(a["heavies_landed"], a["actions_heavy"]))
+                             if pid in heavy_start_players and a["actions_heavy"] > 0 else None)
         total_offensive_outcomes = a["hits_landed"] + a["misses"] + a["attacks_parried"]
         hit_rate = ratio(a["hits_landed"], total_offensive_outcomes)
         miss_rate = ratio(a["misses"], total_offensive_outcomes)
@@ -740,6 +772,8 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             "actions_defense": a["actions_defense"],
             "actions_quick": a["actions_quick"],
             "actions_heavy": a["actions_heavy"],
+            "heavies_landed": a["heavies_landed"],
+            "heavy_cancel_rate": heavy_cancel_rate,
             "actions_special": a["actions_special"],
             "actions_charge": a["actions_charge"],
             "actions_projectile": a["actions_projectile"],
@@ -759,6 +793,7 @@ def extract_round_features(doc: Dict[str, Any], filename: str) -> List[Dict[str,
             "block_time_ratio": block_time_ratio,
             "blocking_s": round(w["blocking_s"], 3),
             "block_segments": w["block_segments"],
+            "block_rapid_repeats": w.get("block_rapid_repeats", 0),
             "defense_rate": defense_rate,
             "hit_rate": hit_rate,
             "miss_rate": miss_rate,

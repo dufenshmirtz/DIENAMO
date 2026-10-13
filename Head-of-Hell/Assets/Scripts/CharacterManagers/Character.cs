@@ -439,6 +439,10 @@ public abstract class Character : MonoBehaviour
     // inside Character
     public IInputProvider GetInputProvider() => input;
 
+    // Read-only, for ImitationLoggerV2: lets the logger read gamepad buttons exactly like this character does.
+    public bool UsesController => controller;
+    public string JoystickButtonName(int button) => "joystick " + ControllerNum(playerNum) + " button " + button;
+
     public void RefreshSetupBindingsForRuntime()
     {
         if (characterSetup == null || characterChoiceHandler == null)
