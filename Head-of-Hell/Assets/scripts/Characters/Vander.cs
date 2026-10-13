@@ -273,8 +273,26 @@ public class Vander : Character
         healthbar.SetHealth(currHealth);
     }
 
+    // Animation only: while flying, the same animator plays the flying clips (Resources/VanderFlyAnimator overrides VanderAnimator clip for clip).
+    RuntimeAnimatorController groundAnims, flyAnims;
+
+    void SyncFlyAnimations()
+    {
+        if (flyAnims == null)
+        {
+            flyAnims = Resources.Load<RuntimeAnimatorController>("VanderFlyAnimator");
+            if (flyAnims == null) return;
+            groundAnims = new AnimatorOverrideController(((AnimatorOverrideController)flyAnims).runtimeAnimatorController);
+        }
+        RuntimeAnimatorController wanted = isFlying ? flyAnims : groundAnims;
+        if (animator.runtimeAnimatorController != wanted) animator.runtimeAnimatorController = wanted;
+    }
+
     public override void Update()
     {
+        // Before any input is read, so swapping clips never eats a trigger set this frame
+        SyncFlyAnimations();
+
         // Run the base Character logic first (movement, jump, etc.)
         base.Update();
 

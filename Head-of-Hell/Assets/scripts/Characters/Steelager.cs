@@ -81,8 +81,27 @@ public class Steelager : Character
         StartCoroutine(SpellSafety(spellTime,cooldown));
     }
 
+    // Animation only: the spell's explosion (Resources/SteelagerBlast), drawn to the size of the hitbox below and left where it went off.
+    GameObject blastFx;
+
+    void ShowExplosion()
+    {
+        if (blastFx == null) blastFx = Resources.Load<GameObject>("SteelagerBlast");
+        if (blastFx == null) return;
+        GameObject fx = Instantiate(blastFx, explosionPoint.position, Quaternion.identity);
+        SpriteRenderer mine = GetComponent<SpriteRenderer>();
+        SpriteRenderer its = fx.GetComponent<SpriteRenderer>();
+        if (mine != null && its != null)
+        {
+            its.sortingLayerID = mine.sortingLayerID;
+            its.sortingOrder = mine.sortingOrder + 1;
+        }
+        Destroy(fx, 0.6f); // length of the explosion clip
+    }
+
     public void DealExplosionDamage()
     {
+        ShowExplosion();
         Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(explosionPoint.position, attackRange * 4, enemyLayer);
         HashSet<Character> hitTargets = new HashSet<Character>();
         bool hitAny = false;

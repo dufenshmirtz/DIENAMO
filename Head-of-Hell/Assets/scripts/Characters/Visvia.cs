@@ -181,6 +181,7 @@ public class Visvia : Character
             TelemetryManager.Instance?.LogAction(PlayerId, "Quick");
             blastCounter++;
             shotgunReady = false;
+            animator.SetTrigger("QuickAttack"); // animation only: she ducks and fires
             QuickAttackIndicatorDisable();
             StartCoroutine(ShotgunBlast());
         }
@@ -285,7 +286,7 @@ public class Visvia : Character
                 target.SetIncomingDamageContext(PlayerId, MoveType.PoisonTick, SourceType.Dot);
                 target.TakeDamage(overheatDamage, false, false, false);
             }
-            ShowShotgunBlast(0.1f);
+            // (the red test circle used to be shown here; the flame is now part of her overheat animations)
 
             yield return new WaitForSeconds(overheatFrequency);
             elapsed += overheatFrequency;
@@ -314,11 +315,46 @@ public class Visvia : Character
         
     }
 
-    void ShowShotgunBlast(float time)   // for testing
+    // Animation only: the explosion of the light attack (Resources/VisviaBlast). It is drawn in her own frame,
+    // so it is placed on her, facing her way, and left behind while the recoil carries her back.
+    GameObject blastFx;
+
+    void ShowShotgunBlast(float time)
     {
-        GameObject blastVisual = Instantiate(blast, blastPoint.position, Quaternion.identity);
-        //blastVisual.transform.localScale = Vector3.one * shotgunRange * 2f;
-        Destroy(blastVisual, time); // Show it briefly
+        if (blastFx == null) blastFx = Resources.Load<GameObject>("VisviaBlast");
+        if (blastFx == null) return;
+        GameObject blastVisual = Instantiate(blastFx, transform.position, Quaternion.identity);
+        blastVisual.transform.localScale = transform.lossyScale;
+        SpriteRenderer mine = GetComponent<SpriteRenderer>();
+        SpriteRenderer its = blastVisual.GetComponent<SpriteRenderer>();
+        if (mine != null && its != null)
+        {
+            its.sortingLayerID = mine.sortingLayerID;
+            its.sortingOrder = mine.sortingOrder + 1;
+        }
+        Destroy(blastVisual, 0.34f); // length of the explosion clip
+    }
+
+    // Animation only: while overheated, Idle and Run play the flame clips (Resources/VisviaOverheatAnimator overrides VisviaAnimator).
+    RuntimeAnimatorController normalAnims, overheatAnims;
+
+    void SyncOverheatAnimations()
+    {
+        if (overheatAnims == null)
+        {
+            overheatAnims = Resources.Load<RuntimeAnimatorController>("VisviaOverheatAnimator");
+            if (overheatAnims == null) return;
+            normalAnims = new AnimatorOverrideController(((AnimatorOverrideController)overheatAnims).runtimeAnimatorController);
+        }
+        RuntimeAnimatorController wanted = overHeated ? overheatAnims : normalAnims;
+        if (animator.runtimeAnimatorController != wanted) animator.runtimeAnimatorController = wanted;
+    }
+
+    public override void Update()
+    {
+        // Before any input is read, so swapping clips never eats a trigger set this frame
+        SyncOverheatAnimations();
+        base.Update();
     }
 
 
