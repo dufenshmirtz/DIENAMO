@@ -411,48 +411,6 @@ TextureImporter:
       indices:
       edges: []
       weights: []
-    - serializedVersion: 2
-      name: Queen_Heavy_15
-      rect:
-        serializedVersion: 2
-        x: 1500
-        y: 0
-        width: 100
-        height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 25320a0b570f33bb0800000000000000
-      internalID: -4957354376539659438
-      vertices: []
-      indices:
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Queen_Heavy_16
-      rect:
-        serializedVersion: 2
-        x: 1600
-        y: 0
-        width: 100
-        height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 6f331e87682753b70800000000000000
-      internalID: 8878128162310009846
-      vertices: []
-      indices:
-      edges: []
-      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -479,8 +437,6 @@ TextureImporter:
       Queen_Heavy_12: 7167616834362333096
       Queen_Heavy_13: -9210066430719727766
       Queen_Heavy_14: -6034064566765415944
-      Queen_Heavy_15: -4957354376539659438
-      Queen_Heavy_16: 8878128162310009846
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
