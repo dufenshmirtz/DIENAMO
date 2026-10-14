@@ -1,0 +1,814 @@
+{
+ "name": "schedule_rl_pilot",
+ "seed": 0,
+ "purpose": "RL models vs REF: competence, style, human-likeness",
+ "models": [
+  "Agent1",
+  "Agent2",
+  "AgentPussy",
+  "AgentSmith1.0",
+  "AgentSmith1.1",
+  "AgentSmith1.2",
+  "AgentSmith1.4",
+  "AgentSmith1.5",
+  "AgentSmith1.6",
+  "AgentSmith2.0",
+  "AgentSmith2.1",
+  "AgentSmith2.2",
+  "AgentSmith2.3",
+  "AgentSmith3.2",
+  "AgentZelia",
+  "BalancedGameplayBot",
+  "BlockExploit(AgentZoya)",
+  "ChargeAbuser",
+  "SchmebAgent",
+  "BlockExploit",
+  "ultimate pussy",
+  "Fighter"
+ ],
+ "model_paths": [
+  "SuccessfulAgents/Agent1.onnx",
+  "SuccessfulAgents/Agent2.onnx",
+  "SuccessfulAgents/AgentPussy.onnx",
+  "SuccessfulAgents/AgentSmith1.0.onnx",
+  "SuccessfulAgents/AgentSmith1.1.onnx",
+  "SuccessfulAgents/AgentSmith1.2.onnx",
+  "SuccessfulAgents/AgentSmith1.4.onnx",
+  "SuccessfulAgents/AgentSmith1.5.onnx",
+  "SuccessfulAgents/AgentSmith1.6.onnx",
+  "SuccessfulAgents/AgentSmith2.0.onnx",
+  "SuccessfulAgents/AgentSmith2.1.onnx",
+  "SuccessfulAgents/AgentSmith2.2.onnx",
+  "SuccessfulAgents/AgentSmith2.3.onnx",
+  "SuccessfulAgents/AgentSmith3.2.onnx",
+  "SuccessfulAgents/AgentZelia.onnx",
+  "SuccessfulAgents/BalancedGameplayBot.onnx",
+  "SuccessfulAgents/BlockExploit(AgentZoya).onnx",
+  "SuccessfulAgents/ChargeAbuser.onnx",
+  "SuccessfulAgents/SchmebAgent.onnx",
+  "SuccessfulAgents/notSoSuccessful/BlockExploit.onnx",
+  "SuccessfulAgents/notSoSuccessful/ultimate pussy.onnx",
+  "results/hoh_run1/Fighter.onnx"
+ ],
+ "personas": [
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "RL_Agent1",
+   "kind": "RL",
+   "model": "Agent1",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_Agent2",
+   "kind": "RL",
+   "model": "Agent2",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentPussy",
+   "kind": "RL",
+   "model": "AgentPussy",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith1.0",
+   "kind": "RL",
+   "model": "AgentSmith1.0",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith1.1",
+   "kind": "RL",
+   "model": "AgentSmith1.1",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith1.2",
+   "kind": "RL",
+   "model": "AgentSmith1.2",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith1.4",
+   "kind": "RL",
+   "model": "AgentSmith1.4",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith1.5",
+   "kind": "RL",
+   "model": "AgentSmith1.5",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith1.6",
+   "kind": "RL",
+   "model": "AgentSmith1.6",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith2.0",
+   "kind": "RL",
+   "model": "AgentSmith2.0",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith2.1",
+   "kind": "RL",
+   "model": "AgentSmith2.1",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith2.2",
+   "kind": "RL",
+   "model": "AgentSmith2.2",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith2.3",
+   "kind": "RL",
+   "model": "AgentSmith2.3",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentSmith3.2",
+   "kind": "RL",
+   "model": "AgentSmith3.2",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_AgentZelia",
+   "kind": "RL",
+   "model": "AgentZelia",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_BalancedGameplayBot",
+   "kind": "RL",
+   "model": "BalancedGameplayBot",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_BlockExploit(AgentZoya)",
+   "kind": "RL",
+   "model": "BlockExploit(AgentZoya)",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_ChargeAbuser",
+   "kind": "RL",
+   "model": "ChargeAbuser",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_SchmebAgent",
+   "kind": "RL",
+   "model": "SchmebAgent",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_BlockExploit",
+   "kind": "RL",
+   "model": "BlockExploit",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_ultimate pussy",
+   "kind": "RL",
+   "model": "ultimate pussy",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "RL_Fighter",
+   "kind": "RL",
+   "model": "Fighter",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "RL_Agent1",
+   "p2": "REF"
+  },
+  {
+   "index": 1,
+   "round": 1,
+   "p1": "RL_Agent2",
+   "p2": "REF"
+  },
+  {
+   "index": 2,
+   "round": 1,
+   "p1": "RL_AgentPussy",
+   "p2": "REF"
+  },
+  {
+   "index": 3,
+   "round": 1,
+   "p1": "RL_AgentSmith1.0",
+   "p2": "REF"
+  },
+  {
+   "index": 4,
+   "round": 1,
+   "p1": "RL_AgentSmith1.1",
+   "p2": "REF"
+  },
+  {
+   "index": 5,
+   "round": 1,
+   "p1": "RL_AgentSmith1.2",
+   "p2": "REF"
+  },
+  {
+   "index": 6,
+   "round": 1,
+   "p1": "RL_AgentSmith1.4",
+   "p2": "REF"
+  },
+  {
+   "index": 7,
+   "round": 1,
+   "p1": "RL_AgentSmith1.5",
+   "p2": "REF"
+  },
+  {
+   "index": 8,
+   "round": 1,
+   "p1": "RL_AgentSmith1.6",
+   "p2": "REF"
+  },
+  {
+   "index": 9,
+   "round": 1,
+   "p1": "RL_AgentSmith2.0",
+   "p2": "REF"
+  },
+  {
+   "index": 10,
+   "round": 1,
+   "p1": "RL_AgentSmith2.1",
+   "p2": "REF"
+  },
+  {
+   "index": 11,
+   "round": 1,
+   "p1": "RL_AgentSmith2.2",
+   "p2": "REF"
+  },
+  {
+   "index": 12,
+   "round": 1,
+   "p1": "RL_AgentSmith2.3",
+   "p2": "REF"
+  },
+  {
+   "index": 13,
+   "round": 1,
+   "p1": "RL_AgentSmith3.2",
+   "p2": "REF"
+  },
+  {
+   "index": 14,
+   "round": 1,
+   "p1": "RL_AgentZelia",
+   "p2": "REF"
+  },
+  {
+   "index": 15,
+   "round": 1,
+   "p1": "RL_BalancedGameplayBot",
+   "p2": "REF"
+  },
+  {
+   "index": 16,
+   "round": 1,
+   "p1": "RL_BlockExploit(AgentZoya)",
+   "p2": "REF"
+  },
+  {
+   "index": 17,
+   "round": 1,
+   "p1": "RL_ChargeAbuser",
+   "p2": "REF"
+  },
+  {
+   "index": 18,
+   "round": 1,
+   "p1": "RL_SchmebAgent",
+   "p2": "REF"
+  },
+  {
+   "index": 19,
+   "round": 1,
+   "p1": "RL_BlockExploit",
+   "p2": "REF"
+  },
+  {
+   "index": 20,
+   "round": 1,
+   "p1": "RL_ultimate pussy",
+   "p2": "REF"
+  },
+  {
+   "index": 21,
+   "round": 1,
+   "p1": "RL_Fighter",
+   "p2": "REF"
+  },
+  {
+   "index": 22,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_Agent1"
+  },
+  {
+   "index": 23,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_Agent2"
+  },
+  {
+   "index": 24,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentPussy"
+  },
+  {
+   "index": 25,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.0"
+  },
+  {
+   "index": 26,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.1"
+  },
+  {
+   "index": 27,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.2"
+  },
+  {
+   "index": 28,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.4"
+  },
+  {
+   "index": 29,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.5"
+  },
+  {
+   "index": 30,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.6"
+  },
+  {
+   "index": 31,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.0"
+  },
+  {
+   "index": 32,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.1"
+  },
+  {
+   "index": 33,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.2"
+  },
+  {
+   "index": 34,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.3"
+  },
+  {
+   "index": 35,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentSmith3.2"
+  },
+  {
+   "index": 36,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_AgentZelia"
+  },
+  {
+   "index": 37,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_BalancedGameplayBot"
+  },
+  {
+   "index": 38,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_BlockExploit(AgentZoya)"
+  },
+  {
+   "index": 39,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_ChargeAbuser"
+  },
+  {
+   "index": 40,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_SchmebAgent"
+  },
+  {
+   "index": 41,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_BlockExploit"
+  },
+  {
+   "index": 42,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_ultimate pussy"
+  },
+  {
+   "index": 43,
+   "round": 2,
+   "p1": "REF",
+   "p2": "RL_Fighter"
+  },
+  {
+   "index": 44,
+   "round": 3,
+   "p1": "RL_Agent1",
+   "p2": "REF"
+  },
+  {
+   "index": 45,
+   "round": 3,
+   "p1": "RL_Agent2",
+   "p2": "REF"
+  },
+  {
+   "index": 46,
+   "round": 3,
+   "p1": "RL_AgentPussy",
+   "p2": "REF"
+  },
+  {
+   "index": 47,
+   "round": 3,
+   "p1": "RL_AgentSmith1.0",
+   "p2": "REF"
+  },
+  {
+   "index": 48,
+   "round": 3,
+   "p1": "RL_AgentSmith1.1",
+   "p2": "REF"
+  },
+  {
+   "index": 49,
+   "round": 3,
+   "p1": "RL_AgentSmith1.2",
+   "p2": "REF"
+  },
+  {
+   "index": 50,
+   "round": 3,
+   "p1": "RL_AgentSmith1.4",
+   "p2": "REF"
+  },
+  {
+   "index": 51,
+   "round": 3,
+   "p1": "RL_AgentSmith1.5",
+   "p2": "REF"
+  },
+  {
+   "index": 52,
+   "round": 3,
+   "p1": "RL_AgentSmith1.6",
+   "p2": "REF"
+  },
+  {
+   "index": 53,
+   "round": 3,
+   "p1": "RL_AgentSmith2.0",
+   "p2": "REF"
+  },
+  {
+   "index": 54,
+   "round": 3,
+   "p1": "RL_AgentSmith2.1",
+   "p2": "REF"
+  },
+  {
+   "index": 55,
+   "round": 3,
+   "p1": "RL_AgentSmith2.2",
+   "p2": "REF"
+  },
+  {
+   "index": 56,
+   "round": 3,
+   "p1": "RL_AgentSmith2.3",
+   "p2": "REF"
+  },
+  {
+   "index": 57,
+   "round": 3,
+   "p1": "RL_AgentSmith3.2",
+   "p2": "REF"
+  },
+  {
+   "index": 58,
+   "round": 3,
+   "p1": "RL_AgentZelia",
+   "p2": "REF"
+  },
+  {
+   "index": 59,
+   "round": 3,
+   "p1": "RL_BalancedGameplayBot",
+   "p2": "REF"
+  },
+  {
+   "index": 60,
+   "round": 3,
+   "p1": "RL_BlockExploit(AgentZoya)",
+   "p2": "REF"
+  },
+  {
+   "index": 61,
+   "round": 3,
+   "p1": "RL_ChargeAbuser",
+   "p2": "REF"
+  },
+  {
+   "index": 62,
+   "round": 3,
+   "p1": "RL_SchmebAgent",
+   "p2": "REF"
+  },
+  {
+   "index": 63,
+   "round": 3,
+   "p1": "RL_BlockExploit",
+   "p2": "REF"
+  },
+  {
+   "index": 64,
+   "round": 3,
+   "p1": "RL_ultimate pussy",
+   "p2": "REF"
+  },
+  {
+   "index": 65,
+   "round": 3,
+   "p1": "RL_Fighter",
+   "p2": "REF"
+  },
+  {
+   "index": 66,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_Agent1"
+  },
+  {
+   "index": 67,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_Agent2"
+  },
+  {
+   "index": 68,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentPussy"
+  },
+  {
+   "index": 69,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.0"
+  },
+  {
+   "index": 70,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.1"
+  },
+  {
+   "index": 71,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.2"
+  },
+  {
+   "index": 72,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.4"
+  },
+  {
+   "index": 73,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.5"
+  },
+  {
+   "index": 74,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith1.6"
+  },
+  {
+   "index": 75,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.0"
+  },
+  {
+   "index": 76,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.1"
+  },
+  {
+   "index": 77,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.2"
+  },
+  {
+   "index": 78,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith2.3"
+  },
+  {
+   "index": 79,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentSmith3.2"
+  },
+  {
+   "index": 80,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_AgentZelia"
+  },
+  {
+   "index": 81,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_BalancedGameplayBot"
+  },
+  {
+   "index": 82,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_BlockExploit(AgentZoya)"
+  },
+  {
+   "index": 83,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_ChargeAbuser"
+  },
+  {
+   "index": 84,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_SchmebAgent"
+  },
+  {
+   "index": 85,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_BlockExploit"
+  },
+  {
+   "index": 86,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_ultimate pussy"
+  },
+  {
+   "index": 87,
+   "round": 4,
+   "p1": "REF",
+   "p2": "RL_Fighter"
+  }
+ ]
+}

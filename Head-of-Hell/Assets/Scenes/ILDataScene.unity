@@ -38122,28 +38122,43 @@ MonoBehaviour:
   timeScale: 1
   delayBeforeNextMatch: 1
   maxMatchSeconds: 180
-  outputFolder: Synthetic_main
-  schedule: {fileID: 4900000, guid: 8ab923e1c4892a24e91078c403c07208, type: 3}
+  outputFolder: StyleEval_theta3
+  schedule: {fileID: 4900000, guid: f49d15e5db2dd614a9669386107e2853, type: 3}
   resumeFromRunLog: 1
+  scheduleIlModel: {fileID: 4900000, guid: 3308f5118522db24c8d4f31fd23e5c3c, type: 3}
   matchups:
-  - label: SPD_M
+  - label: "T1\u0397_vs_REF"
     p1:
-      kind: 0
-      personaId: M90
-      aggression: 0.5
-      defense: 0.5
-      mobility: 0.9
-      patience: 0.5
+      kind: 2
+      personaId: T1
+      aggression: 0
+      defense: 0
+      mobility: 0
+      patience: 0
       model: {fileID: 0}
+      ilModel: {fileID: 4900000, guid: 3308f5118522db24c8d4f31fd23e5c3c, type: 3}
+      styleAttack: 0.267
+      styleMobility: 0.587
+      styleDefense: 0.146
+      styleMobilityTime: 0.543
+      styleBlockTime: 0.073
+      ilSeed: 0
     p2:
       kind: 0
-      personaId: M10
+      personaId: REF
       aggression: 0.5
       defense: 0.5
-      mobility: 0.1
+      mobility: 0.5
       patience: 0.5
       model: {fileID: 0}
-    matches: 15
+      ilModel: {fileID: 0}
+      styleAttack: 0
+      styleMobility: 0
+      styleDefense: 0
+      styleMobilityTime: 0
+      styleBlockTime: 0
+      ilSeed: 0
+    matches: 10
 --- !u!4 &1340006422
 Transform:
   m_ObjectHideFlags: 0

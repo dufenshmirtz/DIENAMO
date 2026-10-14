@@ -183,6 +183,12 @@ public class ImitationLoggerV2 : MonoBehaviour
             act = EncodeActions(s, self, input)
         };
 
+        if (input is ILAgentInputProvider)
+        {
+            var ilc = self.GetComponentInParent<ILAgentController>();
+            if (ilc != null) rec.persona = ilc.Label;
+        }
+
         var bot = (input is BotInputProvider) ? self.GetComponentInParent<SimpleBotController>() : null;
         if (bot != null)
         {
@@ -252,6 +258,7 @@ public class ImitationLoggerV2 : MonoBehaviour
         if (input is KeyboardInputProvider) return "human";
         if (input is BotInputProvider) return "scripted";
         if (input is AIInputProvider) return "rl";
+        if (input is ILAgentInputProvider) return "il_agent";
         if (input is ReplayInputProvider) return "replay";
         return input.GetType().Name;
     }

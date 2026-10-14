@@ -25,7 +25,7 @@ using UnityEditor.SceneManagement;
 [DefaultExecutionOrder(-10000)]
 public class ILDataGenDirector : MonoBehaviour
 {
-    public enum SideKind { Scripted, RL }
+    public enum SideKind { Scripted, RL, ILAgent, Human }
 
     [Serializable]
     public class Side
@@ -40,7 +40,18 @@ public class ILDataGenDirector : MonoBehaviour
         [Tooltip("RL only: the model to play with.")]
         public NNModel model;
 
-        public string Id => kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") : personaId;
+        [Header("ILAgent only")]
+        [Tooltip("JSON exported by RL-Agent/scripts/export_theta_unity.py (e.g. theta0_v1).")]
+        public TextAsset ilModel;
+        [Tooltip("Target style (raw values): attack, mobility, defense, mobility-time, block-time ratios.")]
+        public float styleAttack = 0.27f, styleMobility = 0.59f, styleDefense = 0.15f, styleMobilityTime = 0.54f, styleBlockTime = 0.07f;
+        [Tooltip("0 = random sampling every run.")]
+        public int ilSeed = 0;
+
+        public string Id =>
+            kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") :
+            kind == SideKind.ILAgent ? "IL_" + personaId :
+            kind == SideKind.Human ? "HUMAN" : personaId;
     }
 
     [Serializable]
@@ -70,11 +81,21 @@ public class ILDataGenDirector : MonoBehaviour
     public TextAsset schedule;
     [Tooltip("Schedule only: continue after the last match written in the run log (Telemetry/<Output Folder>/_runlog_<schedule>.csv), e.g. after stopping Play or a crash.")]
     public bool resumeFromRunLog = true;
+    [Tooltip("Schedule only: model used by every persona whose kind is \"ILAgent\" in the schedule file.")]
+    public TextAsset scheduleIlModel;
+    [Tooltip("Schedule only: RL models used by personas whose kind is \"RL\" (matched by asset name, field \"model\").")]
+    public List<NNModel> scheduleRlModels = new List<NNModel>();
 
     public List<Matchup> matchups = new List<Matchup>();
 
     // ---- schedule JSON (JsonUtility needs plain serializable classes with public fields) ----
-    [Serializable] private class SchedPersona { public string id; public float aggression; public float defense; public float mobility; public float patience; public bool holdout; }
+    [Serializable] private class SchedPersona
+    {
+        public string id; public float aggression; public float defense; public float mobility; public float patience; public bool holdout;
+        public string kind;   // "" / "Scripted" (default), "ILAgent" or "RL"
+        public string model;  // RL: NNModel asset name
+        public float styleAttack, styleMobility, styleDefense, styleMobilityTime, styleBlockTime;   // ILAgent target style
+    }
     [Serializable] private class SchedMatch { public int index; public int round; public string p1; public string p2; }
     [Serializable] private class SchedFile { public string name; public int seed; public List<SchedPersona> personas; public List<SchedMatch> matches; }
 
@@ -85,12 +106,15 @@ public class ILDataGenDirector : MonoBehaviour
     private static int totalAbandoned;
     private static bool finished;
     private static bool resumeChecked;
+    private static int stalematesOnCurrent;
+    [Tooltip("After this many stalemates on the same match the entry is skipped (written to the run log as ABANDONED). 0 = never skip.")]
+    public int maxStalematesPerMatch = 2;
 
 #if UNITY_EDITOR
     [InitializeOnEnterPlayMode]
     private static void ResetProgress()
     {
-        matchupIndex = 0; matchInMatchup = 0; totalSaved = 0; totalAbandoned = 0; finished = false; resumeChecked = false;
+        matchupIndex = 0; matchInMatchup = 0; totalSaved = 0; totalAbandoned = 0; finished = false; resumeChecked = false; stalematesOnCurrent = 0;
         TelemetryManager.OutputFolderOverride = null;   // never carry the Synthetic folder into a normal Play session
     }
 #endif
@@ -195,8 +219,8 @@ public class ILDataGenDirector : MonoBehaviour
         var tm = TelemetryManager.Instance;
         if (tm != null && !string.IsNullOrEmpty(tm.CurrentMatchId) && tm.CurrentMatchId != personaReportedForMatch)
         {
-            if (current.p1.kind == SideKind.RL) tm.SetPersona("P1", current.p1.Id);
-            if (current.p2.kind == SideKind.RL) tm.SetPersona("P2", current.p2.Id);
+            if (current.p1.kind != SideKind.Scripted) tm.SetPersona("P1", current.p1.Id);
+            if (current.p2.kind != SideKind.Scripted) tm.SetPersona("P2", current.p2.Id);
             personaReportedForMatch = tm.CurrentMatchId;
         }
 
@@ -204,7 +228,24 @@ public class ILDataGenDirector : MonoBehaviour
         if (Time.time - matchStartTime > maxMatchSeconds)
         {
             totalAbandoned++;
-            Debug.LogWarning($"[ILDataGen] No result after {maxMatchSeconds}s, restarting the match (not counted).");
+            stalematesOnCurrent++;
+            if (maxStalematesPerMatch > 0 && stalematesOnCurrent >= maxStalematesPerMatch)
+            {
+                Debug.LogWarning($"[ILDataGen] {stalematesOnCurrent} stalemates on match {matchupIndex + 1}: skipped.");
+                if (schedule != null) AppendRunLog(matchupIndex, "ABANDONED", current);
+                stalematesOnCurrent = 0;
+                matchInMatchup++;
+                if (matchInMatchup >= current.matches) { matchInMatchup = 0; matchupIndex++; }
+                if (matchupIndex >= matchups.Count)
+                {
+                    finished = true;
+                    Debug.Log($"[ILDataGen] FINISHED. Saved matches: {totalSaved}, abandoned: {totalAbandoned}.");
+                    StartCoroutine(FinishRun());
+                    return;
+                }
+            }
+            else
+                Debug.LogWarning($"[ILDataGen] No result after {maxMatchSeconds}s, restarting the match (not counted).");
             StartCoroutine(Reload());
         }
     }
@@ -216,8 +257,36 @@ public class ILDataGenDirector : MonoBehaviour
         var agent = obj.GetComponent<FighterAgent>();
         var decision = obj.GetComponent<DecisionRequester>();
         var scripted = obj.GetComponent<SimpleBotController>();
+        var il = obj.GetComponent<ILAgentController>();
+        if (il != null && side.kind != SideKind.ILAgent) il.enabled = false;
 
-        if (side.kind == SideKind.Scripted)
+        if (side.kind == SideKind.ILAgent || side.kind == SideKind.Human)
+        {
+            if (agent != null) agent.enabled = false;
+            if (decision != null) decision.enabled = false;
+            if (scripted != null) scripted.enabled = false;
+
+            if (side.kind == SideKind.Human)
+            {
+                self.GetCurrentCharacter().SetInput(new KeyboardInputProvider());
+            }
+            else
+            {
+                if (side.ilModel == null)
+                {
+                    Debug.LogError($"[ILDataGen] ILAgent on P{self.playerNum}: no model assigned.");
+                    return;
+                }
+                if (il == null) il = obj.AddComponent<ILAgentController>();
+                il.seed = side.ilSeed;
+                il.label = side.Id;
+                il.enabled = true;
+                il.LoadModel(side.ilModel);
+                il.SetStyle(side.styleAttack, side.styleMobility, side.styleDefense, side.styleMobilityTime, side.styleBlockTime);
+                il.Rebind(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
+            }
+        }
+        else if (side.kind == SideKind.Scripted)
         {
             if (agent != null) agent.enabled = false;
             if (decision != null) decision.enabled = false;
@@ -262,6 +331,7 @@ public class ILDataGenDirector : MonoBehaviour
 
         if (schedule != null)
             AppendRunLog(matchupIndex, matchId, current);
+        stalematesOnCurrent = 0;
 
         {
             totalSaved++;
@@ -316,11 +386,27 @@ public class ILDataGenDirector : MonoBehaviour
         return true;
     }
 
-    private static Side ToSide(SchedPersona p) => new Side
+    private Side ToSide(SchedPersona p)
     {
-        kind = SideKind.Scripted, personaId = p.id,
-        aggression = p.aggression, defense = p.defense, mobility = p.mobility, patience = p.patience
-    };
+        if (p.kind == "RL")
+        {
+            NNModel m = scheduleRlModels.Find(x => x != null && x.name == p.model);
+            if (m == null) Debug.LogError($"[ILDataGen] Schedule persona '{p.id}': RL model '{p.model}' not in Schedule Rl Models.");
+            return new Side { kind = SideKind.RL, personaId = p.id, model = m };
+        }
+        if (p.kind == "ILAgent")
+            return new Side
+            {
+                kind = SideKind.ILAgent, personaId = p.id, ilModel = scheduleIlModel,
+                styleAttack = p.styleAttack, styleMobility = p.styleMobility, styleDefense = p.styleDefense,
+                styleMobilityTime = p.styleMobilityTime, styleBlockTime = p.styleBlockTime
+            };
+        return new Side
+        {
+            kind = SideKind.Scripted, personaId = p.id,
+            aggression = p.aggression, defense = p.defense, mobility = p.mobility, patience = p.patience
+        };
+    }
 
     private string RunLogPath() => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
