@@ -205,8 +205,11 @@ public class Visvia : Character
         rb.velocity = new Vector2(direction * shotgunForce, upwardsForce);
 
         // Deal damage in front of the player
-        Vector2 attackPosition = attackPoint.position;
-        Collider2D[] hits = Physics2D.OverlapCircleAll(attackPoint.position, shotgunRange, enemyLayer);
+        // Hit area = the blast's art: from the old circle's near edge (1 unit behind attackPoint) to the flame's tip
+        // (3.1 units past it), gun height to feet. Was OverlapCircleAll(attackPoint, shotgunRange), which stopped 1 unit out.
+        float facing = transform.localScale.x > 0 ? 1f : -1f;
+        Vector2 attackPosition = (Vector2)attackPoint.position + new Vector2(facing * 1.05f, 0.08f);
+        Collider2D[] hits = Physics2D.OverlapBoxAll(attackPosition, new Vector2(4.1f, 2.15f), 0f, enemyLayer);
         var targets = ResolveTargetsFromHits(hits);
         
         if (targets.Count > 0)

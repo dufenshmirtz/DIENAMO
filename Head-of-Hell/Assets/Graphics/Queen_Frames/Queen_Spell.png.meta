@@ -31,7 +31,7 @@ TextureImporter:
   cubemapConvolution: 0
   seamlessCubemap: 0
   textureFormat: 1
-  maxTextureSize: 2048
+  maxTextureSize: 4096
   textureSettings:
     serializedVersion: 2
     filterMode: 0
@@ -69,7 +69,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 0
@@ -82,7 +82,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
     buildTarget: Standalone
-    maxTextureSize: 2048
+    maxTextureSize: 4096
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -102,10 +102,10 @@ TextureImporter:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -121,12 +121,12 @@ TextureImporter:
       name: Queen_Spell_1
       rect:
         serializedVersion: 2
-        x: 100
+        x: 204
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -142,12 +142,12 @@ TextureImporter:
       name: Queen_Spell_2
       rect:
         serializedVersion: 2
-        x: 200
+        x: 408
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -163,12 +163,12 @@ TextureImporter:
       name: Queen_Spell_3
       rect:
         serializedVersion: 2
-        x: 300
+        x: 612
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -184,12 +184,12 @@ TextureImporter:
       name: Queen_Spell_4
       rect:
         serializedVersion: 2
-        x: 400
+        x: 816
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -205,12 +205,12 @@ TextureImporter:
       name: Queen_Spell_5
       rect:
         serializedVersion: 2
-        x: 500
+        x: 1020
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -226,12 +226,12 @@ TextureImporter:
       name: Queen_Spell_6
       rect:
         serializedVersion: 2
-        x: 600
+        x: 1224
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -247,12 +247,12 @@ TextureImporter:
       name: Queen_Spell_7
       rect:
         serializedVersion: 2
-        x: 700
+        x: 1428
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -268,12 +268,12 @@ TextureImporter:
       name: Queen_Spell_8
       rect:
         serializedVersion: 2
-        x: 800
+        x: 1632
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -289,12 +289,12 @@ TextureImporter:
       name: Queen_Spell_9
       rect:
         serializedVersion: 2
-        x: 900
+        x: 1836
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -310,12 +310,12 @@ TextureImporter:
       name: Queen_Spell_10
       rect:
         serializedVersion: 2
-        x: 1000
+        x: 2040
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -331,12 +331,12 @@ TextureImporter:
       name: Queen_Spell_11
       rect:
         serializedVersion: 2
-        x: 1100
+        x: 2244
         y: 0
-        width: 100
+        width: 204
         height: 64
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
@@ -344,6 +344,111 @@ TextureImporter:
       bones: []
       spriteID: b5e3693e720aa46c0800000000000000
       internalID: -4158335212740788645
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Queen_Spell_12
+      rect:
+        serializedVersion: 2
+        x: 2448
+        y: 0
+        width: 204
+        height: 64
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ae4c89acab12bae0800000000000000
+      internalID: -1535134094587048288
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Queen_Spell_13
+      rect:
+        serializedVersion: 2
+        x: 2652
+        y: 0
+        width: 204
+        height: 64
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e42ec746bc00c6b90800000000000000
+      internalID: -7247416826781703602
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Queen_Spell_14
+      rect:
+        serializedVersion: 2
+        x: 2856
+        y: 0
+        width: 204
+        height: 64
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 165d5aac5e9195ac0800000000000000
+      internalID: -3866030330382789279
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Queen_Spell_15
+      rect:
+        serializedVersion: 2
+        x: 3060
+        y: 0
+        width: 204
+        height: 64
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7abef730b5c76b8f0800000000000000
+      internalID: -525095576199500889
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Queen_Spell_16
+      rect:
+        serializedVersion: 2
+        x: 3264
+        y: 0
+        width: 204
+        height: 64
+      alignment: 9
+      pivot: {x: 0.24509804, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2d5cb2d72701feaf0800000000000000
+      internalID: -365054960881383982
       vertices: []
       indices:
       edges: []
@@ -371,6 +476,11 @@ TextureImporter:
       Queen_Spell_9: -1678130838501776
       Queen_Spell_10: 3215701308629151972
       Queen_Spell_11: -4158335212740788645
+      Queen_Spell_12: -1535134094587048288
+      Queen_Spell_13: -7247416826781703602
+      Queen_Spell_14: -3866030330382789279
+      Queen_Spell_15: -525095576199500889
+      Queen_Spell_16: -365054960881383982
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
