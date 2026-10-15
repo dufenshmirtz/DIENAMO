@@ -58,6 +58,8 @@ public class ILAgentController : MonoBehaviour
         public int vocabSize;
         public int[] vocab;            // joint: vocabSize rows x headSizes.Length values
         public float[] W1, b1, W2, b2, W3, b3, testInput, testLogits;
+        public float[] styleMin, styleMax;          // style range of the training personas (online clamp); may be empty
+        public string[] trainedSelf, trainedOpp;    // characters seen in training; may be empty
     }
 
     private ThetaFile net;
@@ -94,6 +96,40 @@ public class ILAgentController : MonoBehaviour
     private bool IsJoint => net != null && net.outputType == "joint";
     public string Label => label;
     public float[] Style => new[] { attackRate, mobilityRate, defenseRate, mobilityTimeRatio, blockTimeRatio };
+
+    // Thesis (online): where the current style came from, the style asked for before the clamp, and if it was clamped.
+    // Written to agent_style_log.csv by the StyleTracker after every round.
+    [NonSerialized] public string styleSource = "fixed";
+    [NonSerialized] public float[] styleRequested;
+    [NonSerialized] public bool styleClamped;
+
+    /// <summary>The model's neutral style: the mean style of the training personas (null before a model is loaded).</summary>
+    public float[] NeutralStyle => net != null && net.styleMean != null ? (float[])net.styleMean.Clone() : null;
+
+    /// <summary>
+    /// Online: set the style, clamped to the training range of the loaded model (outside it the agent would be asked for
+    /// a style it never saw). Returns true if any axis was clamped. Without a range in the model file: no clamp.
+    /// </summary>
+    public bool ApplyStyle(float[] requested, string source)
+    {
+        if (requested == null || requested.Length != 5) throw new ArgumentException("style must have 5 values");
+        styleSource = source;
+        styleRequested = (float[])requested.Clone();
+        var v = (float[])requested.Clone();
+        bool clamped = false;
+        if (net != null && net.styleMin != null && net.styleMax != null && net.styleMin.Length == 5 && net.styleMax.Length == 5)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                float c = Mathf.Clamp(v[i], net.styleMin[i], net.styleMax[i]);
+                if (c != v[i]) clamped = true;
+                v[i] = c;
+            }
+        }
+        styleClamped = clamped;
+        SetStyle(v[0], v[1], v[2], v[3], v[4]);
+        return clamped;
+    }
 
     // ---------------------------------------------------------------- setup
     public void SetStyle(float attack, float mobility, float defense, float mobTime, float blockTime)

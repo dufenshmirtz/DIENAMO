@@ -58,6 +58,9 @@ public class CharacterChoiceMenu : MonoBehaviour
             return;
         }
 
+        if (!IsAllowedForILAgent(button))
+            return;
+
         AssignPick(currentPlayer, button);
         picksMade++;
 
@@ -102,6 +105,7 @@ public class CharacterChoiceMenu : MonoBehaviour
 
         foreach (Button button in characterButtons)
             button.interactable = true;
+        ApplyILAgentLock();
 
         picksMade--;
         currentPlayer = picksMade + 1;
@@ -119,6 +123,7 @@ public class CharacterChoiceMenu : MonoBehaviour
             ToggleChild(button, "P3", false);
             ToggleChild(button, "P4", false);
         }
+        ApplyILAgentLock();
 
         currentPlayer = 1;
         picksMade = 0;
@@ -249,6 +254,31 @@ public class CharacterChoiceMenu : MonoBehaviour
 
             PlayerPrefs.DeleteKey("Player4Choice");
         }
+
+        ApplyILAgentLock();
+    }
+
+    // ---------------------------------------------------------------- thesis: IL agent character lock
+    // The IL agent was trained on certain characters only (Skipler mirror). With the IL agent selected in PvE,
+    // only characters the model allows (ILAgentSettings -> model trainedSelf/trainedOpp) can be picked, for both
+    // seats; "Random" is not allowed. Other modes are not affected.
+    private static bool ILAgentSelected =>
+        PvESelectionState.IsPvE && PvESelectionState.SelectedBotType == PvEBotType.ILAgent;
+
+    private bool IsAllowedForILAgent(Button button)
+    {
+        if (button == null || !ILAgentSelected) return true;
+        var settings = ILAgentSettings.Load();
+        if (settings == null || settings.model == null) return true;   // no settings: the round setup falls back to the scripted bot
+        return settings.AllowsMirrorCharacter(button.name);
+    }
+
+    private void ApplyILAgentLock()
+    {
+        if (characterButtons == null || !ILAgentSelected) return;
+        foreach (Button button in characterButtons)
+            if (button != null && !IsAllowedForILAgent(button))
+                button.interactable = false;
     }
 
     private void AssignPick(int playerNumber, Button button)

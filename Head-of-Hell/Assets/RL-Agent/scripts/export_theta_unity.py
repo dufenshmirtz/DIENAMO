@@ -17,6 +17,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model-dir", required=True)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--data-dir", default=None,
+                    help="dataset the model was trained on: its TRAIN personas give styleMin/styleMax (online clamp)")
+    ap.add_argument("--trained-self", nargs="+", default=["Skipler"], help="characters the agent was trained to play")
+    ap.add_argument("--name", default=None, help="model name stored in the file (default: model folder name)")
+    ap.add_argument("--trained-opp", nargs="+", default=["Skipler"], help="opponent characters seen in training")
     args = ap.parse_args()
 
     w = dict(np.load(os.path.join(args.model_dir, "model.npz")))
@@ -27,6 +32,19 @@ def main():
     if joint:
         info["heads"] = {"names": info["output"]["head_names"], "sizes": info["output"]["head_sizes"]}
 
+    # Style range of the training personas (split 0). Online, the style given to the agent is clamped to it:
+    # outside this range the agent would be asked for a style it never saw.
+    style_min, style_max = [], []
+    if args.data_dir:
+        d = np.load(os.path.join(args.data_dir, "dataset.npz"))
+        dmeta = json.load(open(os.path.join(args.data_dir, "dataset.json")))
+        axes = dmeta.get("style_axes", info["input"]["style_axes"])
+        assert list(axes) == list(info["input"]["style_axes"]), f"style axes differ: {axes}"
+        tr = d["style_raw"][d["split"] == 0]
+        style_min = [float(v) for v in tr.min(axis=0)]
+        style_max = [float(v) for v in tr.max(axis=0)]
+        print("style range (train personas):", [f"{a}: {lo:.3f}-{hi:.3f}" for a, lo, hi in zip(axes, style_min, style_max)])
+
     rng = np.random.default_rng(0)
     x = rng.uniform(-1, 1, n_in).astype(np.float32)
     h1 = np.maximum(x @ w["W1"] + w["b1"], 0)
@@ -34,12 +52,16 @@ def main():
     logits = h2 @ w["W3"] + w["b3"]
 
     doc = {
-        "name": os.path.basename(os.path.normpath(args.model_dir)),
+        "name": args.name or os.path.basename(os.path.normpath(args.model_dir)),
         "obsDim": int(info["input"]["obs_dim"]),
         "styleDim": len(info["input"]["style_axes"]),
         "styleAxes": info["input"]["style_axes"],
         "styleMean": [float(v) for v in info["input"]["style_mean"]],
         "styleStd": [float(v) for v in info["input"]["style_std"]],
+        "styleMin": style_min,
+        "styleMax": style_max,
+        "trainedSelf": args.trained_self,
+        "trainedOpp": args.trained_opp,
         "ego": bool(info["input"].get("ego", False)),
         "quickDim": 1 if info["input"].get("quick_ready", False) else 0,
         "historyDim": int(info["input"].get("history_dim", 0)),

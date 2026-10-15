@@ -47,6 +47,9 @@ public class ILDataGenDirector : MonoBehaviour
         public float styleAttack = 0.27f, styleMobility = 0.59f, styleDefense = 0.15f, styleMobilityTime = 0.54f, styleBlockTime = 0.07f;
         [Tooltip("0 = random sampling every run.")]
         public int ilSeed = 0;
+        [Tooltip("Online mirror (thesis): persona id whose style the agent copies - the EMA of that persona's saved matches " +
+                 "in this output folder (neutral before the first one), clamped to the model's range. Empty = the fixed style above.")]
+        public string mirrorOf = "";
 
         public string Id =>
             kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") :
@@ -95,6 +98,7 @@ public class ILDataGenDirector : MonoBehaviour
         public string kind;   // "" / "Scripted" (default), "ILAgent" or "RL"
         public string model;  // RL: NNModel asset name
         public float styleAttack, styleMobility, styleDefense, styleMobilityTime, styleBlockTime;   // ILAgent target style
+        public string mirrorOf;   // ILAgent: online mirror of this persona id (empty = fixed style)
     }
     [Serializable] private class SchedMatch { public int index; public int round; public string p1; public string p2; }
     [Serializable] private class SchedFile { public string name; public int seed; public List<SchedPersona> personas; public List<SchedMatch> matches; }
@@ -282,7 +286,26 @@ public class ILDataGenDirector : MonoBehaviour
                 il.label = side.Id;
                 il.enabled = true;
                 il.LoadModel(side.ilModel);
-                il.SetStyle(side.styleAttack, side.styleMobility, side.styleDefense, side.styleMobilityTime, side.styleBlockTime);
+                if (string.IsNullOrEmpty(side.mirrorOf))
+                    il.SetStyle(side.styleAttack, side.styleMobility, side.styleDefense, side.styleMobilityTime, side.styleBlockTime);
+                else
+                {
+                    // online mirror: EMA of the target persona's saved matches in this run's folder (resume-safe)
+                    string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                        "My Games", "Head of Hell", "Telemetry", outputFolder);
+                    double[] ema = OnlineMirrorStyle.FromTelemetryFolder(folder, side.mirrorOf, out int rounds);
+                    float[] requested = il.NeutralStyle;
+                    string source = "neutral";
+                    if (ema != null)
+                    {
+                        requested = new float[ema.Length];
+                        for (int i = 0; i < ema.Length; i++) requested[i] = (float)ema[i];
+                        source = "mirror";
+                    }
+                    bool clamped = il.ApplyStyle(requested, source);
+                    Debug.Log($"[ILDataGen] P{self.playerNum} online mirror of {side.mirrorOf}: {source} ({rounds} rounds)" +
+                              (clamped ? " - clamped" : ""));
+                }
                 il.Rebind(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
             }
         }
@@ -399,7 +422,8 @@ public class ILDataGenDirector : MonoBehaviour
             {
                 kind = SideKind.ILAgent, personaId = p.id, ilModel = scheduleIlModel,
                 styleAttack = p.styleAttack, styleMobility = p.styleMobility, styleDefense = p.styleDefense,
-                styleMobilityTime = p.styleMobilityTime, styleBlockTime = p.styleBlockTime
+                styleMobilityTime = p.styleMobilityTime, styleBlockTime = p.styleBlockTime,
+                mirrorOf = p.mirrorOf ?? ""
             };
         return new Side
         {

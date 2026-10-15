@@ -1273,6 +1273,14 @@ public class SimpleBotController : MonoBehaviour
             return;
         }
 
+        // Dead while charging: Die() keeps the charging flag but a dead character reads no input, so the
+        // recovery would repeat every 0.3 s until the scene reloads (console spam only; the round is already saved).
+        if (character.IsDead())
+        {
+            orphanChargeTimer = 0f;
+            return;
+        }
+
         if (character.IsCharging || character.IsCharged)
         {
             orphanChargeTimer += dt;

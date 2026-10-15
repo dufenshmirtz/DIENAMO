@@ -1,0 +1,49 @@
+{
+ "name": "schedule_conv_smoke",
+ "seed": 0,
+ "purpose": "online convergence: scripted persona vs IL agent mirroring it",
+ "targets": [
+  "S13"
+ ],
+ "personas": [
+  {
+   "id": "C_S13_smoke",
+   "kind": "Scripted",
+   "aggression": 0.846,
+   "defense": 0.4,
+   "mobility": 0.782,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "M_S13_smoke",
+   "kind": "ILAgent",
+   "mirrorOf": "C_S13_smoke",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "C_S13_smoke",
+   "p2": "M_S13_smoke"
+  },
+  {
+   "index": 1,
+   "round": 2,
+   "p1": "M_S13_smoke",
+   "p2": "C_S13_smoke"
+  },
+  {
+   "index": 2,
+   "round": 3,
+   "p1": "C_S13_smoke",
+   "p2": "M_S13_smoke"
+  }
+ ]
+}

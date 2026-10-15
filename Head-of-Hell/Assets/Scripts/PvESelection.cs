@@ -4,7 +4,15 @@ using UnityEngine;
 public enum PvEBotType
 {
     MLAgent,
-    ScriptedBot
+    ScriptedBot,
+    ILAgent       // thesis: style-conditioned imitation agent (order = carousel index)
+}
+
+/// <summary>Thesis: where the IL agent takes its style from.</summary>
+public enum ILStyleSource
+{
+    Mirror,       // the style of its opponent (EMA, updated every round)
+    Ghost         // the stored style of another profile
 }
 
 public enum PvEDifficulty
@@ -27,6 +35,11 @@ public static class PvESelectionState
     public static PvEDifficulty SelectedDifficulty = PvEDifficulty.Easy;
     public static PvEBotSide SelectedBotSide = PvEBotSide.Player1;
 
+    // Thesis (IL agent)
+    public static ILStyleSource SelectedILStyleSource = ILStyleSource.Mirror;
+    public static string SelectedGhostProfileId = "";
+    public static string SelectedGhostName = "";
+
     public static void ResetToDefaults()
     {
         ResetPvEOptions();
@@ -39,6 +52,9 @@ public static class PvESelectionState
         SelectedBotType = PvEBotType.ScriptedBot;
         SelectedDifficulty = PvEDifficulty.Easy;
         SelectedBotSide = PvEBotSide.Player1;
+        SelectedILStyleSource = ILStyleSource.Mirror;
+        SelectedGhostProfileId = "";
+        SelectedGhostName = "";
     }
     public static void SelectPvPMode()
     {

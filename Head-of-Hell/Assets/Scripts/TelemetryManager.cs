@@ -25,6 +25,17 @@ public class TelemetryManager : MonoBehaviour
     /// <summary>Raised when a session closes: (matchId, saved). saved = JSON written; false = discarded.</summary>
     public static event Action<string, bool> SessionClosed;
 
+    /// <summary>Thesis (style tracker): raised right after a completed round was written to disk, with the same
+    /// session object that was written. Listeners must only read it. Nothing listens -> nothing happens.</summary>
+    public static event Action<TelemetrySession> SessionSaved;
+
+    private static void RaiseSessionSaved(TelemetrySession session)
+    {
+        if (session == null || SessionSaved == null) return;
+        try { SessionSaved(session); }
+        catch (Exception ex) { Debug.LogWarning("[Telemetry] SessionSaved listener failed: " + ex.Message); }
+    }
+
     private static void RaiseSessionClosed(string matchId, bool saved)
     {
         if (string.IsNullOrEmpty(matchId) || SessionClosed == null) return;
@@ -227,6 +238,7 @@ public class TelemetryManager : MonoBehaviour
             : currentSession.sessionSeconds;
 
         WriteSessionToDisk(currentSession);
+        RaiseSessionSaved(currentSession);
 
         if (debugToConsole)
             Debug.Log($"[Telemetry] Session END: {currentSession.matchId} | reason={reason} | events={currentSession.events?.Count ?? 0}");

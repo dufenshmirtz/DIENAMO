@@ -1,0 +1,500 @@
+{
+ "name": "schedule_extreme_pilot",
+ "seed": 0,
+ "purpose": "pilot: can the scripted bot reach the high-mobility / no-defense corner",
+ "targets": [
+  "E_A20_D00_M90",
+  "E_A20_D00_M100",
+  "E_A20_D15_M90",
+  "E_A20_D15_M100",
+  "E_A45_D00_M90",
+  "E_A45_D00_M100",
+  "E_A45_D15_M90",
+  "E_A45_D15_M100",
+  "E_A70_D00_M90",
+  "E_A70_D00_M100",
+  "E_A70_D15_M90",
+  "E_A70_D15_M100"
+ ],
+ "personas": [
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A20_D00_M90",
+   "kind": "Scripted",
+   "aggression": 0.2,
+   "defense": 0.0,
+   "mobility": 0.9,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A20_D00_M100",
+   "kind": "Scripted",
+   "aggression": 0.2,
+   "defense": 0.0,
+   "mobility": 1.0,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A20_D15_M90",
+   "kind": "Scripted",
+   "aggression": 0.2,
+   "defense": 0.15,
+   "mobility": 0.9,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A20_D15_M100",
+   "kind": "Scripted",
+   "aggression": 0.2,
+   "defense": 0.15,
+   "mobility": 1.0,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A45_D00_M90",
+   "kind": "Scripted",
+   "aggression": 0.45,
+   "defense": 0.0,
+   "mobility": 0.9,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A45_D00_M100",
+   "kind": "Scripted",
+   "aggression": 0.45,
+   "defense": 0.0,
+   "mobility": 1.0,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A45_D15_M90",
+   "kind": "Scripted",
+   "aggression": 0.45,
+   "defense": 0.15,
+   "mobility": 0.9,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A45_D15_M100",
+   "kind": "Scripted",
+   "aggression": 0.45,
+   "defense": 0.15,
+   "mobility": 1.0,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A70_D00_M90",
+   "kind": "Scripted",
+   "aggression": 0.7,
+   "defense": 0.0,
+   "mobility": 0.9,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A70_D00_M100",
+   "kind": "Scripted",
+   "aggression": 0.7,
+   "defense": 0.0,
+   "mobility": 1.0,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A70_D15_M90",
+   "kind": "Scripted",
+   "aggression": 0.7,
+   "defense": 0.15,
+   "mobility": 0.9,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "E_A70_D15_M100",
+   "kind": "Scripted",
+   "aggression": 0.7,
+   "defense": 0.15,
+   "mobility": 1.0,
+   "patience": 0.5,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "E_A20_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 1,
+   "round": 1,
+   "p1": "E_A20_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 2,
+   "round": 1,
+   "p1": "E_A20_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 3,
+   "round": 1,
+   "p1": "E_A20_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 4,
+   "round": 1,
+   "p1": "E_A45_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 5,
+   "round": 1,
+   "p1": "E_A45_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 6,
+   "round": 1,
+   "p1": "E_A45_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 7,
+   "round": 1,
+   "p1": "E_A45_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 8,
+   "round": 1,
+   "p1": "E_A70_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 9,
+   "round": 1,
+   "p1": "E_A70_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 10,
+   "round": 1,
+   "p1": "E_A70_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 11,
+   "round": 1,
+   "p1": "E_A70_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 12,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A20_D00_M90"
+  },
+  {
+   "index": 13,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A20_D00_M100"
+  },
+  {
+   "index": 14,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A20_D15_M90"
+  },
+  {
+   "index": 15,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A20_D15_M100"
+  },
+  {
+   "index": 16,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A45_D00_M90"
+  },
+  {
+   "index": 17,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A45_D00_M100"
+  },
+  {
+   "index": 18,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A45_D15_M90"
+  },
+  {
+   "index": 19,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A45_D15_M100"
+  },
+  {
+   "index": 20,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A70_D00_M90"
+  },
+  {
+   "index": 21,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A70_D00_M100"
+  },
+  {
+   "index": 22,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A70_D15_M90"
+  },
+  {
+   "index": 23,
+   "round": 2,
+   "p1": "REF",
+   "p2": "E_A70_D15_M100"
+  },
+  {
+   "index": 24,
+   "round": 3,
+   "p1": "E_A20_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 25,
+   "round": 3,
+   "p1": "E_A20_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 26,
+   "round": 3,
+   "p1": "E_A20_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 27,
+   "round": 3,
+   "p1": "E_A20_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 28,
+   "round": 3,
+   "p1": "E_A45_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 29,
+   "round": 3,
+   "p1": "E_A45_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 30,
+   "round": 3,
+   "p1": "E_A45_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 31,
+   "round": 3,
+   "p1": "E_A45_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 32,
+   "round": 3,
+   "p1": "E_A70_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 33,
+   "round": 3,
+   "p1": "E_A70_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 34,
+   "round": 3,
+   "p1": "E_A70_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 35,
+   "round": 3,
+   "p1": "E_A70_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 36,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A20_D00_M90"
+  },
+  {
+   "index": 37,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A20_D00_M100"
+  },
+  {
+   "index": 38,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A20_D15_M90"
+  },
+  {
+   "index": 39,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A20_D15_M100"
+  },
+  {
+   "index": 40,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A45_D00_M90"
+  },
+  {
+   "index": 41,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A45_D00_M100"
+  },
+  {
+   "index": 42,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A45_D15_M90"
+  },
+  {
+   "index": 43,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A45_D15_M100"
+  },
+  {
+   "index": 44,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A70_D00_M90"
+  },
+  {
+   "index": 45,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A70_D00_M100"
+  },
+  {
+   "index": 46,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A70_D15_M90"
+  },
+  {
+   "index": 47,
+   "round": 4,
+   "p1": "REF",
+   "p2": "E_A70_D15_M100"
+  },
+  {
+   "index": 48,
+   "round": 5,
+   "p1": "E_A20_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 49,
+   "round": 5,
+   "p1": "E_A20_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 50,
+   "round": 5,
+   "p1": "E_A20_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 51,
+   "round": 5,
+   "p1": "E_A20_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 52,
+   "round": 5,
+   "p1": "E_A45_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 53,
+   "round": 5,
+   "p1": "E_A45_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 54,
+   "round": 5,
+   "p1": "E_A45_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 55,
+   "round": 5,
+   "p1": "E_A45_D15_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 56,
+   "round": 5,
+   "p1": "E_A70_D00_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 57,
+   "round": 5,
+   "p1": "E_A70_D00_M100",
+   "p2": "REF"
+  },
+  {
+   "index": 58,
+   "round": 5,
+   "p1": "E_A70_D15_M90",
+   "p2": "REF"
+  },
+  {
+   "index": 59,
+   "round": 5,
+   "p1": "E_A70_D15_M100",
+   "p2": "REF"
+  }
+ ]
+}

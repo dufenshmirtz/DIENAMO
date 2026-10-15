@@ -38122,10 +38122,33 @@ MonoBehaviour:
   timeScale: 1
   delayBeforeNextMatch: 1
   maxMatchSeconds: 180
-  outputFolder: StyleEval_theta3
-  schedule: {fileID: 4900000, guid: f49d15e5db2dd614a9669386107e2853, type: 3}
+  outputFolder: Synthetic_ext
+  schedule: {fileID: 4900000, guid: d720c4d550026cc4491379363a5af98a, type: 3}
   resumeFromRunLog: 1
   scheduleIlModel: {fileID: 4900000, guid: 3308f5118522db24c8d4f31fd23e5c3c, type: 3}
+  scheduleRlModels:
+  - {fileID: 5022602860645237092, guid: bfb592bfffb728a408c32664027af397, type: 3}
+  - {fileID: 5022602860645237092, guid: 780e6d101dd3f2e46a0d42f270daa5b8, type: 3}
+  - {fileID: 5022602860645237092, guid: 298fdfa968c71ff49bfd283cbd1f9f82, type: 3}
+  - {fileID: 5022602860645237092, guid: 2c00af0f9787ef9499d6341e0c5b7955, type: 3}
+  - {fileID: 5022602860645237092, guid: 799190f388963d64ebc935068459c5b2, type: 3}
+  - {fileID: 5022602860645237092, guid: 7c067f183879a4042a450a565cee4b25, type: 3}
+  - {fileID: 5022602860645237092, guid: 0f1726a329814e84dba31242891a030d, type: 3}
+  - {fileID: 5022602860645237092, guid: 49e4c994e17c7a341b7eaf9614698334, type: 3}
+  - {fileID: 5022602860645237092, guid: fc0e3193a68ec3245b489a70e13c1df7, type: 3}
+  - {fileID: 5022602860645237092, guid: 5ddfaf1825817dd4db3ab5185e2c004d, type: 3}
+  - {fileID: 5022602860645237092, guid: e3ab67d9ce3baf64ea95dc4993f6bc63, type: 3}
+  - {fileID: 5022602860645237092, guid: 9a537d825ba807d40bf838b1dedc10c2, type: 3}
+  - {fileID: 5022602860645237092, guid: df6dceac224de114b833aba8d618195d, type: 3}
+  - {fileID: 5022602860645237092, guid: af3efaf8de8d6fa4b82eef91f84fb4d4, type: 3}
+  - {fileID: 5022602860645237092, guid: e5000afe833126049b0f713178c53607, type: 3}
+  - {fileID: 5022602860645237092, guid: b64c02a4b6959904dab0ff284d5094d9, type: 3}
+  - {fileID: 5022602860645237092, guid: a0c3f1d050ebbd04e848184047bcf162, type: 3}
+  - {fileID: 5022602860645237092, guid: 69b4b92f57c4793468cae954c66fd9ff, type: 3}
+  - {fileID: 5022602860645237092, guid: aa21061267094784c9cab7d93c7adfb8, type: 3}
+  - {fileID: 5022602860645237092, guid: d1a6afffa9a3ee6449b4da55b12485be, type: 3}
+  - {fileID: 5022602860645237092, guid: 5584398a3b6d37247871de3bf2f8435d, type: 3}
+  - {fileID: 5022602860645237092, guid: b34254f8ab1c8b844bd7b5c9a8c7f417, type: 3}
   matchups:
   - label: "T1\u0397_vs_REF"
     p1:
@@ -38143,6 +38166,7 @@ MonoBehaviour:
       styleMobilityTime: 0.543
       styleBlockTime: 0.073
       ilSeed: 0
+      mirrorOf: 
     p2:
       kind: 0
       personaId: REF
@@ -38158,7 +38182,9 @@ MonoBehaviour:
       styleMobilityTime: 0
       styleBlockTime: 0
       ilSeed: 0
+      mirrorOf: 
     matches: 10
+  maxStalematesPerMatch: 2
 --- !u!4 &1340006422
 Transform:
   m_ObjectHideFlags: 0
