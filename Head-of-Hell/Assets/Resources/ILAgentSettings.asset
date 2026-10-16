@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7d461e455b23674fa8e64999c0831e8, type: 3}
   m_Name: ILAgentSettings
   m_EditorClassIdentifier: 
-  model: {fileID: 4900000, guid: 3308f5118522db24c8d4f31fd23e5c3c, type: 3}
+  model: {fileID: 4900000, guid: b02d94ec87a21514f83f7088ff6dc041, type: 3}
   temperature: 1
   seed: 0
