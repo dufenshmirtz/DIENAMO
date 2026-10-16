@@ -6923,11 +6923,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: 
-  SteelagerColor: {r: 0.9725491, g: 0.69411767, b: 0, a: 1}
+  SteelagerColor: {r: 1, g: 1, b: 1, a: 1}
   FinColor: {r: 1, g: 1, b: 1, a: 1}
   RagerColor: {r: 1, g: 1, b: 1, a: 1}
   SkiplerColor: {r: 1, g: 1, b: 1, a: 1}
-  VanderColor: {r: 0.08627451, g: 1, b: 0, a: 1}
+  VanderColor: {r: 1, g: 1, b: 1, a: 1}
   LazyBigusColor: {r: 1, g: 1, b: 1, a: 1}
   LithraColor: {r: 1, g: 1, b: 1, a: 1}
   ChibackColor: {r: 1, g: 1, b: 1, a: 1}
@@ -26867,7 +26867,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: 
-  SteelagerColor: {r: 0.9725491, g: 0.69411767, b: 0, a: 1}
+  SteelagerColor: {r: 1, g: 1, b: 1, a: 1}
   FinColor: {r: 1, g: 1, b: 1, a: 1}
   RagerColor: {r: 1, g: 1, b: 1, a: 1}
   SkiplerColor: {r: 1, g: 1, b: 1, a: 1}
@@ -38953,11 +38953,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: 
-  SteelagerColor: {r: 0.9725491, g: 0.69411767, b: 0, a: 1}
+  SteelagerColor: {r: 1, g: 1, b: 1, a: 1}
   FinColor: {r: 1, g: 1, b: 1, a: 1}
   RagerColor: {r: 1, g: 1, b: 1, a: 1}
   SkiplerColor: {r: 1, g: 1, b: 1, a: 1}
-  VanderColor: {r: 0.08627451, g: 1, b: 0, a: 1}
+  VanderColor: {r: 1, g: 1, b: 1, a: 1}
   LazyBigusColor: {r: 1, g: 1, b: 1, a: 1}
   LithraColor: {r: 1, g: 1, b: 1, a: 1}
   ChibackColor: {r: 1, g: 1, b: 1, a: 1}
@@ -41543,11 +41543,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterName: 
-  SteelagerColor: {r: 0.9725491, g: 0.69411767, b: 0, a: 1}
+  SteelagerColor: {r: 1, g: 1, b: 1, a: 1}
   FinColor: {r: 1, g: 1, b: 1, a: 1}
   RagerColor: {r: 1, g: 1, b: 1, a: 1}
   SkiplerColor: {r: 1, g: 1, b: 1, a: 1}
-  VanderColor: {r: 0.08627451, g: 1, b: 0, a: 1}
+  VanderColor: {r: 1, g: 1, b: 1, a: 1}
   LazyBigusColor: {r: 1, g: 1, b: 1, a: 1}
   LithraColor: {r: 1, g: 1, b: 1, a: 1}
   ChibackColor: {r: 1, g: 1, b: 1, a: 1}
