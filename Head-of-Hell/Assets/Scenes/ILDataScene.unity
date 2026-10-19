@@ -38122,10 +38122,10 @@ MonoBehaviour:
   timeScale: 1
   delayBeforeNextMatch: 1
   maxMatchSeconds: 180
-  outputFolder: StyleEval_theta4
-  schedule: {fileID: 4900000, guid: dc47ff725db966343800cdb33a9796ea, type: 3}
+  outputFolder: HV_mirror_P00
+  schedule: {fileID: 4900000, guid: abcb0cef55d326e4cbee163550afb50b, type: 3}
   resumeFromRunLog: 1
-  scheduleIlModel: {fileID: 4900000, guid: b02d94ec87a21514f83f7088ff6dc041, type: 3}
+  scheduleIlModel: {fileID: 4900000, guid: 17371d692ec0f6747adca3d41b5f4b83, type: 3}
   scheduleRlModels:
   - {fileID: 5022602860645237092, guid: bfb592bfffb728a408c32664027af397, type: 3}
   - {fileID: 5022602860645237092, guid: 780e6d101dd3f2e46a0d42f270daa5b8, type: 3}
@@ -38158,6 +38158,7 @@ MonoBehaviour:
       defense: 0
       mobility: 0
       patience: 0
+      skill: -1
       model: {fileID: 0}
       ilModel: {fileID: 4900000, guid: 3308f5118522db24c8d4f31fd23e5c3c, type: 3}
       styleAttack: 0.267
@@ -38174,6 +38175,7 @@ MonoBehaviour:
       defense: 0.5
       mobility: 0.5
       patience: 0.5
+      skill: -1
       model: {fileID: 0}
       ilModel: {fileID: 0}
       styleAttack: 0
@@ -38184,6 +38186,7 @@ MonoBehaviour:
       ilSeed: 0
       mirrorOf: 
     matches: 10
+    scheduleIndex: -1
   maxStalematesPerMatch: 2
 --- !u!4 &1340006422
 Transform:

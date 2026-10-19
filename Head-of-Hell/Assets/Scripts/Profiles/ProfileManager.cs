@@ -29,6 +29,13 @@ public class ProfileManager : MonoBehaviour
         Load();
     }
 
+    // Clears the static reference when this object is destroyed (e.g. by the -ilgen data-generation build),
+    // so "ProfileManager.I?." really sees null instead of a destroyed object.
+    private void OnDestroy()
+    {
+        if (I == this) I = null;
+    }
+
     public (string id, string name) GetTelemetryIdentity(int playerNum)
     {
         EnsureGuest();

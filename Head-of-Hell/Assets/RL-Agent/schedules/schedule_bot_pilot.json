@@ -1,0 +1,612 @@
+{
+ "name": "schedule_bot_pilot",
+ "seed": 0,
+ "purpose": "bot-change pilot: Pilot-2 knob personas vs REF",
+ "personas": [
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5
+  },
+  {
+   "id": "A90",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.9,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5
+  },
+  {
+   "id": "A10",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.1,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5
+  },
+  {
+   "id": "D90",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.5,
+   "defense": 0.9,
+   "mobility": 0.5,
+   "patience": 0.5
+  },
+  {
+   "id": "D10",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.5,
+   "defense": 0.1,
+   "mobility": 0.5,
+   "patience": 0.5
+  },
+  {
+   "id": "M90",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.9,
+   "patience": 0.5
+  },
+  {
+   "id": "M10",
+   "kind": "Scripted",
+   "holdout": false,
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.1,
+   "patience": 0.5
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 1,
+   "round": 1,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 2,
+   "round": 1,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 3,
+   "round": 1,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 4,
+   "round": 1,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 5,
+   "round": 1,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 6,
+   "round": 2,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 7,
+   "round": 2,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 8,
+   "round": 2,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 9,
+   "round": 2,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 10,
+   "round": 2,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 11,
+   "round": 2,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 12,
+   "round": 3,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 13,
+   "round": 3,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 14,
+   "round": 3,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 15,
+   "round": 3,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 16,
+   "round": 3,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 17,
+   "round": 3,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 18,
+   "round": 4,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 19,
+   "round": 4,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 20,
+   "round": 4,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 21,
+   "round": 4,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 22,
+   "round": 4,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 23,
+   "round": 4,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 24,
+   "round": 5,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 25,
+   "round": 5,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 26,
+   "round": 5,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 27,
+   "round": 5,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 28,
+   "round": 5,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 29,
+   "round": 5,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 30,
+   "round": 6,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 31,
+   "round": 6,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 32,
+   "round": 6,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 33,
+   "round": 6,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 34,
+   "round": 6,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 35,
+   "round": 6,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 36,
+   "round": 7,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 37,
+   "round": 7,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 38,
+   "round": 7,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 39,
+   "round": 7,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 40,
+   "round": 7,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 41,
+   "round": 7,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 42,
+   "round": 8,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 43,
+   "round": 8,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 44,
+   "round": 8,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 45,
+   "round": 8,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 46,
+   "round": 8,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 47,
+   "round": 8,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 48,
+   "round": 9,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 49,
+   "round": 9,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 50,
+   "round": 9,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 51,
+   "round": 9,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 52,
+   "round": 9,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 53,
+   "round": 9,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 54,
+   "round": 10,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 55,
+   "round": 10,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 56,
+   "round": 10,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 57,
+   "round": 10,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 58,
+   "round": 10,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 59,
+   "round": 10,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 60,
+   "round": 11,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 61,
+   "round": 11,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 62,
+   "round": 11,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 63,
+   "round": 11,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 64,
+   "round": 11,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 65,
+   "round": 11,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 66,
+   "round": 12,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 67,
+   "round": 12,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 68,
+   "round": 12,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 69,
+   "round": 12,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 70,
+   "round": 12,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 71,
+   "round": 12,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 72,
+   "round": 13,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 73,
+   "round": 13,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 74,
+   "round": 13,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 75,
+   "round": 13,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 76,
+   "round": 13,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 77,
+   "round": 13,
+   "p1": "M10",
+   "p2": "REF"
+  },
+  {
+   "index": 78,
+   "round": 14,
+   "p1": "REF",
+   "p2": "A90"
+  },
+  {
+   "index": 79,
+   "round": 14,
+   "p1": "REF",
+   "p2": "A10"
+  },
+  {
+   "index": 80,
+   "round": 14,
+   "p1": "REF",
+   "p2": "D90"
+  },
+  {
+   "index": 81,
+   "round": 14,
+   "p1": "REF",
+   "p2": "D10"
+  },
+  {
+   "index": 82,
+   "round": 14,
+   "p1": "REF",
+   "p2": "M90"
+  },
+  {
+   "index": 83,
+   "round": 14,
+   "p1": "REF",
+   "p2": "M10"
+  },
+  {
+   "index": 84,
+   "round": 15,
+   "p1": "A90",
+   "p2": "REF"
+  },
+  {
+   "index": 85,
+   "round": 15,
+   "p1": "A10",
+   "p2": "REF"
+  },
+  {
+   "index": 86,
+   "round": 15,
+   "p1": "D90",
+   "p2": "REF"
+  },
+  {
+   "index": 87,
+   "round": 15,
+   "p1": "D10",
+   "p2": "REF"
+  },
+  {
+   "index": 88,
+   "round": 15,
+   "p1": "M90",
+   "p2": "REF"
+  },
+  {
+   "index": 89,
+   "round": 15,
+   "p1": "M10",
+   "p2": "REF"
+  }
+ ]
+}

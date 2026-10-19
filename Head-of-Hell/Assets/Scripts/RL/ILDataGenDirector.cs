@@ -13,7 +13,8 @@ using UnityEditor.SceneManagement;
 #endif
 
 /// <summary>
-/// Thesis data generation (ILDataScene only, Editor only).
+/// Thesis data generation (ILDataScene). Editor (Play mode) or the game build started with -ilgen (ILGenBootstrap):
+/// in the build it runs in locked step, can be sharded (-shard k/N) and writes to &lt;outputFolder&gt;_s{k}of{N}.
 /// Plays a list of matchups automatically: each side is a scripted persona (SimpleBotController with fixed knobs)
 /// or an RL model (FighterAgent + any NNModel). One round per match; after the telemetry JSON is saved the scene
 /// is reloaded for the next match. Output goes to Telemetry/Synthetic and ImitationLogs/Synthetic.
@@ -37,6 +38,8 @@ public class ILDataGenDirector : MonoBehaviour
         [Range(0f, 1f)] public float defense = 0.5f;
         [Range(0f, 1f)] public float mobility = 0.5f;
         [Range(0f, 1f)] public float patience = 0.5f;
+        [Tooltip("Scripted only: skill of this bot. Negative = the run's Scripted Skill (scene field).")]
+        public float skill = -1f;
         [Tooltip("RL only: the model to play with.")]
         public NNModel model;
 
@@ -54,7 +57,12 @@ public class ILDataGenDirector : MonoBehaviour
         public string Id =>
             kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") :
             kind == SideKind.ILAgent ? "IL_" + personaId :
-            kind == SideKind.Human ? "HUMAN" : personaId;
+            kind == SideKind.Human ? HumanId(personaId) : personaId;
+
+        // Human validation: every participant gets his own id (HUMAN_P01 ...) so that mirror / ghost can target him.
+        // Inspector sides with the default persona id keep the old "HUMAN".
+        private static string HumanId(string pid) =>
+            string.IsNullOrEmpty(pid) || pid == "REF" || pid == "HUMAN" ? "HUMAN" : "HUMAN_" + pid;
     }
 
     [Serializable]
@@ -64,6 +72,7 @@ public class ILDataGenDirector : MonoBehaviour
         public Side p1 = new Side();
         public Side p2 = new Side();
         [Min(1)] public int matches = 10;
+        [HideInInspector] public int scheduleIndex = -1;   // schedule: position in the FULL schedule (run log / resume / shards)
     }
 
     [Header("Run")]
@@ -95,7 +104,8 @@ public class ILDataGenDirector : MonoBehaviour
     [Serializable] private class SchedPersona
     {
         public string id; public float aggression; public float defense; public float mobility; public float patience; public bool holdout;
-        public string kind;   // "" / "Scripted" (default), "ILAgent" or "RL"
+        public float skill = -1f;   // scripted: own skill (0 < skill <= 1); missing / <= 0 = the scene's Scripted Skill (old schedules unchanged)
+        public string kind;   // "" / "Scripted" (default), "ILAgent", "RL" or "Human" (keyboard player; human validation)
         public string model;  // RL: NNModel asset name
         public float styleAttack, styleMobility, styleDefense, styleMobilityTime, styleBlockTime;   // ILAgent target style
         public string mirrorOf;   // ILAgent: online mirror of this persona id (empty = fixed style)
@@ -135,9 +145,19 @@ public class ILDataGenDirector : MonoBehaviour
         if (!run) return;
 
 #if !UNITY_EDITOR
-        Debug.LogWarning("[ILDataGen] Editor only. Disabled in builds.");
-        run = false;
-        return;
+        // Build: only as a data-generation worker started with -ilgen (ILGenBootstrap). The normal game never runs this.
+        if (!ILGenArgs.Active)
+        {
+            Debug.LogWarning("[ILDataGen] Build without -ilgen: disabled.");
+            run = false;
+            return;
+        }
+        if (!ApplyBuildArgs())
+        {
+            run = false;
+            Application.Quit();
+            return;
+        }
 #endif
         if (schedule != null)
         {
@@ -150,11 +170,14 @@ public class ILDataGenDirector : MonoBehaviour
             if (resumeFromRunLog && !resumeChecked)
             {
                 resumeChecked = true;
-                int next = LastLoggedIndex() + 1;
-                if (next > 0)
+                int last = LastLoggedIndex();
+                if (last >= 0)
                 {
-                    matchupIndex = next;
-                    Debug.Log($"[ILDataGen] Resuming schedule '{schedule.name}' at match {next + 1}/{matchups.Count} (run log).");
+                    // first entry (of this shard) after the last logged schedule index; same as last+1 without shards
+                    int next = matchups.FindIndex(x => x.scheduleIndex > last);
+                    matchupIndex = next < 0 ? matchups.Count : next;
+                    if (next < 0) finished = true;
+                    Debug.Log($"[ILDataGen] Resuming schedule '{schedule.name}' at entry {matchupIndex + 1}/{matchups.Count} (run log, last index {last}).");
                 }
             }
         }
@@ -163,6 +186,9 @@ public class ILDataGenDirector : MonoBehaviour
         {
             Debug.Log("[ILDataGen] Nothing to run (list finished or empty).");
             run = false;
+#if !UNITY_EDITOR
+            Application.Quit();   // build worker: e.g. resumed a shard that was already complete
+#endif
             return;
         }
 
@@ -170,6 +196,15 @@ public class ILDataGenDirector : MonoBehaviour
 
         TelemetryManager.OutputFolderOverride = outputFolder;   // Telemetry/Synthetic + ImitationLogs/Synthetic
         Time.timeScale = timeScale;
+#if !UNITY_EDITOR
+        // Build worker: locked step. Every frame advances the game by exactly 1/60 s, however fast the PC renders it
+        // (the x1 data have 60 frames per game-second; timeScale > 1 changed that and the behaviour). timeScale stays 1.
+        Time.timeScale = 1f;
+        Time.captureDeltaTime = ILGenArgs.LockedStep;
+        // Same game settings as the Editor collection: Stage 1 + Classic ruleset (the build has its own PlayerPrefs).
+        PlayerPrefs.SetString("SelectedStage", "Stage 1");
+        PlayerPrefs.SetString("SelectedRuleset", ILGenArgs.ClassicRulesetJson());
+#endif
 
         // What the menus normally write (read in CharacterManager.Awake / PvE setup Start)
         PlayerPrefs.SetString("Player1Choice", character);
@@ -190,6 +225,10 @@ public class ILDataGenDirector : MonoBehaviour
     private IEnumerator Start()
     {
         if (!run) yield break;
+#if !UNITY_EDITOR
+        Application.targetFrameRate = -1;   // after GameManager.Awake (which sets 60): run as fast as the PC can (locked step keeps game time exact)
+#endif
+        WriteEnvironmentOnce();
 
         // Wait until both players exist and the PvE setup scripts (Start) have run.
         CharacterManager p1 = null, p2 = null;
@@ -236,7 +275,7 @@ public class ILDataGenDirector : MonoBehaviour
             if (maxStalematesPerMatch > 0 && stalematesOnCurrent >= maxStalematesPerMatch)
             {
                 Debug.LogWarning($"[ILDataGen] {stalematesOnCurrent} stalemates on match {matchupIndex + 1}: skipped.");
-                if (schedule != null) AppendRunLog(matchupIndex, "ABANDONED", current);
+                if (schedule != null) AppendRunLog(current.scheduleIndex, "ABANDONED", current);
                 stalematesOnCurrent = 0;
                 matchInMatchup++;
                 if (matchInMatchup >= current.matches) { matchInMatchup = 0; matchupIndex++; }
@@ -317,7 +356,7 @@ public class ILDataGenDirector : MonoBehaviour
             if (scripted == null) scripted = obj.AddComponent<SimpleBotController>();
             scripted.enabled = true;
             scripted.Rebind(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
-            scripted.SetSkill(scriptedSkill);
+            scripted.SetSkill(side.skill > 0f ? side.skill : scriptedSkill);   // per-persona skill (θ5 teachers) or the run's
             scripted.SetPersonality(side.aggression, side.defense, side.mobility, side.patience, side.personaId);
         }
         else
@@ -340,7 +379,8 @@ public class ILDataGenDirector : MonoBehaviour
             agent.ClearInput();
         }
 
-        Debug.Log($"[ILDataGen] P{self.playerNum} = {side.kind} '{side.Id}'");
+        Debug.Log($"[ILDataGen] P{self.playerNum} = {side.kind} '{side.Id}'" +
+                  (side.kind == SideKind.Scripted ? $" skill {(side.skill > 0f ? side.skill : scriptedSkill):0.00}" : ""));
     }
 
     // ---------------- next match ----------------
@@ -353,7 +393,7 @@ public class ILDataGenDirector : MonoBehaviour
         if (!saved) return;
 
         if (schedule != null)
-            AppendRunLog(matchupIndex, matchId, current);
+            AppendRunLog(current.scheduleIndex, matchId, current);
         stalematesOnCurrent = 0;
 
         {
@@ -396,14 +436,32 @@ public class ILDataGenDirector : MonoBehaviour
         foreach (var p in file.personas) byId[p.id] = p;
 
         var list = new List<Matchup>(file.matches.Count);
-        foreach (var m in file.matches)
+        var pairShard = new Dictionary<string, int>();   // shard mode "pair": unordered persona pair -> shard (round robin by first appearance)
+        for (int i = 0; i < file.matches.Count; i++)
         {
+            var m = file.matches[i];
             if (!byId.TryGetValue(m.p1, out var a) || !byId.TryGetValue(m.p2, out var b))
             {
                 Debug.LogError($"[ILDataGen] Schedule match {m.index}: unknown persona '{m.p1}' or '{m.p2}'.");
                 return false;
             }
-            list.Add(new Matchup { label = $"#{m.index} r{m.round}", p1 = ToSide(a), p2 = ToSide(b), matches = 1 });
+            int shard = 0;
+            if (ShardCount > 1)
+            {
+                if (ShardMode == "pair")
+                {
+                    string key = string.CompareOrdinal(m.p1, m.p2) <= 0 ? m.p1 + "|" + m.p2 : m.p2 + "|" + m.p1;
+                    if (!pairShard.TryGetValue(key, out shard)) { shard = pairShard.Count % ShardCount; pairShard[key] = shard; }
+                }
+                else shard = i % ShardCount;
+            }
+            if (shard != ShardIndex) continue;
+            list.Add(new Matchup { label = $"#{m.index} r{m.round}", p1 = ToSide(a), p2 = ToSide(b), matches = 1, scheduleIndex = i });
+        }
+        if (list.Count == 0)
+        {
+            Debug.LogError($"[ILDataGen] Schedule '{schedule.name}': no matches for shard {ShardIndex}/{ShardCount}.");
+            return false;
         }
         matchups = list;
         return true;
@@ -417,6 +475,8 @@ public class ILDataGenDirector : MonoBehaviour
             if (m == null) Debug.LogError($"[ILDataGen] Schedule persona '{p.id}': RL model '{p.model}' not in Schedule Rl Models.");
             return new Side { kind = SideKind.RL, personaId = p.id, model = m };
         }
+        if (p.kind == "Human")
+            return new Side { kind = SideKind.Human, personaId = p.id };   // Id = HUMAN_<id>
         if (p.kind == "ILAgent")
             return new Side
             {
@@ -428,8 +488,92 @@ public class ILDataGenDirector : MonoBehaviour
         return new Side
         {
             kind = SideKind.Scripted, personaId = p.id,
-            aggression = p.aggression, defense = p.defense, mobility = p.mobility, patience = p.patience
+            aggression = p.aggression, defense = p.defense, mobility = p.mobility, patience = p.patience,
+            skill = p.skill > 0f ? Mathf.Min(p.skill, 1f) : -1f
         };
+    }
+
+    // ---------------- build worker (-ilgen) ----------------
+    // Editor: no shards (k=0, N=1). Build: from the command line (ILGenArgs).
+#if UNITY_EDITOR
+    private static int ShardIndex => 0;
+    private static int ShardCount => 1;
+    private static string ShardMode => "index";
+#else
+    private static int ShardIndex => ILGenArgs.ShardIndex;
+    private static int ShardCount => ILGenArgs.ShardCount;
+    private static string ShardMode => ILGenArgs.ShardMode;
+
+    // Command line overrides the scene's fields (re-applied on every reload: the Director is a new object each match).
+    private bool ApplyBuildArgs()
+    {
+        if (!string.IsNullOrEmpty(ILGenArgs.SchedulePath))
+        {
+            var t = ILGenArgs.LoadTextAsset(ILGenArgs.SchedulePath);
+            if (t == null) return false;
+            schedule = t;
+        }
+        if (!string.IsNullOrEmpty(ILGenArgs.IlModelPath))
+        {
+            var t = ILGenArgs.LoadTextAsset(ILGenArgs.IlModelPath);
+            if (t == null) return false;
+            scheduleIlModel = t;
+        }
+        if (!string.IsNullOrEmpty(ILGenArgs.OutFolder)) outputFolder = ILGenArgs.OutFolder;
+        outputFolder += ILGenArgs.ShardSuffix;   // every shard in its own folder (own run log / resume); merge_shards.py joins them
+        timeScale = 1f;
+        if (schedule == null)
+        {
+            Debug.LogError("[ILDataGen] Build worker needs a schedule (scene field or -schedule).");
+            return false;
+        }
+        return true;
+    }
+#endif
+
+    // One file per process and output folder: the game settings this data was made with (thesis: documented conditions).
+    private static bool environmentWritten;
+    [Serializable] private class EnvInfo
+    {
+        public string savedLocal, runtime, unityVersion, character, outputFolder, schedule, ilModel, stage, ruleset;
+        public float timeScale, captureDeltaTime, scriptedSkill;
+        public int targetFrameRate, shardIndex, shardCount;
+        public string shardMode;
+        public bool fullRender;
+    }
+
+    private void WriteEnvironmentOnce()
+    {
+        if (environmentWritten) return;
+        environmentWritten = true;
+        try
+        {
+            var e = new EnvInfo
+            {
+                savedLocal = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                runtime = Application.isEditor ? "Editor" : "Build",
+                unityVersion = Application.unityVersion,
+                character = character, outputFolder = outputFolder,
+                schedule = schedule != null ? schedule.name : "",
+                ilModel = scheduleIlModel != null ? scheduleIlModel.name : "",
+                stage = PlayerPrefs.GetString("SelectedStage", "Stage 1"),
+                ruleset = PlayerPrefs.GetString("SelectedRuleset", ""),
+                timeScale = Time.timeScale, captureDeltaTime = Time.captureDeltaTime, scriptedSkill = scriptedSkill,
+                targetFrameRate = Application.targetFrameRate,
+                shardIndex = ShardIndex, shardCount = ShardCount, shardMode = ShardMode,
+#if UNITY_EDITOR
+                fullRender = true,
+#else
+                fullRender = ILGenArgs.FullRender,
+#endif
+            };
+            string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "My Games", "Head of Hell", "Telemetry", outputFolder);
+            Directory.CreateDirectory(dir);
+            string name = "_environment_" + (schedule != null ? schedule.name : "matchups") + "_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".json";
+            File.WriteAllText(Path.Combine(dir, name), JsonUtility.ToJson(e, true));
+        }
+        catch (Exception ex) { Debug.LogWarning($"[ILDataGen] Environment file not written: {ex.Message}"); }
     }
 
     private string RunLogPath() => Path.Combine(
@@ -475,6 +619,8 @@ public class ILDataGenDirector : MonoBehaviour
         TelemetryManager.OutputFolderOverride = null;
 #if UNITY_EDITOR
         EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
 #endif
     }
 
@@ -488,6 +634,8 @@ public class ILDataGenDirector : MonoBehaviour
 #if UNITY_EDITOR
         EditorSceneManager.LoadSceneInPlayMode(SceneManager.GetActiveScene().path,
             new LoadSceneParameters(LoadSceneMode.Single));
+#else
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 #endif
     }
 

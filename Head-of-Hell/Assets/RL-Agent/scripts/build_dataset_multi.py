@@ -96,7 +96,7 @@ def main():
             matches_per_split[s].append(offset + m)
 
         quick_times, fight_start = {}, {}
-        for tf in glob.glob(os.path.join(tel_dir, "*.json")):
+        for tf in glob.glob(os.path.join(tel_dir, "match_*.json")):   # not _environment_*.json (parallel runner)
             doc = json.load(open(tf, encoding="utf-8-sig"))
             fight_start[doc["matchId"]] = float(doc.get("fightStartT") or 0.0)
             q = {"P1": [], "P2": []}

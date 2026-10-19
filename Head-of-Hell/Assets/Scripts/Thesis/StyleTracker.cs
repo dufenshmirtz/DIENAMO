@@ -29,7 +29,12 @@ public static class StyleTracker
 
     public static string LogFolder => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "My Games", "Head of Hell", "ImitationLogs", "_style_tracker");
-    public static string AgentLogPath => Path.Combine(LogFolder, "agent_style_log.csv");
+    /// <summary>One shared file; in the parallel build (-ilgen) one file per output folder (= per shard), so that
+    /// several game processes never append to the same file at the same time.</summary>
+    public static string AgentLogPath => Path.Combine(LogFolder,
+        ILGenArgs.Active && !string.IsNullOrEmpty(TelemetryManager.OutputFolderOverride)
+            ? "agent_style_log_" + TelemetryManager.OutputFolderOverride + ".csv"
+            : "agent_style_log.csv");
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void Init()
@@ -91,6 +96,8 @@ public static class StyleTracker
             var (key, name, persistent) = PlayerKey(isP1 ? meta.p1ProfileId : meta.p2ProfileId,
                                                     isP1 ? meta.p1ProfileName : meta.p2ProfileName,
                                                     isP1 ? meta.p1PersonaId : meta.p2PersonaId, seat);
+            // data generation (Editor or -ilgen build): never write into the saved profiles (style_profiles.json)
+            if (!string.IsNullOrEmpty(TelemetryManager.OutputFolderOverride)) persistent = false;
             var entry = StyleProfileStore.AddRound(key, name, row.character, persistent, measured, s.matchId, row.durationS);
             if (LogToConsole)
                 Debug.Log($"[StyleTracker] {seat} {key} ({row.character}) round {entry.rounds}: " +

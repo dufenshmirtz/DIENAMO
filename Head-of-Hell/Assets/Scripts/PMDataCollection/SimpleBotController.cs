@@ -39,6 +39,49 @@ public class SimpleBotController : MonoBehaviour
     [Header("Platform Drop")]
     [SerializeField] private float dropHoldDuration = 0.20f;
 
+    [Header("Human-like timing (theta5 teachers, 19/10)")]
+    [Tooltip("Share of quick attacks for which the bot holds the direction TOWARD the opponent at the press. " +
+             "Skipler's quick is a dash in the held direction (no key = right), before this ~50% dashed away. 1 - value = human-like mistakes.")]
+    [Range(0f, 1f)] [SerializeField] private float quickAimChance = 0.9f;
+    [Tooltip("Frames-worth of time the aimed direction is held after a quick press (covers script execution order).")]
+    [SerializeField] private float quickAimHold = 0.05f;
+    [Tooltip("Reactions to a rush / a charge happen after a perception delay instead of on the same frame the danger appears.")]
+    [SerializeField] private bool humanReactionDelay = true;
+    [Tooltip("Median reaction delay at skill 0 and at skill 1 (log-normal; skill 0.6 -> ~0.31 s, 0.9 -> ~0.27 s).")]
+    [SerializeField] private float reactionMedianSkill0 = 0.38f;
+    [SerializeField] private float reactionMedianSkill1 = 0.26f;
+    [SerializeField] private float reactionSigma = 0.35f;
+    [SerializeField] private float reactionMin = 0.15f;
+    [SerializeField] private float reactionMax = 0.60f;
+    [Tooltip("Walk commitment: a new walk (move != 0) is kept this long (humans ~0.5 s per walk; before 0.10-0.24 s). Stops keep moveCommitMin/Max.")]
+    [SerializeField] private float walkCommitMin = 0.30f;
+    [SerializeField] private float walkCommitMax = 0.60f;
+    [Tooltip("Scales every random 'defend' block chance (humans block ~3.5x less often than the old bot). The defense knob still multiplies it.")]
+    [SerializeField] private float blockFreqScale = 0.40f;
+    [Tooltip("Scales every block hold (and the pause after it): fewer but longer blocks, like humans (~0.38 s vs 0.22 s).")]
+    [SerializeField] private float blockHoldScale = 1.80f;
+    [Tooltip("Scales parry choices (old bot parried ~2x more than humans).")]
+    [SerializeField] private float parryScale = 0.90f;   // v2 pilot: 0.50 overshot (parries ~0 vs humans 0.038/s)
+    [Tooltip("Scales charge starts (old bot charged ~4x more than humans).")]
+    [SerializeField] private float chargeScale = 0.35f;
+    [Tooltip("Human rhythm: decisions come in short bursts (2-4 quick decisions) separated by irregular pauses, instead of one every 0.18-0.28 s.")]
+    [SerializeField] private bool humanRhythm = false;   // bot v4: off - no measurable effect in the v3 pilot (gaps identical to v2)
+    [Tooltip("Chance that a normal decision starts a burst.")]
+    [Range(0f, 1f)] [SerializeField] private float burstStartChance = 0.25f;
+    [SerializeField] private int burstExtraMin = 1;
+    [SerializeField] private int burstExtraMax = 3;
+    [SerializeField] private float burstIntervalMin = 0.04f;
+    [SerializeField] private float burstIntervalMax = 0.10f;
+    [Tooltip("Inside a burst a decision may come this much before the previous action's cooldown ends (never during a heavy commit or a block).")]
+    [SerializeField] private float burstCooldownSlack = 0.12f;
+    [Tooltip("Outside bursts: log-normal pause between decisions (median, sigma, clamp).")]
+    [SerializeField] private float thinkMedian = 0.22f;
+    [SerializeField] private float thinkSigma = 0.45f;
+    [SerializeField] private float thinkMinHuman = 0.08f;
+    [SerializeField] private float thinkMaxHuman = 0.80f;
+    [Tooltip("Free platform use: chance per decision to drop through the platform the bot stands on (mobility knob scales it).")]
+    [SerializeField] private float platformDropChance = 0.15f;   // bot v4 (v3: 0.06 -> 0.08 drops/s, humans ~0.23)
+
     [Header("Anti-Charge Reaction")]
     [SerializeField] private bool antiChargeEnabled = true;
     [SerializeField] private float antiChargeRange = 2.0f;
@@ -233,6 +276,7 @@ public class SimpleBotController : MonoBehaviour
 
     private BotInputProvider botInput;
     private float thinkTimer;
+    private int burstLeft;
     private float actionTimer;
     private float blockHoldTimer;
 
@@ -254,6 +298,10 @@ public class SimpleBotController : MonoBehaviour
     private Transform targetTr;
 
     private float antiRushReactionTimer;
+    private float quickAimTimer;
+    private float quickAimDir;
+    private float rushPerceiveTimer = -1f;     // -1 idle, >0 perceiving, 0 perceived (react if the danger still holds)
+    private float chargePerceiveTimer = -1f;
 
     private bool botCharging;
     private float botChargeTimer;
@@ -271,6 +319,7 @@ public class SimpleBotController : MonoBehaviour
     private void OnEnable()
     {
         thinkTimer = 0f;
+        burstLeft = 0;
         actionTimer = 0f;
         blockHoldTimer = 0f;
 
@@ -291,6 +340,9 @@ public class SimpleBotController : MonoBehaviour
         enemyChargeTimer = 0f;
 
         antiRushReactionTimer = 0f;
+        quickAimTimer = 0f;
+        rushPerceiveTimer = -1f;
+        chargePerceiveTimer = -1f;
 
         botCharging = false;
         botChargeTimer = 0f;
@@ -334,6 +386,9 @@ public class SimpleBotController : MonoBehaviour
         blockHoldTimer -= dt;
         antiChargeReactionTimer -= dt;
         antiRushReactionTimer -= dt;
+        quickAimTimer -= dt;
+        if (rushPerceiveTimer > 0f) rushPerceiveTimer = Mathf.Max(0f, rushPerceiveTimer - dt);
+        if (chargePerceiveTimer > 0f) chargePerceiveTimer = Mathf.Max(0f, chargePerceiveTimer - dt);
         botChargeCooldownTimer -= dt;
         heavyCommitTimer -= dt;
 
@@ -372,7 +427,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (thinkTimer <= 0f)
         {
-            thinkTimer = Random.Range(thinkIntervalMin, thinkIntervalMax);
+            thinkTimer = NextThinkInterval();
             DecideAction();
         }
 
@@ -467,6 +522,11 @@ public class SimpleBotController : MonoBehaviour
             ApplyMovement(forcedHorizontalValue);
             return;
         }
+
+        // A committed walk toward the opponent ends early when it would run into them.
+        if (moveCommitTimer > 0f && Mathf.Abs(committedMove) > 0.01f && sameLevel &&
+            Mathf.Sign(committedMove) == Mathf.Sign(dxSigned) && dx < tooCloseRange)
+            moveCommitTimer = 0f;
 
         if (moveCommitTimer > 0f)
         {
@@ -564,13 +624,17 @@ public class SimpleBotController : MonoBehaviour
         }
 
         committedMove = Mathf.Clamp(move, -1f, 1f);
-        moveCommitTimer = Random.Range(moveCommitMin, moveCommitMax);
+        moveCommitTimer = Mathf.Abs(committedMove) > 0.01f
+            ? Random.Range(walkCommitMin, walkCommitMax)      // a walk: commit like a human
+            : Random.Range(moveCommitMin, moveCommitMax);     // standing: re-decide soon
 
         ApplyMovement(committedMove);
     }
 
     private void ApplyMovement(float move)
     {
+        if (quickAimTimer > 0f) move = quickAimDir;   // a quick was just pressed: keep the dash direction
+
         string suffix = GetAxisSuffix();
 
         botInput.SetAxis("Horizontal" + suffix, move);
@@ -591,8 +655,21 @@ public class SimpleBotController : MonoBehaviour
 
     private void DecideAction()
     {
-        if (actionTimer > 0f || isDroppingThroughPlatform || targetTr == null)
+        // Inside a burst the next decision may come slightly before the cooldown ends (human chains), but never while a
+        // heavy is committed or a block is held (that would cancel them).
+        bool burstEarly = humanRhythm && burstLeft > 0 && actionTimer <= burstCooldownSlack &&
+                          heavyCommitTimer <= 0f && blockHoldTimer <= 0f;
+        if ((actionTimer > 0f && !burstEarly) || isDroppingThroughPlatform || targetTr == null)
             return;
+
+        // Free platform use (humans drop through platforms far more often than the old bot).
+        if (character.CanDropPlatform && character.IsGrounded && !character.IsCasting &&
+            Random.value < platformDropChance * Mathf.Lerp(0.6f, 1.6f, mobilityBias) * MobMul)
+        {
+            TriggerDropPlatform();
+            actionTimer = Random.Range(0.12f, 0.24f);
+            return;
+        }
 
         Vector3 myPos = selfTr.position;
         Vector3 targetPos = targetTr.position;
@@ -629,13 +706,13 @@ public class SimpleBotController : MonoBehaviour
         float defendChance =
             Mathf.Lerp(blockChance, blockChance + 0.28f, defenseBias) *
             Mathf.Lerp(0.75f, 1.15f, skill);
-        defendChance = Mathf.Min(0.6f, defendChance * DefMul);
+        defendChance = Mathf.Min(0.6f, defendChance * DefMul) * blockFreqScale;
 
         if (inEngageRange && Random.value < defendChance)
         {
             botInput.SetKey(setup.block, true);
-            blockHoldTimer = Random.Range(0.10f, 0.24f) * BlockHoldMul;
-            actionTimer = Random.Range(0.16f, 0.28f) * BlockHoldMul;
+            blockHoldTimer = Random.Range(0.10f, 0.24f) * BlockHoldMul * blockHoldScale;
+            actionTimer = Random.Range(0.16f, 0.28f) * BlockHoldMul * blockHoldScale;
             MaybeRepositionAfterAction(dxSigned, false);
             return;
         }
@@ -667,7 +744,7 @@ public class SimpleBotController : MonoBehaviour
 
             if (roll < quickW)
             {
-                PressOneFrame(setup.lightAttack);
+                PressQuick(dxSigned);
                 actionTimer = Random.Range(0.15f, 0.26f);
                 MaybeRepositionAfterAction(dxSigned, true);
                 return;
@@ -707,7 +784,7 @@ public class SimpleBotController : MonoBehaviour
             float heavyW = heavyChance * Mathf.Lerp(0.70f, 1.15f, aggression) * Mathf.Lerp(0.85f, 1.15f, patience) * AggrMul;
             float specialW = CanUseSpecialNow() ? specialChance * Mathf.Lerp(0.75f, 1.35f, aggression) * AggrMul : 0f;
             float jumpW = jumpChance * Mathf.Lerp(0.60f, 1.80f, mobilityBias) * MobMul;
-            float blockW = blockChance * Mathf.Lerp(0.80f, 1.80f, defenseBias) * DefMul;
+            float blockW = blockChance * Mathf.Lerp(0.80f, 1.80f, defenseBias) * DefMul * blockFreqScale;
             float waitW = Mathf.Lerp(0.05f, 0.22f, patience) / AggrMul;
 
             float total = quickW + heavyW + specialW + jumpW + blockW + waitW;
@@ -715,7 +792,7 @@ public class SimpleBotController : MonoBehaviour
 
             if (roll < quickW)
             {
-                PressOneFrame(setup.lightAttack);
+                PressQuick(dxSigned);
                 actionTimer = Random.Range(0.20f, 0.36f);
                 MaybeRepositionAfterAction(dxSigned, true);
                 return;
@@ -754,8 +831,8 @@ public class SimpleBotController : MonoBehaviour
             if (roll < blockW)
             {
                 botInput.SetKey(setup.block, true);
-                blockHoldTimer = Random.Range(0.10f, 0.22f) * BlockHoldMul;
-                actionTimer = Random.Range(0.15f, 0.26f) * BlockHoldMul;
+                blockHoldTimer = Random.Range(0.10f, 0.22f) * BlockHoldMul * blockHoldScale;
+                actionTimer = Random.Range(0.15f, 0.26f) * BlockHoldMul * blockHoldScale;
                 MaybeRepositionAfterAction(dxSigned, false);
                 return;
             }
@@ -780,7 +857,10 @@ public class SimpleBotController : MonoBehaviour
         float dy = Mathf.Abs(dySigned);
 
         if (dy > antiRushHeightTolerance)
+        {
+            PerceptionGate(ref rushPerceiveTimer, false);
             return false;
+        }
 
         float targetVelX = GetTargetVelocityX();
         bool approachingFast =
@@ -794,7 +874,7 @@ public class SimpleBotController : MonoBehaviour
             dx <= antiRushDangerRange &&
             (approachingFast || targetAttacking || distanceClosingFast);
 
-        if (!dangerousRush)
+        if (!PerceptionGate(ref rushPerceiveTimer, dangerousRush))
             return false;
 
         antiRushReactionTimer = antiRushReactionCooldown;
@@ -802,12 +882,12 @@ public class SimpleBotController : MonoBehaviour
         bool critical = dx <= antiRushCriticalRange;
 
         float blockW = antiRushBlockWeight * Mathf.Lerp(1.0f, 1.25f, defenseBias) * DefMul;
-        float parryW = antiRushParryWeight * Mathf.Lerp(0.9f, 1.2f, skill) * DefMul;
+        float parryW = antiRushParryWeight * Mathf.Lerp(0.9f, 1.2f, skill) * DefMul * parryScale;
         float lightW = antiRushLightWeight * Mathf.Lerp(1.0f, 1.25f, aggression) * AggrMul * QuickReadyMul;
         float heavyW = antiRushHeavyWeight * Mathf.Lerp(0.95f, 1.20f, aggression) * AggrMul;
         float specialW = CanUseSpecialNow() ? antiRushSpecialWeight * AggrMul : 0f;
         float retreatW = antiRushRetreatWeight;
-        float chargeW = CanStartBotCharge() ? antiRushChargeWeight * AggrMul : 0f;
+        float chargeW = CanStartBotCharge() ? antiRushChargeWeight * AggrMul * chargeScale : 0f;
 
         if (critical)
         {
@@ -823,8 +903,8 @@ public class SimpleBotController : MonoBehaviour
         if (roll < blockW)
         {
             botInput.SetKey(setup.block, true);
-            blockHoldTimer = Random.Range(antiRushBlockHoldMin, antiRushBlockHoldMax) * BlockHoldMul;
-            actionTimer = Random.Range(0.12f, 0.22f) * BlockHoldMul;
+            blockHoldTimer = Random.Range(antiRushBlockHoldMin, antiRushBlockHoldMax) * BlockHoldMul * blockHoldScale;
+            actionTimer = Random.Range(0.12f, 0.22f) * BlockHoldMul * blockHoldScale;
             return true;
         }
         roll -= blockW;
@@ -842,7 +922,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (roll < lightW)
         {
-            PressOneFrame(setup.lightAttack);
+            PressQuick(dxSigned);
             actionTimer = Random.Range(0.12f, 0.22f);
             return true;
         }
@@ -908,7 +988,7 @@ public class SimpleBotController : MonoBehaviour
         bool closeEnough = dx <= antiChargeRange;
         bool opponentCharging = target.IsCharging;
 
-        if (!opponentCharging || !closeEnough || !sameLevel)
+        if (!PerceptionGate(ref chargePerceiveTimer, opponentCharging && closeEnough && sameLevel))
             return false;
 
         bool chargingTowardsMe = IsTargetChargingTowardsMe(dxSigned);
@@ -931,7 +1011,7 @@ public class SimpleBotController : MonoBehaviour
             if (character.IsGrounded && !character.JumpDisabled && !character.IsCasting)
             {
                 if (trackingEnemyCharge && enemyChargeTimer >= antiChargeParryDelay &&
-                    character.CanParry && Random.value < antiChargeEmergencyParryChance)
+                    character.CanParry && Random.value < antiChargeEmergencyParryChance * parryScale)
                 {
                     PressOneFrame(setup.parry);
                     antiChargeReactionTimer = antiChargeReactionCooldown;
@@ -981,14 +1061,14 @@ public class SimpleBotController : MonoBehaviour
         antiChargeReactionTimer = antiChargeReactionCooldown;
 
         float totalWeight =
-            antiChargeParryWeight +
+            antiChargeParryWeight * parryScale +
             antiChargeJumpWeight +
             antiChargeRetreatWeight +
             antiChargeBlockWeight;
 
         float roll = Random.value * totalWeight;
 
-        if (roll < antiChargeParryWeight)
+        if (roll < antiChargeParryWeight * parryScale)
         {
             bool parryTimingReady = trackingEnemyCharge && enemyChargeTimer >= antiChargeParryDelay;
 
@@ -1001,7 +1081,7 @@ public class SimpleBotController : MonoBehaviour
         }
         else
         {
-            roll -= antiChargeParryWeight;
+            roll -= antiChargeParryWeight * parryScale;
         }
 
         if (roll < antiChargeJumpWeight)
@@ -1031,8 +1111,8 @@ public class SimpleBotController : MonoBehaviour
         }
 
         botInput.SetKey(setup.block, true);
-        blockHoldTimer = Random.Range(0.18f, 0.32f) * BlockHoldMul;
-        actionTimer = 0.22f * BlockHoldMul;
+        blockHoldTimer = Random.Range(0.18f, 0.32f) * BlockHoldMul * blockHoldScale;
+        actionTimer = 0.22f * BlockHoldMul * blockHoldScale;
         return true;
     }
 
@@ -1058,7 +1138,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (roll < quickW)
         {
-            PressOneFrame(setup.lightAttack);
+            PressQuick(dxSigned);
             actionTimer = Random.Range(rushPunishLightCooldownMin, rushPunishLightCooldownMax);
             return true;
         }
@@ -1135,7 +1215,7 @@ public class SimpleBotController : MonoBehaviour
         if (!inRange || !mashEntry)
             return false;
 
-        float chance = proactiveChargeChance * Mathf.Lerp(0.9f, 1.15f, skill) * AggrMul;
+        float chance = proactiveChargeChance * Mathf.Lerp(0.9f, 1.15f, skill) * AggrMul * chargeScale;
         chance = Mathf.Min(0.95f, chance);
 
         if (Random.value > chance)
@@ -1382,6 +1462,25 @@ public class SimpleBotController : MonoBehaviour
         }
     }
 
+    // Human rhythm: bursts of quick decisions, then irregular (log-normal) pauses. Old: uniform thinkIntervalMin..Max.
+    private float NextThinkInterval()
+    {
+        if (!humanRhythm) return Random.Range(thinkIntervalMin, thinkIntervalMax);
+        if (burstLeft > 0)
+        {
+            burstLeft--;
+            return Random.Range(burstIntervalMin, burstIntervalMax);
+        }
+        if (Random.value < burstStartChance)
+        {
+            burstLeft = Random.Range(burstExtraMin, burstExtraMax + 1) - 1;
+            return Random.Range(burstIntervalMin, burstIntervalMax);
+        }
+        float u1 = Mathf.Max(1e-6f, Random.value), u2 = Random.value;
+        float z = Mathf.Sqrt(-2f * Mathf.Log(u1)) * Mathf.Cos(2f * Mathf.PI * u2);
+        return Mathf.Clamp(thinkMedian * Mathf.Exp(thinkSigma * z), thinkMinHuman, thinkMaxHuman);
+    }
+
     private void TriggerDropPlatform()
     {
         isDroppingThroughPlatform = true;
@@ -1409,6 +1508,43 @@ public class SimpleBotController : MonoBehaviour
     private string GetAxisSuffix()
     {
         return setup.playerNum == 1 ? "_P1" : "_P2";
+    }
+
+    // Quick attack with a human-like aim: hold the direction toward the opponent in the same frame (Skipler's quick is a
+    // dash in the held direction; no key = right). With probability 1 - quickAimChance the old behaviour (no aim) is kept.
+    private void PressQuick(float dxSigned)
+    {
+        if (Random.value < quickAimChance)
+        {
+            quickAimDir = dxSigned >= 0f ? 1f : -1f;
+            quickAimTimer = quickAimHold;
+            ApplyMovement(quickAimDir);
+        }
+        PressOneFrame(setup.lightAttack);
+    }
+
+    // Perception delay: the first frame a danger is seen starts a sampled delay; when it has passed the bot reacts only if
+    // the danger still holds at that moment. timer: -1 idle, > 0 perceiving, 0 perceived. Returns true = react now.
+    private bool PerceptionGate(ref float timer, bool danger)
+    {
+        if (!humanReactionDelay) { timer = -1f; return danger; }
+        if (timer < 0f)
+        {
+            if (danger) timer = SampleReactionDelay();
+            return false;
+        }
+        if (timer > 0f) return false;
+        timer = -1f;
+        return danger;
+    }
+
+    // Log-normal reaction delay; the median shrinks with skill (better players react faster).
+    private float SampleReactionDelay()
+    {
+        float median = Mathf.Lerp(reactionMedianSkill0, reactionMedianSkill1, skill);
+        float u1 = Mathf.Max(1e-6f, Random.value), u2 = Random.value;
+        float z = Mathf.Sqrt(-2f * Mathf.Log(u1)) * Mathf.Cos(2f * Mathf.PI * u2);
+        return Mathf.Clamp(median * Mathf.Exp(reactionSigma * z), reactionMin, reactionMax);
     }
 
     private void PressOneFrame(KeyCode key)
