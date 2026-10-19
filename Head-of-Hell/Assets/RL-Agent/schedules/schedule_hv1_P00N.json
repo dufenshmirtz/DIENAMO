@@ -1,0 +1,270 @@
+{
+ "seed": 0,
+ "participant": "P00N",
+ "session": 1,
+ "purpose": "human validation: baseline vs REF",
+ "outputFolder": "HV_P00",
+ "name": "schedule_hv1_P00N",
+ "personas": [
+  {
+   "id": "P00N",
+   "kind": "Human",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 1,
+   "round": 2,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 2,
+   "round": 3,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 3,
+   "round": 4,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 4,
+   "round": 5,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 5,
+   "round": 6,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 6,
+   "round": 7,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 7,
+   "round": 8,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 8,
+   "round": 9,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 9,
+   "round": 10,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 10,
+   "round": 11,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 11,
+   "round": 12,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 12,
+   "round": 13,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 13,
+   "round": 14,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 14,
+   "round": 15,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 15,
+   "round": 16,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 16,
+   "round": 17,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 17,
+   "round": 18,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 18,
+   "round": 19,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 19,
+   "round": 20,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 20,
+   "round": 21,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 21,
+   "round": 22,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 22,
+   "round": 23,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 23,
+   "round": 24,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 24,
+   "round": 25,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 25,
+   "round": 26,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 26,
+   "round": 27,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 27,
+   "round": 28,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 28,
+   "round": 29,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 29,
+   "round": 30,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 30,
+   "round": 31,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 31,
+   "round": 32,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 32,
+   "round": 33,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 33,
+   "round": 34,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 34,
+   "round": 35,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 35,
+   "round": 36,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 36,
+   "round": 37,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 37,
+   "round": 38,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 38,
+   "round": 39,
+   "p1": "P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 39,
+   "round": 40,
+   "p1": "P00N",
+   "p2": "REF"
+  }
+ ]
+}
