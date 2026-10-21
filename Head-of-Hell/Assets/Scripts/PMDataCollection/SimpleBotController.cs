@@ -82,6 +82,28 @@ public class SimpleBotController : MonoBehaviour
     [Tooltip("Free platform use: chance per decision to drop through the platform the bot stands on (mobility knob scales it).")]
     [SerializeField] private float platformDropChance = 0.15f;   // bot v4 (v3: 0.06 -> 0.08 drops/s, humans ~0.23)
 
+    [Header("Bot v5 (19-20/10): special aim, charge awareness, human answer to heavies")]
+    [Tooltip("Share of specials aimed at the opponent (Skipler's special is a dash in the held direction; no key = right).")]
+    [Range(0f, 1f)] [SerializeField] private float specialAimChance = 0.9f;
+    [Tooltip("Movement knows that a charging opponent hits only in FRONT: never walk into the front of a charge; from behind is fine.")]
+    [SerializeField] private bool chargeAwareness = true;
+    [Tooltip("Distance kept from the front of a charging opponent.")]
+    [SerializeField] private float chargeSafeRange = 1.8f;
+    [Tooltip("Perception delay before the movement reacts to a charge start (a fully charged opponent is always known).")]
+    [SerializeField] private float chargeAwareDelay = 0.25f;
+    [Tooltip("Chance per decision to dash (special) through a charging opponent in front (breaks the charge).")]
+    [Range(0f, 1f)] [SerializeField] private float chargeDashChance = 0.5f;
+    [Tooltip("Human answer to an opponent's heavy start nearby (after the perception delay): block / step back / parry / nothing. " +
+             "A blocked heavy still deals 5 of 14 damage, so stepping out of range is preferred when not too close.")]
+    [SerializeField] private bool heavyReaction = true;
+    [SerializeField] private float heavyThreatRange = 1.6f;
+    [SerializeField] private float heavyCloseRange = 1.0f;
+    [SerializeField] private float heavyBlockWeight = 0.45f;
+    [SerializeField] private float heavyStepWeight = 0.30f;
+    [SerializeField] private float heavyParryWeight = 0.10f;
+    [SerializeField] private float heavyNoneWeight = 0.35f;
+    [SerializeField] private float heavyReactCooldown = 0.70f;
+
     [Header("Anti-Charge Reaction")]
     [SerializeField] private bool antiChargeEnabled = true;
     [SerializeField] private float antiChargeRange = 2.0f;
@@ -92,7 +114,7 @@ public class SimpleBotController : MonoBehaviour
     [SerializeField] private float antiChargeParryWeight = 0.42f;
     [SerializeField] private float antiChargeJumpWeight = 0.26f;
     [SerializeField] private float antiChargeRetreatWeight = 0.22f;
-    [SerializeField] private float antiChargeBlockWeight = 0.10f;
+    [SerializeField] private float antiChargeBlockWeight = 0f;   // bot v5: was 0.10 - a block does NOT reduce charge damage
     [SerializeField] private float retreatDuration = 0.22f;
     [SerializeField] private float antiChargeSpecialChance = 0.92f;
     [SerializeField] private float antiChargeSpecialRange = 2f;
@@ -302,6 +324,8 @@ public class SimpleBotController : MonoBehaviour
     private float quickAimDir;
     private float rushPerceiveTimer = -1f;     // -1 idle, >0 perceiving, 0 perceived (react if the danger still holds)
     private float chargePerceiveTimer = -1f;
+    private float heavyPerceiveTimer = -1f;
+    private float heavyReactTimer;
 
     private bool botCharging;
     private float botChargeTimer;
@@ -343,6 +367,8 @@ public class SimpleBotController : MonoBehaviour
         quickAimTimer = 0f;
         rushPerceiveTimer = -1f;
         chargePerceiveTimer = -1f;
+        heavyPerceiveTimer = -1f;
+        heavyReactTimer = 0f;
 
         botCharging = false;
         botChargeTimer = 0f;
@@ -389,6 +415,8 @@ public class SimpleBotController : MonoBehaviour
         quickAimTimer -= dt;
         if (rushPerceiveTimer > 0f) rushPerceiveTimer = Mathf.Max(0f, rushPerceiveTimer - dt);
         if (chargePerceiveTimer > 0f) chargePerceiveTimer = Mathf.Max(0f, chargePerceiveTimer - dt);
+        if (heavyPerceiveTimer > 0f) heavyPerceiveTimer = Mathf.Max(0f, heavyPerceiveTimer - dt);
+        heavyReactTimer -= dt;
         botChargeCooldownTimer -= dt;
         heavyCommitTimer -= dt;
 
@@ -409,6 +437,14 @@ public class SimpleBotController : MonoBehaviour
         }
 
         if (TryReactToCharge())
+        {
+            HandleMovement(dt);
+            UpdateLastTargetDistance();
+            return;
+        }
+
+        // Bot v5: human answer to an opponent's heavy (before the generic anti-rush, which prefers counter-attacks).
+        if (heavyCommitTimer <= 0f && TryReactToHeavy())
         {
             HandleMovement(dt);
             UpdateLastTargetDistance();
@@ -520,6 +556,25 @@ public class SimpleBotController : MonoBehaviour
         if (forcedHorizontalTimer > 0f)
         {
             ApplyMovement(forcedHorizontalValue);
+            return;
+        }
+
+        // Bot v5 (H): a charging opponent hits only in front -> keep out of its front, wait for the release; behind is fine.
+        if (ChargeThreatFront(dxSigned, dx, sameLevel))
+        {
+            if (dx < chargeSafeRange)
+            {
+                float away = -Mathf.Sign(dxSigned);
+                if (Mathf.Abs(away) < 0.01f) away = Random.value < 0.5f ? -1f : 1f;
+                committedMove = away;
+                moveCommitTimer = Random.Range(0.12f, 0.22f);
+            }
+            else
+            {
+                committedMove = 0f;
+                moveCommitTimer = Random.Range(0.08f, 0.16f);
+            }
+            ApplyMovement(committedMove);
             return;
         }
 
@@ -687,6 +742,19 @@ public class SimpleBotController : MonoBehaviour
 
         bool rushPunishState = IsRushPunishState(dx, dy, dxSigned, sameLevel);
 
+        // Bot v5 (H): no attacks into the front of a charge; the special dash goes through it and breaks it.
+        if (ChargeThreatFront(dxSigned, dx, sameLevel) && dx < chargeSafeRange + 0.3f)
+        {
+            if (CanUseSpecialNow() && dx <= antiChargeSpecialRange && Random.value < chargeDashChance)
+            {
+                PressSpecial(dxSigned);
+                actionTimer = Random.Range(0.30f, 0.50f);
+            }
+            else
+                actionTimer = Random.Range(0.08f, 0.16f);
+            return;
+        }
+
         if (TryStartProactiveCharge(dx, dy, dxSigned, sameLevel))
             return;
 
@@ -769,7 +837,7 @@ public class SimpleBotController : MonoBehaviour
 
             if (roll < specialW)
             {
-                PressOneFrame(setup.ability);
+                PressSpecial(dxSigned);
                 actionTimer = Random.Range(0.24f, 0.42f);
                 MaybeRepositionAfterAction(dxSigned, true);
                 return;
@@ -809,7 +877,7 @@ public class SimpleBotController : MonoBehaviour
 
             if (roll < specialW)
             {
-                PressOneFrame(setup.ability);
+                PressSpecial(dxSigned);
                 actionTimer = Random.Range(0.32f, 0.56f);
                 MaybeRepositionAfterAction(dxSigned, true);
                 return;
@@ -937,7 +1005,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (roll < specialW)
         {
-            PressOneFrame(setup.ability);
+            PressSpecial(dxSigned);
             actionTimer = Random.Range(0.22f, 0.40f);
             return true;
         }
@@ -1002,7 +1070,7 @@ public class SimpleBotController : MonoBehaviour
         {
             if (dx <= antiChargeSpecialRange && CanUseSpecialNow())
             {
-                PressOneFrame(setup.ability);
+                PressSpecial(dxSigned);
                 antiChargeReactionTimer = antiChargeSpecialCooldown;
                 actionTimer = 0.16f;
                 return true;
@@ -1041,7 +1109,7 @@ public class SimpleBotController : MonoBehaviour
         {
             if (Random.value < antiChargeSpecialChance)
             {
-                PressOneFrame(setup.ability);
+                PressSpecial(dxSigned);
                 antiChargeReactionTimer = antiChargeSpecialCooldown;
                 actionTimer = 0.20f;
                 return true;
@@ -1110,9 +1178,9 @@ public class SimpleBotController : MonoBehaviour
             roll -= antiChargeRetreatWeight;
         }
 
-        botInput.SetKey(setup.block, true);
-        blockHoldTimer = Random.Range(0.18f, 0.32f) * BlockHoldMul * blockHoldScale;
-        actionTimer = 0.22f * BlockHoldMul * blockHoldScale;
+        // Bot v5: fallback was a block, but a block does not reduce charge damage -> step away instead.
+        ForceRetreatFromTarget(dxSigned, retreatDuration);
+        actionTimer = 0.18f;
         return true;
     }
 
@@ -1153,7 +1221,7 @@ public class SimpleBotController : MonoBehaviour
 
         if (roll < specialW)
         {
-            PressOneFrame(setup.ability);
+            PressSpecial(dxSigned);
             actionTimer = Random.Range(rushPunishSpecialCooldownMin, rushPunishSpecialCooldownMax);
             return true;
         }
@@ -1521,6 +1589,72 @@ public class SimpleBotController : MonoBehaviour
             ApplyMovement(quickAimDir);
         }
         PressOneFrame(setup.lightAttack);
+    }
+
+    // Bot v5 (G): the special (Skipler: dash in the held direction) aimed at the opponent, like PressQuick.
+    private void PressSpecial(float dxSigned)
+    {
+        if (Random.value < specialAimChance)
+        {
+            quickAimDir = dxSigned >= 0f ? 1f : -1f;
+            quickAimTimer = quickAimHold;
+            ApplyMovement(quickAimDir);
+        }
+        PressOneFrame(setup.ability);
+    }
+
+    // Bot v5 (H): the opponent is charging / charged, on our level and facing us (its charge hits only in front).
+    private bool ChargeThreatFront(float dxSigned, float dx, bool sameLevel)
+    {
+        if (!chargeAwareness || target == null || !sameLevel) return false;
+        bool known = target.IsCharged || (target.IsCharging && trackingEnemyCharge && enemyChargeTimer >= chargeAwareDelay);
+        return known && IsTargetChargingTowardsMe(dxSigned);
+    }
+
+    // Bot v5 (I): human answer to an opponent's heavy start nearby, after the perception delay.
+    private bool TryReactToHeavy()
+    {
+        if (!heavyReaction || heavyReactTimer > 0f) return false;
+        if (character == null || target == null || targetTr == null) return false;
+        if (character.IsCasting || character.IsStunned || character.IsKnocked) return false;
+
+        float dxSigned = targetTr.position.x - selfTr.position.x;
+        float dx = Mathf.Abs(dxSigned);
+        float dy = Mathf.Abs(targetTr.position.y - selfTr.position.y);
+        bool threat = target.HeavyAttacking && dy <= sameLevelTolerance && dx <= heavyThreatRange &&
+                      IsTargetChargingTowardsMe(dxSigned);   // = the opponent faces us
+        if (!PerceptionGate(ref heavyPerceiveTimer, threat)) return false;
+
+        heavyReactTimer = heavyReactCooldown;
+        bool close = dx <= heavyCloseRange;
+        float blockW = character.BlockDisabled ? 0f : heavyBlockWeight * DefMul * (close ? 1.3f : 0.7f);
+        float stepW = heavyStepWeight * MobMul * (close ? 0.5f : 1.4f);
+        float parryW = character.CanParry ? heavyParryWeight * DefMul * Mathf.Lerp(0.8f, 1.2f, skill) * parryScale : 0f;
+        float noneW = heavyNoneWeight * AggrMul;
+        float roll = Random.value * (blockW + stepW + parryW + noneW);
+
+        if (roll < blockW)
+        {
+            botInput.SetKey(setup.block, true);
+            blockHoldTimer = Random.Range(0.40f, 0.65f);   // until the heavy has landed (~0.57 s after its start)
+            actionTimer = blockHoldTimer;
+            return true;
+        }
+        roll -= blockW;
+        if (roll < stepW)
+        {
+            ForceRetreatFromTarget(dxSigned, Random.Range(0.25f, 0.40f));
+            actionTimer = 0.20f;
+            return true;
+        }
+        roll -= stepW;
+        if (roll < parryW)
+        {
+            PressOneFrame(setup.parry);
+            actionTimer = Random.Range(antiRushParryWindowMin, antiRushParryWindowMax);
+            return true;
+        }
+        return false;   // no special answer: keep doing what it was doing (anti-rush may still counter-attack)
     }
 
     // Perception delay: the first frame a danger is seen starts a sampled delay; when it has passed the bot reacts only if

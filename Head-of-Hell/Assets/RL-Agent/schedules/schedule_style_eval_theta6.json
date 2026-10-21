@@ -1,0 +1,1940 @@
+{
+ "name": "schedule_style_eval_theta6",
+ "seed": 0,
+ "purpose": "style fidelity theta5 (bot v4 teachers play too)",
+ "targets": [
+  "S07",
+  "S08",
+  "S15",
+  "S20",
+  "S22",
+  "S24",
+  "S04",
+  "S13",
+  "S14",
+  "S16",
+  "S17",
+  "S21",
+  "X02",
+  "X03",
+  "X05",
+  "X10"
+ ],
+ "personas": [
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_S07",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.33727,
+   "styleMobility": 0.55814,
+   "styleDefense": 0.1046,
+   "styleMobilityTime": 0.46431,
+   "styleBlockTime": 0.0741
+  },
+  {
+   "id": "S07",
+   "kind": "Scripted",
+   "aggression": 0.774,
+   "defense": 0.74,
+   "mobility": 0.279,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_S08",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.36545,
+   "styleMobility": 0.57185,
+   "styleDefense": 0.0627,
+   "styleMobilityTime": 0.43268,
+   "styleBlockTime": 0.02248
+  },
+  {
+   "id": "S08",
+   "kind": "Scripted",
+   "aggression": 0.381,
+   "defense": 0.222,
+   "mobility": 0.233,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_S15",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.25202,
+   "styleMobility": 0.69784,
+   "styleDefense": 0.05014,
+   "styleMobilityTime": 0.81341,
+   "styleBlockTime": 0.03906
+  },
+  {
+   "id": "S15",
+   "kind": "Scripted",
+   "aggression": 0.688,
+   "defense": 0.436,
+   "mobility": 0.755,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_S20",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.29685,
+   "styleMobility": 0.56468,
+   "styleDefense": 0.13847,
+   "styleMobilityTime": 0.5,
+   "styleBlockTime": 0.10709
+  },
+  {
+   "id": "S20",
+   "kind": "Scripted",
+   "aggression": 0.418,
+   "defense": 0.553,
+   "mobility": 0.37,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_S22",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.19863,
+   "styleMobility": 0.74711,
+   "styleDefense": 0.05426,
+   "styleMobilityTime": 0.77902,
+   "styleBlockTime": 0.03685
+  },
+  {
+   "id": "S22",
+   "kind": "Scripted",
+   "aggression": 0.356,
+   "defense": 0.33,
+   "mobility": 0.707,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_S24",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.19349,
+   "styleMobility": 0.63697,
+   "styleDefense": 0.16954,
+   "styleMobilityTime": 0.53646,
+   "styleBlockTime": 0.17302
+  },
+  {
+   "id": "S24",
+   "kind": "Scripted",
+   "aggression": 0.241,
+   "defense": 0.789,
+   "mobility": 0.428,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_S04",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.1912,
+   "styleMobility": 0.55638,
+   "styleDefense": 0.25241,
+   "styleMobilityTime": 0.39371,
+   "styleBlockTime": 0.18586
+  },
+  {
+   "id": "S04",
+   "kind": "Scripted",
+   "aggression": 0.148,
+   "defense": 0.839,
+   "mobility": 0.235,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_S13",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.278,
+   "styleMobility": 0.68929,
+   "styleDefense": 0.03272,
+   "styleMobilityTime": 0.81902,
+   "styleBlockTime": 0.01819
+  },
+  {
+   "id": "S13",
+   "kind": "Scripted",
+   "aggression": 0.846,
+   "defense": 0.4,
+   "mobility": 0.782,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_S14",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.17141,
+   "styleMobility": 0.73434,
+   "styleDefense": 0.09426,
+   "styleMobilityTime": 0.83824,
+   "styleBlockTime": 0.13378
+  },
+  {
+   "id": "S14",
+   "kind": "Scripted",
+   "aggression": 0.624,
+   "defense": 0.887,
+   "mobility": 0.835,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_S16",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.37472,
+   "styleMobility": 0.51637,
+   "styleDefense": 0.10891,
+   "styleMobilityTime": 0.41942,
+   "styleBlockTime": 0.07078
+  },
+  {
+   "id": "S16",
+   "kind": "Scripted",
+   "aggression": 0.512,
+   "defense": 0.617,
+   "mobility": 0.198,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_S17",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.25024,
+   "styleMobility": 0.69362,
+   "styleDefense": 0.05614,
+   "styleMobilityTime": 0.51639,
+   "styleBlockTime": 0.02602
+  },
+  {
+   "id": "S17",
+   "kind": "Scripted",
+   "aggression": 0.168,
+   "defense": 0.133,
+   "mobility": 0.356,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_S21",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.45013,
+   "styleMobility": 0.51627,
+   "styleDefense": 0.0336,
+   "styleMobilityTime": 0.40488,
+   "styleBlockTime": 0.00924
+  },
+  {
+   "id": "S21",
+   "kind": "Scripted",
+   "aggression": 0.756,
+   "defense": 0.293,
+   "mobility": 0.15,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_X02",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.20191,
+   "styleMobility": 0.77239,
+   "styleDefense": 0.0257,
+   "styleMobilityTime": 0.8646,
+   "styleBlockTime": 0.01272
+  },
+  {
+   "id": "X02",
+   "kind": "Scripted",
+   "aggression": 0.601,
+   "defense": 0.061,
+   "mobility": 0.858,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_X03",
+   "kind": "ILAgent",
+   "holdout": true,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.17124,
+   "styleMobility": 0.79589,
+   "styleDefense": 0.03286,
+   "styleMobilityTime": 0.89262,
+   "styleBlockTime": 0.01683
+  },
+  {
+   "id": "X03",
+   "kind": "Scripted",
+   "aggression": 0.473,
+   "defense": 0.116,
+   "mobility": 0.951,
+   "patience": 0.5,
+   "holdout": true
+  },
+  {
+   "id": "T6_X05",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.1959,
+   "styleMobility": 0.78578,
+   "styleDefense": 0.01831,
+   "styleMobilityTime": 0.89322,
+   "styleBlockTime": 0.00948
+  },
+  {
+   "id": "X05",
+   "kind": "Scripted",
+   "aggression": 0.772,
+   "defense": 0.043,
+   "mobility": 0.969,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "T6_X10",
+   "kind": "ILAgent",
+   "holdout": false,
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "styleAttack": 0.15783,
+   "styleMobility": 0.78999,
+   "styleDefense": 0.05218,
+   "styleMobilityTime": 0.85385,
+   "styleBlockTime": 0.04004
+  },
+  {
+   "id": "X10",
+   "kind": "Scripted",
+   "aggression": 0.4,
+   "defense": 0.266,
+   "mobility": 0.894,
+   "patience": 0.5,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "T6_S07",
+   "p2": "REF"
+  },
+  {
+   "index": 1,
+   "round": 1,
+   "p1": "S07",
+   "p2": "REF"
+  },
+  {
+   "index": 2,
+   "round": 1,
+   "p1": "T6_S08",
+   "p2": "REF"
+  },
+  {
+   "index": 3,
+   "round": 1,
+   "p1": "S08",
+   "p2": "REF"
+  },
+  {
+   "index": 4,
+   "round": 1,
+   "p1": "T6_S15",
+   "p2": "REF"
+  },
+  {
+   "index": 5,
+   "round": 1,
+   "p1": "S15",
+   "p2": "REF"
+  },
+  {
+   "index": 6,
+   "round": 1,
+   "p1": "T6_S20",
+   "p2": "REF"
+  },
+  {
+   "index": 7,
+   "round": 1,
+   "p1": "S20",
+   "p2": "REF"
+  },
+  {
+   "index": 8,
+   "round": 1,
+   "p1": "T6_S22",
+   "p2": "REF"
+  },
+  {
+   "index": 9,
+   "round": 1,
+   "p1": "S22",
+   "p2": "REF"
+  },
+  {
+   "index": 10,
+   "round": 1,
+   "p1": "T6_S24",
+   "p2": "REF"
+  },
+  {
+   "index": 11,
+   "round": 1,
+   "p1": "S24",
+   "p2": "REF"
+  },
+  {
+   "index": 12,
+   "round": 1,
+   "p1": "T6_S04",
+   "p2": "REF"
+  },
+  {
+   "index": 13,
+   "round": 1,
+   "p1": "S04",
+   "p2": "REF"
+  },
+  {
+   "index": 14,
+   "round": 1,
+   "p1": "T6_S13",
+   "p2": "REF"
+  },
+  {
+   "index": 15,
+   "round": 1,
+   "p1": "S13",
+   "p2": "REF"
+  },
+  {
+   "index": 16,
+   "round": 1,
+   "p1": "T6_S14",
+   "p2": "REF"
+  },
+  {
+   "index": 17,
+   "round": 1,
+   "p1": "S14",
+   "p2": "REF"
+  },
+  {
+   "index": 18,
+   "round": 1,
+   "p1": "T6_S16",
+   "p2": "REF"
+  },
+  {
+   "index": 19,
+   "round": 1,
+   "p1": "S16",
+   "p2": "REF"
+  },
+  {
+   "index": 20,
+   "round": 1,
+   "p1": "T6_S17",
+   "p2": "REF"
+  },
+  {
+   "index": 21,
+   "round": 1,
+   "p1": "S17",
+   "p2": "REF"
+  },
+  {
+   "index": 22,
+   "round": 1,
+   "p1": "T6_S21",
+   "p2": "REF"
+  },
+  {
+   "index": 23,
+   "round": 1,
+   "p1": "S21",
+   "p2": "REF"
+  },
+  {
+   "index": 24,
+   "round": 1,
+   "p1": "T6_X02",
+   "p2": "REF"
+  },
+  {
+   "index": 25,
+   "round": 1,
+   "p1": "X02",
+   "p2": "REF"
+  },
+  {
+   "index": 26,
+   "round": 1,
+   "p1": "T6_X03",
+   "p2": "REF"
+  },
+  {
+   "index": 27,
+   "round": 1,
+   "p1": "X03",
+   "p2": "REF"
+  },
+  {
+   "index": 28,
+   "round": 1,
+   "p1": "T6_X05",
+   "p2": "REF"
+  },
+  {
+   "index": 29,
+   "round": 1,
+   "p1": "X05",
+   "p2": "REF"
+  },
+  {
+   "index": 30,
+   "round": 1,
+   "p1": "T6_X10",
+   "p2": "REF"
+  },
+  {
+   "index": 31,
+   "round": 1,
+   "p1": "X10",
+   "p2": "REF"
+  },
+  {
+   "index": 32,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S07"
+  },
+  {
+   "index": 33,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S07"
+  },
+  {
+   "index": 34,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S08"
+  },
+  {
+   "index": 35,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S08"
+  },
+  {
+   "index": 36,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S15"
+  },
+  {
+   "index": 37,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S15"
+  },
+  {
+   "index": 38,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S20"
+  },
+  {
+   "index": 39,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S20"
+  },
+  {
+   "index": 40,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S22"
+  },
+  {
+   "index": 41,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S22"
+  },
+  {
+   "index": 42,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S24"
+  },
+  {
+   "index": 43,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S24"
+  },
+  {
+   "index": 44,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S04"
+  },
+  {
+   "index": 45,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S04"
+  },
+  {
+   "index": 46,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S13"
+  },
+  {
+   "index": 47,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S13"
+  },
+  {
+   "index": 48,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S14"
+  },
+  {
+   "index": 49,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S14"
+  },
+  {
+   "index": 50,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S16"
+  },
+  {
+   "index": 51,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S16"
+  },
+  {
+   "index": 52,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S17"
+  },
+  {
+   "index": 53,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S17"
+  },
+  {
+   "index": 54,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_S21"
+  },
+  {
+   "index": 55,
+   "round": 2,
+   "p1": "REF",
+   "p2": "S21"
+  },
+  {
+   "index": 56,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_X02"
+  },
+  {
+   "index": 57,
+   "round": 2,
+   "p1": "REF",
+   "p2": "X02"
+  },
+  {
+   "index": 58,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_X03"
+  },
+  {
+   "index": 59,
+   "round": 2,
+   "p1": "REF",
+   "p2": "X03"
+  },
+  {
+   "index": 60,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_X05"
+  },
+  {
+   "index": 61,
+   "round": 2,
+   "p1": "REF",
+   "p2": "X05"
+  },
+  {
+   "index": 62,
+   "round": 2,
+   "p1": "REF",
+   "p2": "T6_X10"
+  },
+  {
+   "index": 63,
+   "round": 2,
+   "p1": "REF",
+   "p2": "X10"
+  },
+  {
+   "index": 64,
+   "round": 3,
+   "p1": "T6_S07",
+   "p2": "REF"
+  },
+  {
+   "index": 65,
+   "round": 3,
+   "p1": "S07",
+   "p2": "REF"
+  },
+  {
+   "index": 66,
+   "round": 3,
+   "p1": "T6_S08",
+   "p2": "REF"
+  },
+  {
+   "index": 67,
+   "round": 3,
+   "p1": "S08",
+   "p2": "REF"
+  },
+  {
+   "index": 68,
+   "round": 3,
+   "p1": "T6_S15",
+   "p2": "REF"
+  },
+  {
+   "index": 69,
+   "round": 3,
+   "p1": "S15",
+   "p2": "REF"
+  },
+  {
+   "index": 70,
+   "round": 3,
+   "p1": "T6_S20",
+   "p2": "REF"
+  },
+  {
+   "index": 71,
+   "round": 3,
+   "p1": "S20",
+   "p2": "REF"
+  },
+  {
+   "index": 72,
+   "round": 3,
+   "p1": "T6_S22",
+   "p2": "REF"
+  },
+  {
+   "index": 73,
+   "round": 3,
+   "p1": "S22",
+   "p2": "REF"
+  },
+  {
+   "index": 74,
+   "round": 3,
+   "p1": "T6_S24",
+   "p2": "REF"
+  },
+  {
+   "index": 75,
+   "round": 3,
+   "p1": "S24",
+   "p2": "REF"
+  },
+  {
+   "index": 76,
+   "round": 3,
+   "p1": "T6_S04",
+   "p2": "REF"
+  },
+  {
+   "index": 77,
+   "round": 3,
+   "p1": "S04",
+   "p2": "REF"
+  },
+  {
+   "index": 78,
+   "round": 3,
+   "p1": "T6_S13",
+   "p2": "REF"
+  },
+  {
+   "index": 79,
+   "round": 3,
+   "p1": "S13",
+   "p2": "REF"
+  },
+  {
+   "index": 80,
+   "round": 3,
+   "p1": "T6_S14",
+   "p2": "REF"
+  },
+  {
+   "index": 81,
+   "round": 3,
+   "p1": "S14",
+   "p2": "REF"
+  },
+  {
+   "index": 82,
+   "round": 3,
+   "p1": "T6_S16",
+   "p2": "REF"
+  },
+  {
+   "index": 83,
+   "round": 3,
+   "p1": "S16",
+   "p2": "REF"
+  },
+  {
+   "index": 84,
+   "round": 3,
+   "p1": "T6_S17",
+   "p2": "REF"
+  },
+  {
+   "index": 85,
+   "round": 3,
+   "p1": "S17",
+   "p2": "REF"
+  },
+  {
+   "index": 86,
+   "round": 3,
+   "p1": "T6_S21",
+   "p2": "REF"
+  },
+  {
+   "index": 87,
+   "round": 3,
+   "p1": "S21",
+   "p2": "REF"
+  },
+  {
+   "index": 88,
+   "round": 3,
+   "p1": "T6_X02",
+   "p2": "REF"
+  },
+  {
+   "index": 89,
+   "round": 3,
+   "p1": "X02",
+   "p2": "REF"
+  },
+  {
+   "index": 90,
+   "round": 3,
+   "p1": "T6_X03",
+   "p2": "REF"
+  },
+  {
+   "index": 91,
+   "round": 3,
+   "p1": "X03",
+   "p2": "REF"
+  },
+  {
+   "index": 92,
+   "round": 3,
+   "p1": "T6_X05",
+   "p2": "REF"
+  },
+  {
+   "index": 93,
+   "round": 3,
+   "p1": "X05",
+   "p2": "REF"
+  },
+  {
+   "index": 94,
+   "round": 3,
+   "p1": "T6_X10",
+   "p2": "REF"
+  },
+  {
+   "index": 95,
+   "round": 3,
+   "p1": "X10",
+   "p2": "REF"
+  },
+  {
+   "index": 96,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S07"
+  },
+  {
+   "index": 97,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S07"
+  },
+  {
+   "index": 98,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S08"
+  },
+  {
+   "index": 99,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S08"
+  },
+  {
+   "index": 100,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S15"
+  },
+  {
+   "index": 101,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S15"
+  },
+  {
+   "index": 102,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S20"
+  },
+  {
+   "index": 103,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S20"
+  },
+  {
+   "index": 104,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S22"
+  },
+  {
+   "index": 105,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S22"
+  },
+  {
+   "index": 106,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S24"
+  },
+  {
+   "index": 107,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S24"
+  },
+  {
+   "index": 108,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S04"
+  },
+  {
+   "index": 109,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S04"
+  },
+  {
+   "index": 110,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S13"
+  },
+  {
+   "index": 111,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S13"
+  },
+  {
+   "index": 112,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S14"
+  },
+  {
+   "index": 113,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S14"
+  },
+  {
+   "index": 114,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S16"
+  },
+  {
+   "index": 115,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S16"
+  },
+  {
+   "index": 116,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S17"
+  },
+  {
+   "index": 117,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S17"
+  },
+  {
+   "index": 118,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_S21"
+  },
+  {
+   "index": 119,
+   "round": 4,
+   "p1": "REF",
+   "p2": "S21"
+  },
+  {
+   "index": 120,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_X02"
+  },
+  {
+   "index": 121,
+   "round": 4,
+   "p1": "REF",
+   "p2": "X02"
+  },
+  {
+   "index": 122,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_X03"
+  },
+  {
+   "index": 123,
+   "round": 4,
+   "p1": "REF",
+   "p2": "X03"
+  },
+  {
+   "index": 124,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_X05"
+  },
+  {
+   "index": 125,
+   "round": 4,
+   "p1": "REF",
+   "p2": "X05"
+  },
+  {
+   "index": 126,
+   "round": 4,
+   "p1": "REF",
+   "p2": "T6_X10"
+  },
+  {
+   "index": 127,
+   "round": 4,
+   "p1": "REF",
+   "p2": "X10"
+  },
+  {
+   "index": 128,
+   "round": 5,
+   "p1": "T6_S07",
+   "p2": "REF"
+  },
+  {
+   "index": 129,
+   "round": 5,
+   "p1": "S07",
+   "p2": "REF"
+  },
+  {
+   "index": 130,
+   "round": 5,
+   "p1": "T6_S08",
+   "p2": "REF"
+  },
+  {
+   "index": 131,
+   "round": 5,
+   "p1": "S08",
+   "p2": "REF"
+  },
+  {
+   "index": 132,
+   "round": 5,
+   "p1": "T6_S15",
+   "p2": "REF"
+  },
+  {
+   "index": 133,
+   "round": 5,
+   "p1": "S15",
+   "p2": "REF"
+  },
+  {
+   "index": 134,
+   "round": 5,
+   "p1": "T6_S20",
+   "p2": "REF"
+  },
+  {
+   "index": 135,
+   "round": 5,
+   "p1": "S20",
+   "p2": "REF"
+  },
+  {
+   "index": 136,
+   "round": 5,
+   "p1": "T6_S22",
+   "p2": "REF"
+  },
+  {
+   "index": 137,
+   "round": 5,
+   "p1": "S22",
+   "p2": "REF"
+  },
+  {
+   "index": 138,
+   "round": 5,
+   "p1": "T6_S24",
+   "p2": "REF"
+  },
+  {
+   "index": 139,
+   "round": 5,
+   "p1": "S24",
+   "p2": "REF"
+  },
+  {
+   "index": 140,
+   "round": 5,
+   "p1": "T6_S04",
+   "p2": "REF"
+  },
+  {
+   "index": 141,
+   "round": 5,
+   "p1": "S04",
+   "p2": "REF"
+  },
+  {
+   "index": 142,
+   "round": 5,
+   "p1": "T6_S13",
+   "p2": "REF"
+  },
+  {
+   "index": 143,
+   "round": 5,
+   "p1": "S13",
+   "p2": "REF"
+  },
+  {
+   "index": 144,
+   "round": 5,
+   "p1": "T6_S14",
+   "p2": "REF"
+  },
+  {
+   "index": 145,
+   "round": 5,
+   "p1": "S14",
+   "p2": "REF"
+  },
+  {
+   "index": 146,
+   "round": 5,
+   "p1": "T6_S16",
+   "p2": "REF"
+  },
+  {
+   "index": 147,
+   "round": 5,
+   "p1": "S16",
+   "p2": "REF"
+  },
+  {
+   "index": 148,
+   "round": 5,
+   "p1": "T6_S17",
+   "p2": "REF"
+  },
+  {
+   "index": 149,
+   "round": 5,
+   "p1": "S17",
+   "p2": "REF"
+  },
+  {
+   "index": 150,
+   "round": 5,
+   "p1": "T6_S21",
+   "p2": "REF"
+  },
+  {
+   "index": 151,
+   "round": 5,
+   "p1": "S21",
+   "p2": "REF"
+  },
+  {
+   "index": 152,
+   "round": 5,
+   "p1": "T6_X02",
+   "p2": "REF"
+  },
+  {
+   "index": 153,
+   "round": 5,
+   "p1": "X02",
+   "p2": "REF"
+  },
+  {
+   "index": 154,
+   "round": 5,
+   "p1": "T6_X03",
+   "p2": "REF"
+  },
+  {
+   "index": 155,
+   "round": 5,
+   "p1": "X03",
+   "p2": "REF"
+  },
+  {
+   "index": 156,
+   "round": 5,
+   "p1": "T6_X05",
+   "p2": "REF"
+  },
+  {
+   "index": 157,
+   "round": 5,
+   "p1": "X05",
+   "p2": "REF"
+  },
+  {
+   "index": 158,
+   "round": 5,
+   "p1": "T6_X10",
+   "p2": "REF"
+  },
+  {
+   "index": 159,
+   "round": 5,
+   "p1": "X10",
+   "p2": "REF"
+  },
+  {
+   "index": 160,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S07"
+  },
+  {
+   "index": 161,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S07"
+  },
+  {
+   "index": 162,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S08"
+  },
+  {
+   "index": 163,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S08"
+  },
+  {
+   "index": 164,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S15"
+  },
+  {
+   "index": 165,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S15"
+  },
+  {
+   "index": 166,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S20"
+  },
+  {
+   "index": 167,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S20"
+  },
+  {
+   "index": 168,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S22"
+  },
+  {
+   "index": 169,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S22"
+  },
+  {
+   "index": 170,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S24"
+  },
+  {
+   "index": 171,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S24"
+  },
+  {
+   "index": 172,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S04"
+  },
+  {
+   "index": 173,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S04"
+  },
+  {
+   "index": 174,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S13"
+  },
+  {
+   "index": 175,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S13"
+  },
+  {
+   "index": 176,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S14"
+  },
+  {
+   "index": 177,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S14"
+  },
+  {
+   "index": 178,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S16"
+  },
+  {
+   "index": 179,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S16"
+  },
+  {
+   "index": 180,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S17"
+  },
+  {
+   "index": 181,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S17"
+  },
+  {
+   "index": 182,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_S21"
+  },
+  {
+   "index": 183,
+   "round": 6,
+   "p1": "REF",
+   "p2": "S21"
+  },
+  {
+   "index": 184,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_X02"
+  },
+  {
+   "index": 185,
+   "round": 6,
+   "p1": "REF",
+   "p2": "X02"
+  },
+  {
+   "index": 186,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_X03"
+  },
+  {
+   "index": 187,
+   "round": 6,
+   "p1": "REF",
+   "p2": "X03"
+  },
+  {
+   "index": 188,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_X05"
+  },
+  {
+   "index": 189,
+   "round": 6,
+   "p1": "REF",
+   "p2": "X05"
+  },
+  {
+   "index": 190,
+   "round": 6,
+   "p1": "REF",
+   "p2": "T6_X10"
+  },
+  {
+   "index": 191,
+   "round": 6,
+   "p1": "REF",
+   "p2": "X10"
+  },
+  {
+   "index": 192,
+   "round": 7,
+   "p1": "T6_S07",
+   "p2": "REF"
+  },
+  {
+   "index": 193,
+   "round": 7,
+   "p1": "S07",
+   "p2": "REF"
+  },
+  {
+   "index": 194,
+   "round": 7,
+   "p1": "T6_S08",
+   "p2": "REF"
+  },
+  {
+   "index": 195,
+   "round": 7,
+   "p1": "S08",
+   "p2": "REF"
+  },
+  {
+   "index": 196,
+   "round": 7,
+   "p1": "T6_S15",
+   "p2": "REF"
+  },
+  {
+   "index": 197,
+   "round": 7,
+   "p1": "S15",
+   "p2": "REF"
+  },
+  {
+   "index": 198,
+   "round": 7,
+   "p1": "T6_S20",
+   "p2": "REF"
+  },
+  {
+   "index": 199,
+   "round": 7,
+   "p1": "S20",
+   "p2": "REF"
+  },
+  {
+   "index": 200,
+   "round": 7,
+   "p1": "T6_S22",
+   "p2": "REF"
+  },
+  {
+   "index": 201,
+   "round": 7,
+   "p1": "S22",
+   "p2": "REF"
+  },
+  {
+   "index": 202,
+   "round": 7,
+   "p1": "T6_S24",
+   "p2": "REF"
+  },
+  {
+   "index": 203,
+   "round": 7,
+   "p1": "S24",
+   "p2": "REF"
+  },
+  {
+   "index": 204,
+   "round": 7,
+   "p1": "T6_S04",
+   "p2": "REF"
+  },
+  {
+   "index": 205,
+   "round": 7,
+   "p1": "S04",
+   "p2": "REF"
+  },
+  {
+   "index": 206,
+   "round": 7,
+   "p1": "T6_S13",
+   "p2": "REF"
+  },
+  {
+   "index": 207,
+   "round": 7,
+   "p1": "S13",
+   "p2": "REF"
+  },
+  {
+   "index": 208,
+   "round": 7,
+   "p1": "T6_S14",
+   "p2": "REF"
+  },
+  {
+   "index": 209,
+   "round": 7,
+   "p1": "S14",
+   "p2": "REF"
+  },
+  {
+   "index": 210,
+   "round": 7,
+   "p1": "T6_S16",
+   "p2": "REF"
+  },
+  {
+   "index": 211,
+   "round": 7,
+   "p1": "S16",
+   "p2": "REF"
+  },
+  {
+   "index": 212,
+   "round": 7,
+   "p1": "T6_S17",
+   "p2": "REF"
+  },
+  {
+   "index": 213,
+   "round": 7,
+   "p1": "S17",
+   "p2": "REF"
+  },
+  {
+   "index": 214,
+   "round": 7,
+   "p1": "T6_S21",
+   "p2": "REF"
+  },
+  {
+   "index": 215,
+   "round": 7,
+   "p1": "S21",
+   "p2": "REF"
+  },
+  {
+   "index": 216,
+   "round": 7,
+   "p1": "T6_X02",
+   "p2": "REF"
+  },
+  {
+   "index": 217,
+   "round": 7,
+   "p1": "X02",
+   "p2": "REF"
+  },
+  {
+   "index": 218,
+   "round": 7,
+   "p1": "T6_X03",
+   "p2": "REF"
+  },
+  {
+   "index": 219,
+   "round": 7,
+   "p1": "X03",
+   "p2": "REF"
+  },
+  {
+   "index": 220,
+   "round": 7,
+   "p1": "T6_X05",
+   "p2": "REF"
+  },
+  {
+   "index": 221,
+   "round": 7,
+   "p1": "X05",
+   "p2": "REF"
+  },
+  {
+   "index": 222,
+   "round": 7,
+   "p1": "T6_X10",
+   "p2": "REF"
+  },
+  {
+   "index": 223,
+   "round": 7,
+   "p1": "X10",
+   "p2": "REF"
+  },
+  {
+   "index": 224,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S07"
+  },
+  {
+   "index": 225,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S07"
+  },
+  {
+   "index": 226,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S08"
+  },
+  {
+   "index": 227,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S08"
+  },
+  {
+   "index": 228,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S15"
+  },
+  {
+   "index": 229,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S15"
+  },
+  {
+   "index": 230,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S20"
+  },
+  {
+   "index": 231,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S20"
+  },
+  {
+   "index": 232,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S22"
+  },
+  {
+   "index": 233,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S22"
+  },
+  {
+   "index": 234,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S24"
+  },
+  {
+   "index": 235,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S24"
+  },
+  {
+   "index": 236,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S04"
+  },
+  {
+   "index": 237,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S04"
+  },
+  {
+   "index": 238,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S13"
+  },
+  {
+   "index": 239,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S13"
+  },
+  {
+   "index": 240,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S14"
+  },
+  {
+   "index": 241,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S14"
+  },
+  {
+   "index": 242,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S16"
+  },
+  {
+   "index": 243,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S16"
+  },
+  {
+   "index": 244,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S17"
+  },
+  {
+   "index": 245,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S17"
+  },
+  {
+   "index": 246,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_S21"
+  },
+  {
+   "index": 247,
+   "round": 8,
+   "p1": "REF",
+   "p2": "S21"
+  },
+  {
+   "index": 248,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_X02"
+  },
+  {
+   "index": 249,
+   "round": 8,
+   "p1": "REF",
+   "p2": "X02"
+  },
+  {
+   "index": 250,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_X03"
+  },
+  {
+   "index": 251,
+   "round": 8,
+   "p1": "REF",
+   "p2": "X03"
+  },
+  {
+   "index": 252,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_X05"
+  },
+  {
+   "index": 253,
+   "round": 8,
+   "p1": "REF",
+   "p2": "X05"
+  },
+  {
+   "index": 254,
+   "round": 8,
+   "p1": "REF",
+   "p2": "T6_X10"
+  },
+  {
+   "index": 255,
+   "round": 8,
+   "p1": "REF",
+   "p2": "X10"
+  }
+ ]
+}
