@@ -1,0 +1,91 @@
+{
+ "name": "schedule_hv2b_P00",
+ "seed": 0,
+ "participant": "P00",
+ "session": 2,
+ "outputFolder": "HV_mirror6h_P00",
+ "purpose": "human validation: online mirror (theta6h)",
+ "personas": [
+  {
+   "id": "P00",
+   "kind": "Human",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "M_P00",
+   "kind": "ILAgent",
+   "mirrorOf": "HUMAN_P00",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 1,
+   "round": 2,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 2,
+   "round": 3,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 3,
+   "round": 4,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 4,
+   "round": 5,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 5,
+   "round": 6,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 6,
+   "round": 7,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 7,
+   "round": 8,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 8,
+   "round": 9,
+   "p1": "P00",
+   "p2": "M_P00"
+  },
+  {
+   "index": 9,
+   "round": 10,
+   "p1": "P00",
+   "p2": "M_P00"
+  }
+ ]
+}

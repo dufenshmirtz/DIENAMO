@@ -47,13 +47,19 @@ def load(data_dir, use_style, use_history=False, ego=False, quick=False):
     sd = np.array([meta["style_norm"]["std"][a] for a in axes], dtype=np.float32)
     x = d["obs"].astype(np.float32)
     act = d["act"]
+    # DAgger datasets (23/10): the label is the teacher's choice (act), but the action-history features must describe
+    # what the AGENT itself did before (hist_act), exactly as ILAgentController computes them in game.
+    # Every other dataset has no hist_act -> history from act, exactly as before.
+    has_hist = "hist_act" in d.files
+    hist = d["hist_act"] if has_hist else act
     if ego:           # opponent always on the right, move head = away / none / towards
         x, dirs = EGO.obs_to_ego(x)
         act = EGO.act_to_ego(act, dirs)
+        hist = EGO.act_to_ego(hist, dirs) if has_hist else act
     if quick:         # order: obs, quick_ready, history, style
         x = np.concatenate([x, d["quick_ready"][:, None]], axis=1).astype(np.float32)
     if use_history:
-        x = np.concatenate([x, HF.compute(act, d["match"], d["slot"], d["tick"])], axis=1).astype(np.float32)
+        x = np.concatenate([x, HF.compute(hist, d["match"], d["slot"], d["tick"])], axis=1).astype(np.float32)
     if use_style:
         x = np.concatenate([x, (d["style_raw"] - mu) / sd], axis=1).astype(np.float32)
     y = act.astype(np.int64)

@@ -53,6 +53,11 @@ public class ILDataGenDirector : MonoBehaviour
         [Tooltip("Online mirror (thesis): persona id whose style the agent copies - the EMA of that persona's saved matches " +
                  "in this output folder (neutral before the first one), clamped to the model's range. Empty = the fixed style above.")]
         public string mirrorOf = "";
+        [Tooltip("DAgger (thesis): scripted persona that runs as a SHADOW expert on this agent's character - it decides " +
+                 "like a bot but never controls the character; ImitationLoggerV2 writes its choice as expertAct. Empty = none.")]
+        public string expertId = "";
+        [HideInInspector] public float expertAggression = 0.5f, expertDefense = 0.5f, expertMobility = 0.5f, expertPatience = 0.5f;
+        [HideInInspector] public float expertSkill = -1f;
 
         public string Id =>
             kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") :
@@ -109,6 +114,7 @@ public class ILDataGenDirector : MonoBehaviour
         public string model;  // RL: NNModel asset name
         public float styleAttack, styleMobility, styleDefense, styleMobilityTime, styleBlockTime;   // ILAgent target style
         public string mirrorOf;   // ILAgent: online mirror of this persona id (empty = fixed style)
+        public string expert;     // ILAgent (DAgger): id of a scripted persona of this schedule that runs as shadow expert
     }
     [Serializable] private class SchedMatch { public int index; public int round; public string p1; public string p2; }
     [Serializable] private class SchedFile { public string name; public int seed; public List<SchedPersona> personas; public List<SchedMatch> matches; }
@@ -121,6 +127,7 @@ public class ILDataGenDirector : MonoBehaviour
     private static bool finished;
     private static bool resumeChecked;
     private static int stalematesOnCurrent;
+    private static string playSignature;   // schedule|output folder|model at the first match of this Play (Editor safety check)
     [Tooltip("After this many stalemates on the same match the entry is skipped (written to the run log as ABANDONED). 0 = never skip.")]
     public int maxStalematesPerMatch = 2;
 
@@ -129,6 +136,7 @@ public class ILDataGenDirector : MonoBehaviour
     private static void ResetProgress()
     {
         matchupIndex = 0; matchInMatchup = 0; totalSaved = 0; totalAbandoned = 0; finished = false; resumeChecked = false; stalematesOnCurrent = 0;
+        playSignature = null;
         TelemetryManager.OutputFolderOverride = null;   // never carry the Synthetic folder into a normal Play session
     }
 #endif
@@ -143,6 +151,23 @@ public class ILDataGenDirector : MonoBehaviour
     private void Awake()
     {
         if (!run) return;
+
+#if UNITY_EDITOR
+        // Safety check (22/10): every match reloads the scene FROM THE SAVED FILE, while the progress counters are static.
+        // If the Inspector was changed (e.g. another schedule) but the scene was not saved, the first match uses the new
+        // value and the following ones the old one -> rounds logged under the wrong schedule. Stop Play instead.
+        string sig = $"{(schedule != null ? schedule.name : "(matchups)")}|{outputFolder}|{(scheduleIlModel != null ? scheduleIlModel.name : "")}";
+        if (playSignature == null) playSignature = sig;
+        else if (playSignature != sig)
+        {
+            Debug.LogError($"[ILDataGen] The scene settings changed after the reload: started with '{playSignature}', the saved scene has '{sig}'. " +
+                           "The scene was not saved after the Inspector change. Play stopped: press Ctrl+S, then Play again " +
+                           "(resume continues from the run log, the rounds already played are kept).");
+            run = false;
+            EditorApplication.isPlaying = false;
+            return;
+        }
+#endif
 
 #if !UNITY_EDITOR
         // Build: only as a data-generation worker started with -ilgen (ILGenBootstrap). The normal game never runs this.
@@ -346,6 +371,17 @@ public class ILDataGenDirector : MonoBehaviour
                               (clamped ? " - clamped" : ""));
                 }
                 il.Rebind(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
+
+                if (!string.IsNullOrEmpty(side.expertId))
+                {
+                    // DAgger shadow expert: a scripted bot with the expert persona's knobs on the SAME character, never in control
+                    if (scripted == null) scripted = obj.AddComponent<SimpleBotController>();
+                    scripted.enabled = false;
+                    scripted.EnableShadow(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
+                    scripted.SetSkill(side.expertSkill > 0f ? side.expertSkill : scriptedSkill);
+                    scripted.SetPersonality(side.expertAggression, side.expertDefense, side.expertMobility, side.expertPatience, side.expertId);
+                    scripted.enabled = true;
+                }
             }
         }
         else if (side.kind == SideKind.Scripted)
@@ -380,7 +416,8 @@ public class ILDataGenDirector : MonoBehaviour
         }
 
         Debug.Log($"[ILDataGen] P{self.playerNum} = {side.kind} '{side.Id}'" +
-                  (side.kind == SideKind.Scripted ? $" skill {(side.skill > 0f ? side.skill : scriptedSkill):0.00}" : ""));
+                  (side.kind == SideKind.Scripted ? $" skill {(side.skill > 0f ? side.skill : scriptedSkill):0.00}" : "") +
+                  (side.kind == SideKind.ILAgent && !string.IsNullOrEmpty(side.expertId) ? $" + shadow expert '{side.expertId}'" : ""));
     }
 
     // ---------------- next match ----------------
@@ -456,7 +493,9 @@ public class ILDataGenDirector : MonoBehaviour
                 else shard = i % ShardCount;
             }
             if (shard != ShardIndex) continue;
-            list.Add(new Matchup { label = $"#{m.index} r{m.round}", p1 = ToSide(a), p2 = ToSide(b), matches = 1, scheduleIndex = i });
+            var s1 = ToSide(a); var s2 = ToSide(b);
+            if (!AttachExpert(s1, a, byId) || !AttachExpert(s2, b, byId)) return false;
+            list.Add(new Matchup { label = $"#{m.index} r{m.round}", p1 = s1, p2 = s2, matches = 1, scheduleIndex = i });
         }
         if (list.Count == 0)
         {
@@ -464,6 +503,27 @@ public class ILDataGenDirector : MonoBehaviour
             return false;
         }
         matchups = list;
+        return true;
+    }
+
+    // DAgger: an ILAgent persona with "expert": "<scripted persona id>" gets that persona's knobs / skill as shadow expert.
+    private bool AttachExpert(Side side, SchedPersona p, Dictionary<string, SchedPersona> byId)
+    {
+        if (string.IsNullOrEmpty(p.expert)) return true;
+        if (side.kind != SideKind.ILAgent)
+        {
+            Debug.LogError($"[ILDataGen] Schedule persona '{p.id}': \"expert\" is only allowed for kind ILAgent.");
+            return false;
+        }
+        if (!byId.TryGetValue(p.expert, out var e) || (!string.IsNullOrEmpty(e.kind) && e.kind != "Scripted"))
+        {
+            Debug.LogError($"[ILDataGen] Schedule persona '{p.id}': expert '{p.expert}' is not a scripted persona of this schedule.");
+            return false;
+        }
+        side.expertId = e.id;
+        side.expertAggression = e.aggression; side.expertDefense = e.defense;
+        side.expertMobility = e.mobility; side.expertPatience = e.patience;
+        side.expertSkill = e.skill > 0f ? Mathf.Min(e.skill, 1f) : -1f;
         return true;
     }
 

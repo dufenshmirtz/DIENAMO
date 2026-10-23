@@ -280,13 +280,16 @@ public class SimpleBotController : MonoBehaviour
     {
         PressOneFrame(setup.heavyAttack);
         heavyCommitTimer = heavyCommitTime;
-        actionTimer = Mathf.Max(Random.Range(cooldownMin, cooldownMax), heavyCommitTime);
+        shadowOwnHeavyCooldown = Random.Range(cooldownMin, cooldownMax);   // same random draw as before
+        actionTimer = Mathf.Max(shadowOwnHeavyCooldown, heavyCommitTime);
+        shadowSinceOwnHeavy = 0f;
+        shadowCommitIsOwn = true;
     }
 
     // Writes the persona id into the current telemetry session once per match (p1PersonaId / p2PersonaId).
     private void ReportPersonaToTelemetry()
     {
-        if (!personalityLocked || string.IsNullOrEmpty(personaId) || character == null) return;
+        if (shadowMode || !personalityLocked || string.IsNullOrEmpty(personaId) || character == null) return;   // shadow: the agent's id stays
         var tm = TelemetryManager.Instance;
         if (tm == null || string.IsNullOrEmpty(tm.CurrentMatchId) || tm.CurrentMatchId == personaReportedForMatch) return;
         tm.SetPersona(character.PlayerId, personaId);
@@ -332,6 +335,192 @@ public class SimpleBotController : MonoBehaviour
     private float botChargeCooldownTimer;
 
     private float lastTargetDistanceX = 999f;
+
+    // ---- DAgger shadow expert (thesis, 23/10) ----
+    // The bot runs on a character that the IL AGENT controls: it decides every frame from the real game state, but writes
+    // into its own BotInputProvider that is NOT connected to the character. ImitationLoggerV2 records these presses as the
+    // expert label next to the agent's own action. Two intentions are re-synced every frame with what really happened:
+    // the charge (botCharging) and the heavy commitment (heavyCommitTimer). The bot's rhythm (actionTimer) is kept.
+    private bool shadowMode;
+    private float shadowRealChargeTime;        // how long the character has really been charging / charged
+    private float shadowSinceOwnCharge = 99f;  // time since the shadow itself started a charge
+    private float shadowSinceOwnHeavy = 99f;   // time since the shadow itself pressed heavy
+    private bool shadowCommitIsOwn;            // the current heavy commitment comes from the shadow's own (unfollowed?) press
+    private float shadowOwnHeavyCooldown;      // the normal cooldown of that press (without the commitment)
+    private bool shadowPrevHeavy;
+    [Tooltip("Shadow mode: a charge / heavy the bot suggested is kept this long; if the agent has not done it by then, " +
+             "the intention is dropped (one log record = 80 ms).")]
+    [SerializeField] private float shadowFollowGrace = 0.10f;
+
+    public bool ShadowMode => shadowMode;
+    public BotInputProvider ShadowInput => shadowMode ? botInput : null;
+
+    /// <summary>DAgger: run as a shadow expert on a character that someone else controls. Call before enabling.</summary>
+    public void EnableShadow(Character self, Character enemy)
+    {
+        shadowMode = true;
+        character = self;
+        target = enemy;
+        targetTr = target != null ? target.transform : null;
+        setup = GetComponent<CharacterSetup>();
+        selfTr = transform;
+        if (botInput == null) botInput = new BotInputProvider();   // never connected to the character
+        initialized = (character != null && setup != null && target != null);
+    }
+
+    // Every frame in shadow mode, before the decisions: the bot's intentions follow what the character really does.
+    private void SyncShadowWithCharacter(float dt)
+    {
+        bool realCharge = character.IsCharging || character.IsCharged;
+        shadowRealChargeTime = realCharge ? shadowRealChargeTime + dt : 0f;
+        shadowSinceOwnCharge += dt;
+        shadowSinceOwnHeavy += dt;
+
+        if (botCharging && !realCharge && shadowSinceOwnCharge > shadowFollowGrace)
+        {
+            // suggested a charge, the agent is not charging: drop the intention silently (no "release" label)
+            botInput.ForceKeyState(setup.charge, false);
+            botCharging = false;
+            botChargeTimer = 0f;
+        }
+        else if (!botCharging && realCharge)
+        {
+            // the agent charges on its own: the expert takes the charge over now (it decides when to release / cancel)
+            botCharging = true;
+            botChargeTimer = shadowRealChargeTime;
+            botInput.ForceKeyState(setup.charge, true);
+        }
+
+        bool heavyNow = character.HeavyAttacking;
+        if (heavyNow && !shadowPrevHeavy)
+        {
+            // the character really started a heavy (the agent's, or the suggested one followed): no new decision until it hits
+            heavyCommitTimer = heavyCommitTime;
+            actionTimer = Mathf.Max(actionTimer, heavyCommitTime);
+            shadowCommitIsOwn = false;
+        }
+        else if (shadowCommitIsOwn && !heavyNow && heavyCommitTimer > 0f && shadowSinceOwnHeavy > shadowFollowGrace)
+        {
+            // the shadow suggested a heavy and the agent did not swing: drop the commitment, keep the normal cooldown
+            heavyCommitTimer = 0f;
+            actionTimer = shadowFollowAgent ? 0f   // B: the rhythm follows what the agent really did (nothing)
+                : Mathf.Min(actionTimer, Mathf.Max(0f, shadowOwnHeavyCooldown - shadowSinceOwnHeavy));
+            shadowCommitIsOwn = false;
+        }
+        shadowPrevHeavy = heavyNow;
+
+        if (shadowFollowAgent) SyncShadowFollowAgent(dt);
+    }
+
+    // ---- DAgger option B (23/10): the teacher becomes "Markov in the agent's history" ----
+    // Iteration 1 showed that the teacher's HELD intentions (walk commitment, block hold) and its RHYTHM (actionTimer)
+    // are invisible in the agent's history -> the agent learned a per-decision average and flickered (θ7), or copied the
+    // rate but not the timing of presses (θ7a). Here the shadow treats what the agent really does as its OWN choice:
+    //  - the agent starts a walk / stops       -> the shadow commits to it (new walk commitment), re-decides when it expires
+    //  - the agent starts a block              -> the shadow holds it (new block hold); the agent releases -> it ends too
+    //  - the agent presses quick/special/jump/drop/parry without the shadow's suggestion -> the shadow's cooldown starts
+    //    as if it had pressed it
+    //  - the shadow's own suggestion (press or block) not followed within the grace time -> dropped, cooldown = 0
+    //    (it may suggest again at its next decision, like the bot itself would in that situation)
+    [Tooltip("DAgger option B: the shadow adopts the agent's walk / block / presses as its own intentions and its rhythm " +
+             "follows the agent. Off = the iteration-1 shadow (only charge and heavy re-synced).")]
+    [SerializeField] private bool shadowFollowAgent = true;
+    private float shadowAgentMovePrev;
+    private bool shadowAgentBlockPrev, shadowMyBlockPrev, shadowOwnBlockPending;
+    private float shadowSinceOwnBlock = 99f;
+    private static readonly int ShadowKeyCount = 5;   // 0 light, 1 special, 2 jump, 3 drop, 4 parry
+    private readonly float[] shadowSinceOwnPress = { 99f, 99f, 99f, 99f, 99f };
+    private readonly bool[] shadowOwnPressPending = new bool[5];
+
+    private int ShadowKeyIndex(KeyCode key)
+    {
+        if (setup == null) return -1;
+        if (key == setup.lightAttack) return 0;
+        if (key == setup.ability) return 1;
+        if (key == setup.up) return 2;
+        if (key == setup.down) return 3;
+        if (key == setup.parry) return 4;
+        return -1;
+    }
+
+    private KeyCode ShadowKey(int i) =>
+        i == 0 ? setup.lightAttack : i == 1 ? setup.ability : i == 2 ? setup.up : i == 3 ? setup.down : setup.parry;
+
+    // Cooldown the bot itself uses after that press (ranges of DecideAction, engage range).
+    private float ShadowAdoptedCooldown(int i) =>
+        i == 0 ? Random.Range(0.15f, 0.36f) : i == 1 ? Random.Range(0.24f, 0.56f) : i == 2 ? Random.Range(0.20f, 0.38f)
+        : i == 3 ? Random.Range(0.12f, 0.24f) : Random.Range(0.08f, 0.22f);
+
+    private void SyncShadowFollowAgent(float dt)
+    {
+        IInputProvider agent = character.GetInputProvider();
+        if (agent == null || ReferenceEquals(agent, botInput)) return;
+
+        // --- walk / stop ---
+        float agentMove = 0f;
+        if (agent.GetKey(setup.left)) agentMove -= 1f;
+        if (agent.GetKey(setup.right)) agentMove += 1f;
+        if (Mathf.Abs(agentMove - shadowAgentMovePrev) > 0.01f && forcedHorizontalTimer <= 0f && quickAimTimer <= 0f &&
+            !botCharging && Mathf.Abs(committedMove - agentMove) > 0.01f)
+        {
+            committedMove = agentMove;
+            moveCommitTimer = Mathf.Abs(agentMove) > 0.01f ? Random.Range(walkCommitMin, walkCommitMax)
+                                                            : Random.Range(moveCommitMin, moveCommitMax);
+        }
+        shadowAgentMovePrev = agentMove;
+
+        // --- block ---
+        bool agentBlock = agent.GetKey(setup.block);
+        bool myBlock = botInput.GetKey(setup.block);
+        shadowSinceOwnBlock += dt;
+        if (myBlock && !shadowMyBlockPrev && !agentBlock) { shadowOwnBlockPending = true; shadowSinceOwnBlock = 0f; }
+        if (agentBlock) shadowOwnBlockPending = false;
+        if (agentBlock && !shadowAgentBlockPrev && !myBlock)
+        {
+            // the agent starts a block on its own: the shadow holds it like its own block
+            float hold = Random.Range(0.10f, 0.24f) * BlockHoldMul * blockHoldScale;
+            botInput.ForceKeyState(setup.block, true);
+            blockHoldTimer = hold;
+            actionTimer = Mathf.Max(actionTimer, hold);
+            myBlock = true;
+        }
+        else if (!agentBlock && shadowAgentBlockPrev && myBlock)
+        {
+            // the agent released its block: the shadow's (adopted or followed) block ends with it
+            botInput.ForceKeyState(setup.block, false);
+            blockHoldTimer = 0f;
+            myBlock = false;
+        }
+        else if (myBlock && !agentBlock && shadowOwnBlockPending && shadowSinceOwnBlock > shadowFollowGrace)
+        {
+            // suggested a block, the agent did not block: drop it, the rhythm restarts
+            botInput.ForceKeyState(setup.block, false);
+            blockHoldTimer = 0f;
+            actionTimer = 0f;
+            shadowOwnBlockPending = false;
+            myBlock = false;
+        }
+        shadowAgentBlockPrev = agentBlock;
+        shadowMyBlockPrev = myBlock;
+
+        // --- one-shot presses: quick, special, jump, drop, parry (heavy: see the heavy sync above) ---
+        for (int i = 0; i < ShadowKeyCount; i++)
+        {
+            shadowSinceOwnPress[i] += dt;
+            bool agentPressed = agent.GetKeyDown(ShadowKey(i));
+            if (agentPressed)
+            {
+                if (shadowSinceOwnPress[i] > shadowFollowGrace)
+                    actionTimer = Mathf.Max(actionTimer, ShadowAdoptedCooldown(i));   // the agent's own press: cooldown as if ours
+                shadowOwnPressPending[i] = false;
+            }
+            else if (shadowOwnPressPending[i] && shadowSinceOwnPress[i] > shadowFollowGrace)
+            {
+                actionTimer = 0f;   // suggested, not followed: the rhythm restarts
+                shadowOwnPressPending[i] = false;
+            }
+        }
+    }
 
     private void Start()
     {
@@ -427,7 +616,8 @@ public class SimpleBotController : MonoBehaviour
         if (blockHoldTimer <= 0f)
             botInput.SetKey(setup.block, false);
 
-        CheckOrphanCharge(dt);
+        if (shadowMode) SyncShadowWithCharacter(dt);   // DAgger: intentions follow the real character
+        else CheckOrphanCharge(dt);
 
         if (HandleBotChargeState(dt))
         {
@@ -483,7 +673,7 @@ public class SimpleBotController : MonoBehaviour
         if (botInput == null)
         {
             botInput = new BotInputProvider();
-            character.SetInput(botInput);
+            if (!shadowMode) character.SetInput(botInput);   // DAgger shadow: never take control
         }
 
         if (target == null)
@@ -1393,6 +1583,7 @@ public class SimpleBotController : MonoBehaviour
 
         botCharging = true;
         botChargeTimer = 0f;
+        shadowSinceOwnCharge = 0f;
         botInput.SetKey(setup.charge, true);
         moveCommitTimer = 0f;
         committedMove = 0f;
@@ -1684,6 +1875,11 @@ public class SimpleBotController : MonoBehaviour
     private void PressOneFrame(KeyCode key)
     {
         botInput.PressKeyOneFrame(key);
+        if (shadowMode)
+        {
+            int i = ShadowKeyIndex(key);   // DAgger option B: remember the shadow's own suggestion
+            if (i >= 0) { shadowSinceOwnPress[i] = 0f; shadowOwnPressPending[i] = true; }
+        }
     }
 
     private Character FindOpponent()
@@ -1720,7 +1916,7 @@ public class SimpleBotController : MonoBehaviour
         if (botInput == null)
             botInput = new BotInputProvider();
 
-        if (character != null)
+        if (character != null && !shadowMode)   // DAgger shadow: never take control
             character.SetInput(botInput);
 
         selfTr = transform;

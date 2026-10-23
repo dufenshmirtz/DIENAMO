@@ -41,6 +41,13 @@ public class BotInputProvider : IInputProvider
         heldKeys[key] = pressed;
     }
 
+    // DAgger shadow expert (23/10): change the held state WITHOUT a key-down / key-up event (used to re-sync the shadow
+    // bot's intention with what the agent really did; a key-up here would be logged as a charge release).
+    public void ForceKeyState(KeyCode key, bool held)
+    {
+        heldKeys[key] = held;
+    }
+
     public void PressKeyOneFrame(KeyCode key)
     {
         downKeys.Add(key);

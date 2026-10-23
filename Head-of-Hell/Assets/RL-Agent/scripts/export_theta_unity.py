@@ -19,6 +19,8 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--data-dir", default=None,
                     help="dataset the model was trained on: its TRAIN personas give styleMin/styleMax (online clamp)")
+    ap.add_argument("--extra-data-dir", nargs="*", default=[],
+                    help="further datasets (e.g. human fine-tune data): the style range becomes the UNION with their train personas")
     ap.add_argument("--trained-self", nargs="+", default=["Skipler"], help="characters the agent was trained to play")
     ap.add_argument("--name", default=None, help="model name stored in the file (default: model folder name)")
     ap.add_argument("--trained-opp", nargs="+", default=["Skipler"], help="opponent characters seen in training")
@@ -44,6 +46,14 @@ def main():
         style_min = [float(v) for v in tr.min(axis=0)]
         style_max = [float(v) for v in tr.max(axis=0)]
         print("style range (train personas):", [f"{a}: {lo:.3f}-{hi:.3f}" for a, lo, hi in zip(axes, style_min, style_max)])
+        for extra in args.extra_data_dir:   # without --extra-data-dir nothing changes
+            de = np.load(os.path.join(extra, "dataset.npz"))
+            te = de["style_raw"][de["split"] == 0]
+            if len(te):
+                style_min = [min(a, float(b)) for a, b in zip(style_min, te.min(axis=0))]
+                style_max = [max(a, float(b)) for a, b in zip(style_max, te.max(axis=0))]
+        if args.extra_data_dir:
+            print("style range (union with extra data):", [f"{a}: {lo:.3f}-{hi:.3f}" for a, lo, hi in zip(axes, style_min, style_max)])
 
     rng = np.random.default_rng(0)
     x = rng.uniform(-1, 1, n_in).astype(np.float32)

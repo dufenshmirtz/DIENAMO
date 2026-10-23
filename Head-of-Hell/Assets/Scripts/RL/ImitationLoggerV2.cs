@@ -45,7 +45,12 @@ public class ImitationLoggerV2 : MonoBehaviour
         // one-shot presses since the last record
         public bool jump, drop, light, heavy, special, parry, chargeRelease;
         public bool prevAxisUp;           // for the vertical-axis jump edge (same rule as Character)
-        public void ClearPresses() { jump = drop = light = heavy = special = parry = chargeRelease = false; }
+        public Slot expert;               // DAgger: presses of the shadow expert on this character (null = none)
+        public void ClearPresses()
+        {
+            jump = drop = light = heavy = special = parry = chargeRelease = false;
+            expert?.ClearPresses();
+        }
     }
 
     private readonly Slot[] slots = { new Slot { id = "P1" }, new Slot { id = "P2" } };
@@ -78,6 +83,10 @@ public class ImitationLoggerV2 : MonoBehaviour
         public int oppHp;
         public float[] obs;           // 67
         public int[] act;             // 9: move(0/1/2), jump, drop, light, heavy, block, special, charge(0/1/2), parry
+        // DAgger (23/10): what the shadow expert (scripted bot, not in control) would have done at this record,
+        // same encoding as act. Empty when the character has no shadow expert.
+        public int[] expertAct;
+        public string expertPersona;
     }
 
     // =====================================================================
@@ -123,7 +132,31 @@ public class ImitationLoggerV2 : MonoBehaviour
             if (input.GetKeyDown(c.ability) || (pad && Input.GetKeyDown(c.JoystickButtonName(3)))) s.special = true;
             if (input.GetKeyDown(c.parry) || (pad && Input.GetKeyDown(c.JoystickButtonName(4)))) s.parry = true;
             if (input.GetKeyUp(c.charge) || (pad && Input.GetKeyUp(c.JoystickButtonName(1)))) s.chargeRelease = true;
+
+            // DAgger: the shadow expert's virtual keys (never a gamepad)
+            BotInputProvider ex = ShadowExpertInput(c);
+            if (ex != null)
+            {
+                if (s.expert == null) s.expert = new Slot { id = s.id };
+                var e = s.expert;
+                bool exUp = VerticalInput(c, ex) > 0.5f;
+                if (ex.GetKeyDown(c.up) || (exUp && !e.prevAxisUp)) e.jump = true;
+                e.prevAxisUp = exUp;
+                if (ex.GetKeyDown(c.down)) e.drop = true;
+                if (ex.GetKeyDown(c.lightAttack)) e.light = true;
+                if (ex.GetKeyDown(c.heavyAttack)) e.heavy = true;
+                if (ex.GetKeyDown(c.ability)) e.special = true;
+                if (ex.GetKeyDown(c.parry)) e.parry = true;
+                if (ex.GetKeyUp(c.charge)) e.chargeRelease = true;
+            }
         }
+    }
+
+    // DAgger: virtual keyboard of a SimpleBotController running in shadow mode on this character (null = none).
+    private static BotInputProvider ShadowExpertInput(Character c)
+    {
+        var bot = c.GetComponentInParent<SimpleBotController>();
+        return bot != null && bot.isActiveAndEnabled && bot.ShadowMode ? bot.ShadowInput : null;
     }
 
     // ---------------- records (every decisionPeriod fixed steps) ----------------
@@ -183,6 +216,13 @@ public class ImitationLoggerV2 : MonoBehaviour
             act = EncodeActions(s, self, input)
         };
 
+        BotInputProvider ex = ShadowExpertInput(self);
+        if (ex != null && s.expert != null)
+        {
+            rec.expertAct = EncodeExpertActions(s.expert, self, ex);
+            rec.expertPersona = self.GetComponentInParent<SimpleBotController>().PersonaId;
+        }
+
         if (input is ILAgentInputProvider)
         {
             var ilc = self.GetComponentInParent<ILAgentController>();
@@ -225,6 +265,19 @@ public class ImitationLoggerV2 : MonoBehaviour
             s.special ? 1 : 0,
             charge,
             s.parry ? 1 : 0
+        };
+    }
+
+    // DAgger: same encoding as EncodeActions, for the shadow expert's virtual keys (no gamepad).
+    private static int[] EncodeExpertActions(Slot e, Character c, BotInputProvider ex)
+    {
+        float h = HorizontalInput(c, ex);
+        int move = h < -0.5f ? 0 : (h > 0.5f ? 2 : 1);
+        int charge = e.chargeRelease ? 2 : (ex.GetKey(c.charge) ? 1 : 0);
+        return new[]
+        {
+            move, e.jump ? 1 : 0, e.drop ? 1 : 0, e.light ? 1 : 0, e.heavy ? 1 : 0,
+            ex.GetKey(c.block) ? 1 : 0, e.special ? 1 : 0, charge, e.parry ? 1 : 0
         };
     }
 

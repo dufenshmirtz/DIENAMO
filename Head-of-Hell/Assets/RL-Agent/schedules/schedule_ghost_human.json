@@ -1,0 +1,391 @@
+{
+ "name": "schedule_ghost_human",
+ "seed": 0,
+ "outputFolder": "GhostHuman_theta6h (and GhostHuman_theta6)",
+ "purpose": "ghost of Aris's personas vs REF; run once per model (-ilmodel), compare with HV_P00",
+ "requested_style": {
+  "HUMAN_P00N": [
+   0.32617,
+   0.62513,
+   0.0487,
+   0.88593,
+   0.03017
+  ],
+  "HUMAN_P00A": [
+   0.42714,
+   0.51739,
+   0.05546,
+   0.92716,
+   0.02645
+  ],
+  "HUMAN_P00D": [
+   0.21028,
+   0.63143,
+   0.1583,
+   0.90491,
+   0.22359
+  ],
+  "HUMAN_P00M": [
+   0.22992,
+   0.74933,
+   0.02075,
+   0.93521,
+   0.01477
+  ]
+ },
+ "clamped_style": {
+  "HUMAN_P00N": [
+   0.32617,
+   0.62513,
+   0.0487,
+   0.88593,
+   0.03017
+  ],
+  "HUMAN_P00A": [
+   0.42714,
+   0.51739,
+   0.05546,
+   0.92716,
+   0.02645
+  ],
+  "HUMAN_P00D": [
+   0.21028,
+   0.63143,
+   0.1583,
+   0.90491,
+   0.22359
+  ],
+  "HUMAN_P00M": [
+   0.22992,
+   0.74933,
+   0.02075,
+   0.93521,
+   0.01477
+  ]
+ },
+ "clamp_range": {
+  "min": [
+   0.10037732124328613,
+   0.48811081051826477,
+   0.0068983957171440125,
+   0.3774966597557068,
+   0.0019558491185307503
+  ],
+  "max": [
+   0.4695834219455719,
+   0.8582678437232971,
+   0.25241339206695557,
+   0.9352099895477295,
+   0.22359181940555573
+  ]
+ },
+ "personas": [
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "G_P00N",
+   "kind": "ILAgent",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.32617,
+   "styleMobility": 0.62513,
+   "styleDefense": 0.0487,
+   "styleMobilityTime": 0.88593,
+   "styleBlockTime": 0.03017
+  },
+  {
+   "id": "G_P00A",
+   "kind": "ILAgent",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.42714,
+   "styleMobility": 0.51739,
+   "styleDefense": 0.05546,
+   "styleMobilityTime": 0.92716,
+   "styleBlockTime": 0.02645
+  },
+  {
+   "id": "G_P00D",
+   "kind": "ILAgent",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.21028,
+   "styleMobility": 0.63143,
+   "styleDefense": 0.1583,
+   "styleMobilityTime": 0.90491,
+   "styleBlockTime": 0.22359
+  },
+  {
+   "id": "G_P00M",
+   "kind": "ILAgent",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.22992,
+   "styleMobility": 0.74933,
+   "styleDefense": 0.02075,
+   "styleMobilityTime": 0.93521,
+   "styleBlockTime": 0.01477
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "G_P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 1,
+   "round": 1,
+   "p1": "G_P00A",
+   "p2": "REF"
+  },
+  {
+   "index": 2,
+   "round": 1,
+   "p1": "G_P00D",
+   "p2": "REF"
+  },
+  {
+   "index": 3,
+   "round": 1,
+   "p1": "G_P00M",
+   "p2": "REF"
+  },
+  {
+   "index": 4,
+   "round": 2,
+   "p1": "REF",
+   "p2": "G_P00N"
+  },
+  {
+   "index": 5,
+   "round": 2,
+   "p1": "REF",
+   "p2": "G_P00A"
+  },
+  {
+   "index": 6,
+   "round": 2,
+   "p1": "REF",
+   "p2": "G_P00D"
+  },
+  {
+   "index": 7,
+   "round": 2,
+   "p1": "REF",
+   "p2": "G_P00M"
+  },
+  {
+   "index": 8,
+   "round": 3,
+   "p1": "G_P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 9,
+   "round": 3,
+   "p1": "G_P00A",
+   "p2": "REF"
+  },
+  {
+   "index": 10,
+   "round": 3,
+   "p1": "G_P00D",
+   "p2": "REF"
+  },
+  {
+   "index": 11,
+   "round": 3,
+   "p1": "G_P00M",
+   "p2": "REF"
+  },
+  {
+   "index": 12,
+   "round": 4,
+   "p1": "REF",
+   "p2": "G_P00N"
+  },
+  {
+   "index": 13,
+   "round": 4,
+   "p1": "REF",
+   "p2": "G_P00A"
+  },
+  {
+   "index": 14,
+   "round": 4,
+   "p1": "REF",
+   "p2": "G_P00D"
+  },
+  {
+   "index": 15,
+   "round": 4,
+   "p1": "REF",
+   "p2": "G_P00M"
+  },
+  {
+   "index": 16,
+   "round": 5,
+   "p1": "G_P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 17,
+   "round": 5,
+   "p1": "G_P00A",
+   "p2": "REF"
+  },
+  {
+   "index": 18,
+   "round": 5,
+   "p1": "G_P00D",
+   "p2": "REF"
+  },
+  {
+   "index": 19,
+   "round": 5,
+   "p1": "G_P00M",
+   "p2": "REF"
+  },
+  {
+   "index": 20,
+   "round": 6,
+   "p1": "REF",
+   "p2": "G_P00N"
+  },
+  {
+   "index": 21,
+   "round": 6,
+   "p1": "REF",
+   "p2": "G_P00A"
+  },
+  {
+   "index": 22,
+   "round": 6,
+   "p1": "REF",
+   "p2": "G_P00D"
+  },
+  {
+   "index": 23,
+   "round": 6,
+   "p1": "REF",
+   "p2": "G_P00M"
+  },
+  {
+   "index": 24,
+   "round": 7,
+   "p1": "G_P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 25,
+   "round": 7,
+   "p1": "G_P00A",
+   "p2": "REF"
+  },
+  {
+   "index": 26,
+   "round": 7,
+   "p1": "G_P00D",
+   "p2": "REF"
+  },
+  {
+   "index": 27,
+   "round": 7,
+   "p1": "G_P00M",
+   "p2": "REF"
+  },
+  {
+   "index": 28,
+   "round": 8,
+   "p1": "REF",
+   "p2": "G_P00N"
+  },
+  {
+   "index": 29,
+   "round": 8,
+   "p1": "REF",
+   "p2": "G_P00A"
+  },
+  {
+   "index": 30,
+   "round": 8,
+   "p1": "REF",
+   "p2": "G_P00D"
+  },
+  {
+   "index": 31,
+   "round": 8,
+   "p1": "REF",
+   "p2": "G_P00M"
+  },
+  {
+   "index": 32,
+   "round": 9,
+   "p1": "G_P00N",
+   "p2": "REF"
+  },
+  {
+   "index": 33,
+   "round": 9,
+   "p1": "G_P00A",
+   "p2": "REF"
+  },
+  {
+   "index": 34,
+   "round": 9,
+   "p1": "G_P00D",
+   "p2": "REF"
+  },
+  {
+   "index": 35,
+   "round": 9,
+   "p1": "G_P00M",
+   "p2": "REF"
+  },
+  {
+   "index": 36,
+   "round": 10,
+   "p1": "REF",
+   "p2": "G_P00N"
+  },
+  {
+   "index": 37,
+   "round": 10,
+   "p1": "REF",
+   "p2": "G_P00A"
+  },
+  {
+   "index": 38,
+   "round": 10,
+   "p1": "REF",
+   "p2": "G_P00D"
+  },
+  {
+   "index": 39,
+   "round": 10,
+   "p1": "REF",
+   "p2": "G_P00M"
+  }
+ ]
+}
