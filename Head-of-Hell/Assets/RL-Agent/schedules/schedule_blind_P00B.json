@@ -1,0 +1,180 @@
+{
+ "name": "schedule_blind_P00B",
+ "seed": 20261030,
+ "participant": "P00B",
+ "outputFolder": "HV_blind_P00B",
+ "purpose": "blind human-likeness test: rate each opponent 1-5 and guess bot / agent (DO NOT OPEN before the test)",
+ "blind_key": {
+  "REF": "K79",
+  "GHOST_B": "K38",
+  "GHOST_H": "K81",
+  "MIRROR_H": "K52"
+ },
+ "ghost_style_from": "HUMAN_P00N",
+ "ghost_style": {
+  "styleAttack": 0.32322,
+  "styleMobility": 0.62468,
+  "styleDefense": 0.0521,
+  "styleMobilityTime": 0.88927,
+  "styleBlockTime": 0.03462
+ },
+ "personas": [
+  {
+   "id": "P00B",
+   "kind": "Human",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "K79",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "K38",
+   "kind": "ILAgent",
+   "ilModel": "theta6_joint",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.32322,
+   "styleMobility": 0.62468,
+   "styleDefense": 0.0521,
+   "styleMobilityTime": 0.88927,
+   "styleBlockTime": 0.03462
+  },
+  {
+   "id": "K81",
+   "kind": "ILAgent",
+   "ilModel": "theta6h2_joint",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.32322,
+   "styleMobility": 0.62468,
+   "styleDefense": 0.0521,
+   "styleMobilityTime": 0.88927,
+   "styleBlockTime": 0.03462
+  },
+  {
+   "id": "K52",
+   "kind": "ILAgent",
+   "ilModel": "theta6h2_joint",
+   "mirrorOf": "HUMAN_P00B",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "P00B",
+   "p2": "K38"
+  },
+  {
+   "index": 1,
+   "round": 2,
+   "p1": "P00B",
+   "p2": "K81"
+  },
+  {
+   "index": 2,
+   "round": 3,
+   "p1": "P00B",
+   "p2": "K38"
+  },
+  {
+   "index": 3,
+   "round": 4,
+   "p1": "P00B",
+   "p2": "K79"
+  },
+  {
+   "index": 4,
+   "round": 5,
+   "p1": "P00B",
+   "p2": "K52"
+  },
+  {
+   "index": 5,
+   "round": 6,
+   "p1": "P00B",
+   "p2": "K52"
+  },
+  {
+   "index": 6,
+   "round": 7,
+   "p1": "P00B",
+   "p2": "K38"
+  },
+  {
+   "index": 7,
+   "round": 8,
+   "p1": "P00B",
+   "p2": "K52"
+  },
+  {
+   "index": 8,
+   "round": 9,
+   "p1": "P00B",
+   "p2": "K79"
+  },
+  {
+   "index": 9,
+   "round": 10,
+   "p1": "P00B",
+   "p2": "K52"
+  },
+  {
+   "index": 10,
+   "round": 11,
+   "p1": "P00B",
+   "p2": "K79"
+  },
+  {
+   "index": 11,
+   "round": 12,
+   "p1": "P00B",
+   "p2": "K81"
+  },
+  {
+   "index": 12,
+   "round": 13,
+   "p1": "P00B",
+   "p2": "K79"
+  },
+  {
+   "index": 13,
+   "round": 14,
+   "p1": "P00B",
+   "p2": "K81"
+  },
+  {
+   "index": 14,
+   "round": 15,
+   "p1": "P00B",
+   "p2": "K38"
+  },
+  {
+   "index": 15,
+   "round": 16,
+   "p1": "P00B",
+   "p2": "K81"
+  }
+ ]
+}

@@ -100,6 +100,9 @@ public class ILDataGenDirector : MonoBehaviour
     public bool resumeFromRunLog = true;
     [Tooltip("Schedule only: model used by every persona whose kind is \"ILAgent\" in the schedule file.")]
     public TextAsset scheduleIlModel;
+    [Tooltip("Schedule only, optional: further IL models for personas that name their own model (schedule field \"ilModel\", " +
+             "matched by asset name). In the Editor a model not listed here is also found in Assets/RL-Agent/models/<name>.json.")]
+    public List<TextAsset> scheduleIlModels = new List<TextAsset>();
     [Tooltip("Schedule only: RL models used by personas whose kind is \"RL\" (matched by asset name, field \"model\").")]
     public List<NNModel> scheduleRlModels = new List<NNModel>();
 
@@ -115,9 +118,14 @@ public class ILDataGenDirector : MonoBehaviour
         public float styleAttack, styleMobility, styleDefense, styleMobilityTime, styleBlockTime;   // ILAgent target style
         public string mirrorOf;   // ILAgent: online mirror of this persona id (empty = fixed style)
         public string expert;     // ILAgent (DAgger): id of a scripted persona of this schedule that runs as shadow expert
+        public string ilModel;    // ILAgent, optional: this persona's own model (asset name); empty = the scene's Schedule Il Model
     }
     [Serializable] private class SchedMatch { public int index; public int round; public string p1; public string p2; }
-    [Serializable] private class SchedFile { public string name; public int seed; public List<SchedPersona> personas; public List<SchedMatch> matches; }
+    [Serializable] private class SchedFile
+    {
+        public string name; public int seed; public List<SchedPersona> personas; public List<SchedMatch> matches;
+        public bool rating;   // blind test (30/10): after every saved match the human player rates the opponent (on-screen panel)
+    }
 
     // ---- progress: static, so it survives the scene reloads (reset when Play mode starts) ----
     private static int matchupIndex;
@@ -142,6 +150,17 @@ public class ILDataGenDirector : MonoBehaviour
 #endif
 
     private Matchup current;
+
+    // ---- blind test rating panel (30/10) ----
+    // Schedules with "rating": true: after every saved match the next match waits until the human player has answered
+    // two questions on screen (how human-like was the opponent 1-5, scripted bot or IL agent?). The answer is appended
+    // to Telemetry/<Output Folder>/_ratings_<schedule>.csv. The opponent's real identity is never shown (neutral ids).
+    private bool ratingEnabled;
+    private bool ratingPending;
+    private int ratingValue;
+    private string ratingGuess = "";
+    private string ratingMatchId, ratingOpponent;
+    private int ratingIndex;
     private string personaReportedForMatch;
     private bool reloading;
     private float matchStartTime;
@@ -433,6 +452,19 @@ public class ILDataGenDirector : MonoBehaviour
             AppendRunLog(current.scheduleIndex, matchId, current);
         stalematesOnCurrent = 0;
 
+        if (ratingEnabled && (current.p1.kind == SideKind.Human || current.p2.kind == SideKind.Human))
+        {
+            ratingPending = true;   // Reload() / FinishRun() wait until the player has answered
+            ratingValue = 0; ratingGuess = "";
+            ratingMatchId = matchId; ratingIndex = current.scheduleIndex;
+            ratingOpponent = current.p1.kind == SideKind.Human ? current.p2.Id : current.p1.Id;
+            // the game's own end-of-match screen (Play again / Main menu, 3 s after the KO) must not take the clicks
+            // meant for the rating panel: the UI INPUT MODULES are switched off until the reload (a new scene brings new
+            // ones). The EventSystem itself stays enabled, because VictoryScreenNavigation uses EventSystem.current
+            // (disabling the whole EventSystem gave a NullReferenceException there, 30/10).
+            foreach (var im in FindObjectsOfType<UnityEngine.EventSystems.BaseInputModule>()) im.enabled = false;
+        }
+
         {
             totalSaved++;
             matchInMatchup++;
@@ -503,6 +535,7 @@ public class ILDataGenDirector : MonoBehaviour
             return false;
         }
         matchups = list;
+        ratingEnabled = file.rating;
         return true;
     }
 
@@ -527,6 +560,20 @@ public class ILDataGenDirector : MonoBehaviour
         return true;
     }
 
+    // Per-persona IL model (30/10, blind test: several models in one schedule). Empty "ilModel" = the scene's model,
+    // exactly as before. Otherwise: Schedule Il Models list by asset name; in the Editor also Assets/RL-Agent/models/<name>.json.
+    private TextAsset ResolveIlModel(SchedPersona p)
+    {
+        if (string.IsNullOrEmpty(p.ilModel)) return scheduleIlModel;
+        TextAsset t = scheduleIlModels.Find(x => x != null && x.name == p.ilModel);
+        if (t == null && scheduleIlModel != null && scheduleIlModel.name == p.ilModel) t = scheduleIlModel;
+#if UNITY_EDITOR
+        if (t == null) t = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/RL-Agent/models/" + p.ilModel + ".json");
+#endif
+        if (t == null) Debug.LogError($"[ILDataGen] Schedule persona '{p.id}': IL model '{p.ilModel}' not found (Schedule Il Models / Assets/RL-Agent/models).");
+        return t;
+    }
+
     private Side ToSide(SchedPersona p)
     {
         if (p.kind == "RL")
@@ -540,7 +587,7 @@ public class ILDataGenDirector : MonoBehaviour
         if (p.kind == "ILAgent")
             return new Side
             {
-                kind = SideKind.ILAgent, personaId = p.id, ilModel = scheduleIlModel,
+                kind = SideKind.ILAgent, personaId = p.id, ilModel = ResolveIlModel(p),
                 styleAttack = p.styleAttack, styleMobility = p.styleMobility, styleDefense = p.styleDefense,
                 styleMobilityTime = p.styleMobilityTime, styleBlockTime = p.styleBlockTime,
                 mirrorOf = p.mirrorOf ?? ""
@@ -673,6 +720,7 @@ public class ILDataGenDirector : MonoBehaviour
     private IEnumerator FinishRun()
     {
         reloading = true;
+        while (ratingPending) yield return null;   // blind test: wait for the player's answer
         yield return new WaitForSecondsRealtime(delayBeforeNextMatch);
 
         Time.timeScale = 1f;
@@ -687,6 +735,7 @@ public class ILDataGenDirector : MonoBehaviour
     private IEnumerator Reload()
     {
         reloading = true;
+        while (ratingPending) yield return null;   // blind test: wait for the player's answer
         yield return new WaitForSecondsRealtime(delayBeforeNextMatch);
 
         FindObjectOfType<GameManager>()?.ResetStatics();   // round/win counters are static in GameManager
@@ -697,6 +746,53 @@ public class ILDataGenDirector : MonoBehaviour
 #else
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
 #endif
+    }
+
+    private void OnGUI()
+    {
+        if (!ratingPending) return;
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+        float s = Mathf.Max(1f, Screen.height / 720f);
+        var label = new GUIStyle(GUI.skin.label) { fontSize = Mathf.RoundToInt(20 * s), alignment = TextAnchor.MiddleCenter, wordWrap = true };
+        var btn = new GUIStyle(GUI.skin.button) { fontSize = Mathf.RoundToInt(20 * s) };
+        float w = 620 * s, h = 330 * s;
+        var r = new Rect((Screen.width - w) / 2f, (Screen.height - h) / 2f, w, h);
+        GUI.Box(r, GUIContent.none);
+        GUI.Box(r, GUIContent.none);   // darker background
+        GUILayout.BeginArea(new Rect(r.x + 20 * s, r.y + 15 * s, w - 40 * s, h - 30 * s));
+        GUILayout.Label($"Round {ratingIndex + 1} of {matchups.Count}", label);
+        GUILayout.Label("How human-like did your opponent play?  (1 = clearly a bot, 5 = like a human)", label);
+        GUILayout.BeginHorizontal();
+        for (int v = 1; v <= 5; v++)
+            if (GUILayout.Toggle(ratingValue == v, v.ToString(), btn, GUILayout.Height(44 * s))) ratingValue = v;
+        GUILayout.EndHorizontal();
+        GUILayout.Space(10 * s);
+        GUILayout.Label("What do you think it was?", label);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Toggle(ratingGuess == "bot", "Scripted bot", btn, GUILayout.Height(44 * s))) ratingGuess = "bot";
+        if (GUILayout.Toggle(ratingGuess == "agent", "IL agent", btn, GUILayout.Height(44 * s))) ratingGuess = "agent";
+        GUILayout.EndHorizontal();
+        GUILayout.Space(14 * s);
+        GUI.enabled = ratingValue > 0 && ratingGuess != "";
+        if (GUILayout.Button("Next", btn, GUILayout.Height(48 * s))) SaveRating();
+        GUI.enabled = true;
+        GUILayout.EndArea();
+    }
+
+    private void SaveRating()
+    {
+        try
+        {
+            string folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "My Games", "Head of Hell", "Telemetry", outputFolder);
+            Directory.CreateDirectory(folder);
+            string path = Path.Combine(folder, "_ratings_" + (schedule != null ? schedule.name : "matchups") + ".csv");
+            if (!File.Exists(path)) File.AppendAllText(path, "index,round,matchId,opponent,human_like_1to5,guess,savedLocal\n");
+            File.AppendAllText(path, $"{ratingIndex},{ratingIndex + 1},{ratingMatchId},{ratingOpponent},{ratingValue},{ratingGuess},{DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
+        }
+        catch (Exception e) { Debug.LogError("[ILDataGen] Rating could not be saved: " + e.Message); }
+        ratingPending = false;
     }
 
     private void OnDestroy()
