@@ -38122,8 +38122,8 @@ MonoBehaviour:
   timeScale: 1
   delayBeforeNextMatch: 1
   maxMatchSeconds: 180
-  outputFolder: HV_blind_P00B2
-  schedule: {fileID: 4900000, guid: 9051881bfa779cc4696ef3342c4f587d, type: 3}
+  outputFolder: HV_mirror6h2_P00N
+  schedule: {fileID: 4900000, guid: 471c6ee8513e5c2489428807fcefe3a3, type: 3}
   resumeFromRunLog: 1
   scheduleIlModel: {fileID: 4900000, guid: 5d97a1588457e0d4abc7792c4ebb34c7, type: 3}
   scheduleIlModels: []

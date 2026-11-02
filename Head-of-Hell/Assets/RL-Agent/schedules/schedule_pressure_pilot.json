@@ -1,0 +1,533 @@
+{
+ "name": "schedule_pressure_pilot",
+ "seed": 0,
+ "outputFolder": "Pressure_<model> (set by run_parallel --out)",
+ "purpose": "Step 0 (02/11): automatic pressure test. Aggressive skilled scripted opponents (PRS_A, PRS_B) vs Aris ghost (P00N style, model via -ilmodel) and vs REF (bot baseline). Measures hit streaks, reaction after being hit, freezes. Pilot: must reproduce the mirror finding (theta6h2 streaks >> theta6).",
+ "personas": [
+  {
+   "id": "PRS_A",
+   "kind": "Scripted",
+   "aggression": 0.9,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "skill": 0.9,
+   "holdout": false
+  },
+  {
+   "id": "PRS_B",
+   "kind": "Scripted",
+   "aggression": 0.9,
+   "defense": 0.2,
+   "mobility": 0.8,
+   "patience": 0.5,
+   "skill": 0.9,
+   "holdout": false
+  },
+  {
+   "id": "G_P00N",
+   "kind": "ILAgent",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false,
+   "styleAttack": 0.32617,
+   "styleMobility": 0.62513,
+   "styleDefense": 0.0487,
+   "styleMobilityTime": 0.88593,
+   "styleBlockTime": 0.03017
+  },
+  {
+   "id": "REF",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 1,
+   "round": 1,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 2,
+   "round": 1,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 3,
+   "round": 1,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 4,
+   "round": 2,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 5,
+   "round": 2,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 6,
+   "round": 2,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 7,
+   "round": 2,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 8,
+   "round": 3,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 9,
+   "round": 3,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 10,
+   "round": 3,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 11,
+   "round": 3,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 12,
+   "round": 4,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 13,
+   "round": 4,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 14,
+   "round": 4,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 15,
+   "round": 4,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 16,
+   "round": 5,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 17,
+   "round": 5,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 18,
+   "round": 5,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 19,
+   "round": 5,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 20,
+   "round": 6,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 21,
+   "round": 6,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 22,
+   "round": 6,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 23,
+   "round": 6,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 24,
+   "round": 7,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 25,
+   "round": 7,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 26,
+   "round": 7,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 27,
+   "round": 7,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 28,
+   "round": 8,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 29,
+   "round": 8,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 30,
+   "round": 8,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 31,
+   "round": 8,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 32,
+   "round": 9,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 33,
+   "round": 9,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 34,
+   "round": 9,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 35,
+   "round": 9,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 36,
+   "round": 10,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 37,
+   "round": 10,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 38,
+   "round": 10,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 39,
+   "round": 10,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 40,
+   "round": 11,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 41,
+   "round": 11,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 42,
+   "round": 11,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 43,
+   "round": 11,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 44,
+   "round": 12,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 45,
+   "round": 12,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 46,
+   "round": 12,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 47,
+   "round": 12,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 48,
+   "round": 13,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 49,
+   "round": 13,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 50,
+   "round": 13,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 51,
+   "round": 13,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 52,
+   "round": 14,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 53,
+   "round": 14,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 54,
+   "round": 14,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 55,
+   "round": 14,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 56,
+   "round": 15,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 57,
+   "round": 15,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 58,
+   "round": 15,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 59,
+   "round": 15,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 60,
+   "round": 16,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 61,
+   "round": 16,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 62,
+   "round": 16,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 63,
+   "round": 16,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 64,
+   "round": 17,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 65,
+   "round": 17,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 66,
+   "round": 17,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 67,
+   "round": 17,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 68,
+   "round": 18,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 69,
+   "round": 18,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 70,
+   "round": 18,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 71,
+   "round": 18,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 72,
+   "round": 19,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 73,
+   "round": 19,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 74,
+   "round": 19,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 75,
+   "round": 19,
+   "p1": "REF",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 76,
+   "round": 20,
+   "p1": "G_P00N",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 77,
+   "round": 20,
+   "p1": "G_P00N",
+   "p2": "PRS_B"
+  },
+  {
+   "index": 78,
+   "round": 20,
+   "p1": "REF",
+   "p2": "PRS_A"
+  },
+  {
+   "index": 79,
+   "round": 20,
+   "p1": "REF",
+   "p2": "PRS_B"
+  }
+ ]
+}
