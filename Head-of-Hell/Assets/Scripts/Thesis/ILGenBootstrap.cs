@@ -9,7 +9,9 @@ using UnityEngine.SceneManagement;
 /// Without "-ilgen" nothing here is active and the build is the normal game.
 ///
 ///   HoH.exe -ilgen [-schedule file.json] [-out Folder] [-shard k/N] [-shardmode index|pair]
-///           [-ilmodel file.json] [-fullrender]
+///           [-ilmodel file.json] [-fullrender] [-rlport N]
+///   -rlport N (thesis RL, 02/11): the IL agent marked "rl" in the schedule takes its decisions from the Python trainer
+///             listening on 127.0.0.1:(N + shard index). Without it: unchanged.
 ///   (+ Unity's own: -screen-fullscreen 0 -screen-width 640 -screen-height 360 -logFile path)
 /// </summary>
 public static class ILGenArgs
@@ -22,6 +24,7 @@ public static class ILGenArgs
     public static string ShardMode { get; private set; } = "index";   // "index" or "pair"
     public static string IlModelPath { get; private set; }
     public static bool FullRender { get; private set; }
+    public static int RlPort { get; private set; }   // 0 = no RL training
 
     public const string SceneName = "ILDataScene";
     public const float LockedStep = 1f / 60f;   // every frame = exactly 1/60 game-second (same structure as the x1 data)
@@ -48,6 +51,11 @@ public static class ILGenArgs
                 case "-ilmodel": IlModelPath = next; i++; break;
                 case "-shardmode": ShardMode = (next ?? "index").ToLowerInvariant(); i++; break;
                 case "-fullrender": FullRender = true; break;
+                case "-rlport":
+                    if (int.TryParse(next, NumberStyles.Integer, CultureInfo.InvariantCulture, out int port) && port > 0) RlPort = port;
+                    else Debug.LogError($"[ILGen] Bad -rlport '{next}'. Ignored.");
+                    i++;
+                    break;
                 case "-shard":
                     var p = (next ?? "").Split('/');
                     if (p.Length == 2 && int.TryParse(p[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int sk)
@@ -124,7 +132,8 @@ public static class ILGenBootstrap
         SceneManager.sceneLoaded += OnSceneLoaded;
         Debug.Log($"[ILGen] Data-generation build. shard {ILGenArgs.ShardIndex}/{ILGenArgs.ShardCount} ({ILGenArgs.ShardMode}), " +
                   $"schedule '{ILGenArgs.SchedulePath ?? "(scene)"}', out '{ILGenArgs.OutFolder ?? "(scene)"}', " +
-                  $"model '{ILGenArgs.IlModelPath ?? "(scene)"}', render {(ILGenArgs.FullRender ? "full" : "characters only")}");
+                  $"model '{ILGenArgs.IlModelPath ?? "(scene)"}', render {(ILGenArgs.FullRender ? "full" : "characters only")}" +
+                  (ILGenArgs.RlPort > 0 ? $", RL trainer port {ILGenArgs.RlPort + ILGenArgs.ShardIndex}" : ""));
     }
 
     static void OnSceneLoaded(Scene scene, LoadSceneMode mode)

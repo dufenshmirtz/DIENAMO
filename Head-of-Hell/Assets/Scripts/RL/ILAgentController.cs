@@ -92,6 +92,10 @@ public class ILAgentController : MonoBehaviour
     private int move = 1, charge;
     private bool block, pendingJump, pendingDrop, pendingLight, pendingHeavy, pendingSpecial, pendingParry;
 
+    // Thesis RL (02/11): set only in RL training (-rlport): the decision comes from the Python trainer. null = own sampling.
+    [NonSerialized] public ILRemotePolicy remote;
+    public int VocabSize => net != null && IsJoint ? net.vocabSize : 0;
+
     public bool Ready => net != null && self != null && enemy != null;
     private bool IsJoint => net != null && net.outputType == "joint";
     public string Label => label;
@@ -234,17 +238,21 @@ public class ILAgentController : MonoBehaviour
         for (int i = 0; i < net.styleDim; i++)
             x[so + i] = (s[i] - net.styleMean[i]) / net.styleStd[i];
 
-        Forward();
-
         int[] a = new int[net.headSizes.Length];
         if (IsJoint)
         {
-            // one sample over the action combinations the teachers used
-            int k = Sample(0, net.vocabSize);
+            // Thesis RL: in training the index comes from the trainer (same inputs x); otherwise / on failure: own sample
+            int k = remote != null && remote.Active ? remote.Decide(x, me, opp) : -1;
+            if (k < 0 || k >= net.vocabSize)
+            {
+                Forward();
+                k = Sample(0, net.vocabSize);   // one sample over the action combinations the teachers used
+            }
             Array.Copy(net.vocab, k * a.Length, a, 0, a.Length);
         }
         else
         {
+            Forward();
             int o = 0;
             for (int h = 0; h < a.Length; h++)
             {

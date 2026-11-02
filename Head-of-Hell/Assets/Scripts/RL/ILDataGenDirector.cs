@@ -60,6 +60,7 @@ public class ILDataGenDirector : MonoBehaviour
         [HideInInspector] public float expertSkill = -1f;
         [Tooltip("Scripted only: bot v6 (02/11: pressure follow-up + escape under pressure). Off = bot v5, as before.")]
         public bool botV6 = false;
+        [HideInInspector] public bool rlTrain;   // ILAgent: decisions from the RL trainer (schedule "rl": true + build -rlport)
 
         public string Id =>
             kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") :
@@ -122,6 +123,7 @@ public class ILDataGenDirector : MonoBehaviour
         public string expert;     // ILAgent (DAgger): id of a scripted persona of this schedule that runs as shadow expert
         public string ilModel;    // ILAgent, optional: this persona's own model (asset name); empty = the scene's Schedule Il Model
         public string bot;        // Scripted, optional: "v6" = bot v6 (02/11); missing / anything else = bot v5 (old schedules unchanged)
+        public bool rl;           // ILAgent, optional (RL, 02/11): this agent is trained by the Python trainer when the build runs with -rlport
     }
     [Serializable] private class SchedMatch { public int index; public int round; public string p1; public string p2; }
     [Serializable] private class SchedFile
@@ -153,6 +155,7 @@ public class ILDataGenDirector : MonoBehaviour
 #endif
 
     private Matchup current;
+    private ILRemotePolicy remote;   // RL training: the trained agent's link to the Python trainer (one per match)
 
     // ---- blind test rating panel (30/10) ----
     // Schedules with "rating": true: after every saved match the next match waits until the human player has answered
@@ -336,6 +339,8 @@ public class ILDataGenDirector : MonoBehaviour
             }
             else
                 Debug.LogWarning($"[ILDataGen] No result after {maxMatchSeconds}s, restarting the match (not counted).");
+            remote?.EndEpisode(true);   // RL: the episode ends without a result (time-out)
+            remote = null;
             StartCoroutine(Reload());
         }
     }
@@ -393,6 +398,17 @@ public class ILDataGenDirector : MonoBehaviour
                               (clamped ? " - clamped" : ""));
                 }
                 il.Rebind(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
+
+                il.remote = null;
+                if (side.rlTrain && ILGenArgs.RlPort > 0 && remote == null)
+                {
+                    // RL training (02/11): decisions from the Python trainer; the imitation logger is off (thousands of
+                    // matches, and these are not imitation data)
+                    string oppId = ReferenceEquals(side, current.p1) ? current.p2.Id : current.p1.Id;
+                    remote = ILRemotePolicy.ForMatch(ILGenArgs.RlPort + ILGenArgs.ShardIndex, side.Id, oppId, side.ilModel.name, il.VocabSize);
+                    il.remote = remote;
+                    foreach (var lg in FindObjectsOfType<ImitationLoggerV2>()) lg.enabled = false;
+                }
 
                 if (!string.IsNullOrEmpty(side.expertId))
                 {
@@ -452,6 +468,9 @@ public class ILDataGenDirector : MonoBehaviour
         // Discarded sessions (e.g. the old session closed by StartSession after a stalemate reload) are ignored:
         // only a saved match moves the run forward and triggers the next reload.
         if (!saved) return;
+
+        remote?.EndEpisode(false);   // RL: final HP changes + win / loss to the trainer
+        remote = null;
 
         if (schedule != null)
             AppendRunLog(current.scheduleIndex, matchId, current);
@@ -595,7 +614,8 @@ public class ILDataGenDirector : MonoBehaviour
                 kind = SideKind.ILAgent, personaId = p.id, ilModel = ResolveIlModel(p),
                 styleAttack = p.styleAttack, styleMobility = p.styleMobility, styleDefense = p.styleDefense,
                 styleMobilityTime = p.styleMobilityTime, styleBlockTime = p.styleBlockTime,
-                mirrorOf = p.mirrorOf ?? ""
+                mirrorOf = p.mirrorOf ?? "",
+                rlTrain = p.rl
             };
         return new Side
         {
