@@ -38122,10 +38122,10 @@ MonoBehaviour:
   timeScale: 1
   delayBeforeNextMatch: 1
   maxMatchSeconds: 180
-  outputFolder: HV_mirror6h2_P00N
-  schedule: {fileID: 4900000, guid: 471c6ee8513e5c2489428807fcefe3a3, type: 3}
+  outputFolder: HV_mirror8h_P00N
+  schedule: {fileID: 4900000, guid: 29ef12b492e4c164d8f494da1953879a, type: 3}
   resumeFromRunLog: 1
-  scheduleIlModel: {fileID: 4900000, guid: 5d97a1588457e0d4abc7792c4ebb34c7, type: 3}
+  scheduleIlModel: {fileID: 4900000, guid: 37748ef9dfe291442b549bcc7249d0b1, type: 3}
   scheduleIlModels: []
   scheduleRlModels:
   - {fileID: 5022602860645237092, guid: bfb592bfffb728a408c32664027af397, type: 3}
@@ -38175,6 +38175,7 @@ MonoBehaviour:
       expertMobility: 0.5
       expertPatience: 0.5
       expertSkill: -1
+      botV6: 0
     p2:
       kind: 0
       personaId: REF
@@ -38198,6 +38199,7 @@ MonoBehaviour:
       expertMobility: 0.5
       expertPatience: 0.5
       expertSkill: -1
+      botV6: 0
     matches: 10
     scheduleIndex: -1
   maxStalematesPerMatch: 2

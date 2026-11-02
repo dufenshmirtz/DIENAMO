@@ -58,6 +58,8 @@ public class ILDataGenDirector : MonoBehaviour
         public string expertId = "";
         [HideInInspector] public float expertAggression = 0.5f, expertDefense = 0.5f, expertMobility = 0.5f, expertPatience = 0.5f;
         [HideInInspector] public float expertSkill = -1f;
+        [Tooltip("Scripted only: bot v6 (02/11: pressure follow-up + escape under pressure). Off = bot v5, as before.")]
+        public bool botV6 = false;
 
         public string Id =>
             kind == SideKind.RL ? "RL_" + (model != null ? model.name : "none") :
@@ -119,6 +121,7 @@ public class ILDataGenDirector : MonoBehaviour
         public string mirrorOf;   // ILAgent: online mirror of this persona id (empty = fixed style)
         public string expert;     // ILAgent (DAgger): id of a scripted persona of this schedule that runs as shadow expert
         public string ilModel;    // ILAgent, optional: this persona's own model (asset name); empty = the scene's Schedule Il Model
+        public string bot;        // Scripted, optional: "v6" = bot v6 (02/11); missing / anything else = bot v5 (old schedules unchanged)
     }
     [Serializable] private class SchedMatch { public int index; public int round; public string p1; public string p2; }
     [Serializable] private class SchedFile
@@ -399,6 +402,7 @@ public class ILDataGenDirector : MonoBehaviour
                     scripted.EnableShadow(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
                     scripted.SetSkill(side.expertSkill > 0f ? side.expertSkill : scriptedSkill);
                     scripted.SetPersonality(side.expertAggression, side.expertDefense, side.expertMobility, side.expertPatience, side.expertId);
+                    scripted.SetBotV6(false);   // shadow experts stay v5
                     scripted.enabled = true;
                 }
             }
@@ -413,6 +417,7 @@ public class ILDataGenDirector : MonoBehaviour
             scripted.Rebind(self.GetCurrentCharacter(), enemy.GetCurrentCharacter());
             scripted.SetSkill(side.skill > 0f ? side.skill : scriptedSkill);   // per-persona skill (θ5 teachers) or the run's
             scripted.SetPersonality(side.aggression, side.defense, side.mobility, side.patience, side.personaId);
+            scripted.SetBotV6(side.botV6);
         }
         else
         {
@@ -596,7 +601,8 @@ public class ILDataGenDirector : MonoBehaviour
         {
             kind = SideKind.Scripted, personaId = p.id,
             aggression = p.aggression, defense = p.defense, mobility = p.mobility, patience = p.patience,
-            skill = p.skill > 0f ? Mathf.Min(p.skill, 1f) : -1f
+            skill = p.skill > 0f ? Mathf.Min(p.skill, 1f) : -1f,
+            botV6 = p.bot == "v6"
         };
     }
 

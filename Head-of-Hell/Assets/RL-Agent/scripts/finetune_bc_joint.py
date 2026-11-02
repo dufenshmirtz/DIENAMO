@@ -7,6 +7,12 @@ Fine-tune a joint style-conditioned BC model (θ6) on HUMAN data -> θ6h (thesis
   BASE dataset's normalisation, which build_dataset_human.py copies into the human dataset).
 - Replay against forgetting: every batch = (1 - replay) human rows + replay bot rows from the base dataset's train split.
 - Adam with a small learning rate; early stopping on the HUMAN val NLL.
+- History dropout (02/11, θ8h, optional, default 0 = exactly as before): with probability q a training row's
+  action-history features are replaced by the "start of match" history (no previous action), so the model must
+  decide from the game state and cannot only copy its previous decision ("copycat problem" of BC: the agent froze
+  after stopping). Only in training; in game the full history is used.
+- Held-out rounds (02/11, optional): --holdout-matches lists human match numbers that are removed from every split
+  (kept aside as an untouched test set, e.g. 10 of Aris's 30 rounds vs θ6h2).
 - Report: joint NLL on the human splits and on the bot val split, base vs fine-tuned (the key numbers:
   human test NLL should drop = predicts the person better; bot val NLL should stay ~ the same = nothing forgotten).
 """
@@ -46,6 +52,10 @@ def main():
     ap.add_argument("--patience", type=int, default=5)
     ap.add_argument("--weight-decay", type=float, default=1e-5)
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--history-dropout", type=float, default=0.0,
+                    help="probability that a training row's action history is replaced by the start-of-match history")
+    ap.add_argument("--holdout-matches", default="",
+                    help="comma-separated human match numbers removed from train/val/test (untouched test set)")
     args = ap.parse_args()
 
     p = {k: v.astype(np.float32) for k, v in np.load(os.path.join(args.base_model, "model.npz")).items() if k != "vocab"}
@@ -54,6 +64,18 @@ def main():
 
     xh, yh, sh, _, mh, _, _ = T.load(args.human_data, True, True, True, True)
     xb, yb, sb, _, _, _, _ = T.load(args.bot_data, True, True, True, True)
+    if args.holdout_matches:
+        hm = np.load(os.path.join(args.human_data, "dataset.npz"))["match"]
+        held = np.isin(hm, [int(v) for v in args.holdout_matches.split(",")])
+        sh = sh.copy(); sh[held] = 3   # 3 = not used for training, selection or the test report
+        print(f"held-out human matches: {args.holdout_matches} ({held.sum()} rows)")
+    # history columns: inputs = ego obs (67) + quick_ready (1) + history + style (5)
+    hc0, hc1 = 68, xh.shape[1] - 5
+    zb = np.load(os.path.join(args.bot_data, "dataset.npz"))
+    key = zb["match"].astype(np.int64) * 2 + zb["slot"]
+    order = np.lexsort((zb["tick"], key))
+    first = order[np.r_[True, key[order][1:] != key[order][:-1]]]   # first decision of every player stream
+    start_hist = xb[first, hc0:hc1].mean(0)                          # identical for all streams (checked)
     ch, unm_h = map_classes(yh, vocab)
     cb, _ = map_classes(yb, vocab)
     print(f"human rows {len(xh)} (train {(sh == 0).sum()}, val {(sh == 1).sum()}, test {(sh == 2).sum()}); "
@@ -94,6 +116,9 @@ def main():
         for _ in range(steps):
             idx_h = rng.choice(htr, nh); idx_b = rng.choice(btr, nb)
             xb_ = np.concatenate([xh[idx_h], xb[idx_b]]); cb_ = np.concatenate([ch[idx_h], cb[idx_b]]); n = len(cb_)
+            if args.history_dropout > 0:
+                drop = rng.random(n) < args.history_dropout
+                xb_[drop, hc0:hc1] = start_hist
             h1, h2, lg = forward(p, xb_)
             lg = lg - lg.max(1, keepdims=True); e = np.exp(lg); pr = e / e.sum(1, keepdims=True)
             losses.append(float(-np.log(pr[np.arange(n), cb_] + 1e-12).mean()))

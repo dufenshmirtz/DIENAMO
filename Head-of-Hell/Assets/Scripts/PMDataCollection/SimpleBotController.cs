@@ -279,6 +279,7 @@ public class SimpleBotController : MonoBehaviour
     private void PressHeavy(float cooldownMin, float cooldownMax)
     {
         PressOneFrame(setup.heavyAttack);
+        lastOwnAttackTime = v6Clock;
         heavyCommitTimer = heavyCommitTime;
         shadowOwnHeavyCooldown = Random.Range(cooldownMin, cooldownMax);   // same random draw as before
         actionTimer = Mathf.Max(shadowOwnHeavyCooldown, heavyCommitTime);
@@ -329,6 +330,53 @@ public class SimpleBotController : MonoBehaviour
     private float chargePerceiveTimer = -1f;
     private float heavyPerceiveTimer = -1f;
     private float heavyReactTimer;
+
+    // ---- Bot v6 (thesis 02/11): J = pressure follow-up, K = escape under pressure ----
+    // Off by default = exactly bot v5 (the REF of every evaluation stays v5). ILDataGenDirector turns it on per persona
+    // (schedule field "bot": "v6"). Never active in DAgger shadow mode. Numbers from Aris's mirror rounds (02/11).
+    [Header("Bot v6 (thesis 02/11)")]
+    [SerializeField] private bool botV6 = false;
+    [SerializeField] private float followChanceMin = 0.25f, followChanceMax = 0.75f;   // chance to continue after a landed hit (aggression 0 -> 1)
+    [SerializeField] private float followDecay = 0.70f;      // x per further link of a chain
+    [SerializeField] private int followMaxChain = 4;         // hits in one chain, the first included
+    [SerializeField] private float followDelayMedian = 0.28f, followDelaySigma = 0.35f, followDelayMin = 0.12f, followDelayMax = 0.60f;
+    [SerializeField] private float followWHeavy = 0.55f, followWSpecial = 0.25f, followWQuick = 0.20f;   // Aris: Heavy->Heavy most common
+    [SerializeField] private float ownHitAttributionWindow = 0.9f;   // a target HP drop is "my hit" if I attacked this recently
+    [SerializeField] private float multiHitMerge = 0.25f;            // HP drops closer than this = one hit (multi-hit moves)
+    [SerializeField] private float escapeWindow = 1.5f;              // 2 hits taken within this -> escape
+    [SerializeField] private int escapeHeavyDamage = 10;             // or one hit this big with the opponent close
+    [SerializeField] private float escapeCooldown = 1.0f;
+    [SerializeField] private float escapeExpire = 1.5f;              // an escape still waiting (stun) after this is dropped
+    [SerializeField] private float escapeWAway = 0.68f, escapeWCounter = 0.17f, escapeWBlock = 0.05f, escapeWNone = 0.10f;   // Aris's first answer after a hit
+    [SerializeField] private float escapeRetreatMin = 0.35f, escapeRetreatMax = 0.60f;
+    // v6.1 (02/11, after the first v6 pilot): the heavy's knockback pushed the target out of reach, so chains were dropped
+    [SerializeField] private float followChaseRange = 3.0f;   // follow-up: walk in and hit if the target is this close (same level)
+    [SerializeField] private float followChaseTime = 0.8f;    // give up the chase after this
+    [SerializeField] private float escapeCloseMul = 2.5f;     // "opponent close" for the one-heavy escape = engageRange x this
+    [SerializeField] private float v6ChargeScale = 0.4f;      // proactive charge x this (Aris opens with charge far less than the bots)
+
+    private float v6Clock;
+    private float lastOwnAttackTime = -99f;
+    private int prevSelfHp = -1, prevTargetHp = -1;
+    private int followChain;              // hits landed in the current chain
+    private float followTimer = -1f;      // -1 idle, > 0 human delay before the follow-up, 0 = press now
+    private float lastLandedTime = -99f;
+    private readonly System.Collections.Generic.List<float> hitsTaken = new System.Collections.Generic.List<float>();
+    private float escapePerceiveTimer = -1f;   // -1 idle, > 0 perceiving, 0 = escape now
+    private float escapeTriggerTime = -99f;
+    private float escapeCooldownTimer;
+    private float followChaseTimer = -1f;   // -1 idle, > 0 walking in for the follow-up, 0 = gave up
+
+    public bool BotV6 => botV6;
+    public void SetBotV6(bool on) { botV6 = on; ResetV6(); }
+
+    private void ResetV6()
+    {
+        v6Clock = 0f; lastOwnAttackTime = -99f; prevSelfHp = -1; prevTargetHp = -1;
+        followChain = 0; followTimer = -1f; lastLandedTime = -99f; hitsTaken.Clear();
+        escapePerceiveTimer = -1f; escapeTriggerTime = -99f; escapeCooldownTimer = 0f;
+        followChaseTimer = -1f;
+    }
 
     private bool botCharging;
     private float botChargeTimer;
@@ -564,6 +612,7 @@ public class SimpleBotController : MonoBehaviour
         botChargeCooldownTimer = 0f;
 
         lastTargetDistanceX = 999f;
+        ResetV6();
     }
 
     private void OnDisable()
@@ -608,6 +657,7 @@ public class SimpleBotController : MonoBehaviour
         heavyReactTimer -= dt;
         botChargeCooldownTimer -= dt;
         heavyCommitTimer -= dt;
+        if (botV6 && !shadowMode) UpdateV6Tracking(dt);
 
         UpdateForcedVertical(dt);
         UpdateForcedHorizontal(dt);
@@ -627,6 +677,14 @@ public class SimpleBotController : MonoBehaviour
         }
 
         if (TryReactToCharge())
+        {
+            HandleMovement(dt);
+            UpdateLastTargetDistance();
+            return;
+        }
+
+        // Bot v6: escape under pressure / follow-up after a landed hit (before the v5 reactions).
+        if (botV6 && !shadowMode && heavyCommitTimer <= 0f && TryV6Actions())
         {
             HandleMovement(dt);
             UpdateLastTargetDistance();
@@ -1473,7 +1531,8 @@ public class SimpleBotController : MonoBehaviour
         if (!inRange || !mashEntry)
             return false;
 
-        float chance = proactiveChargeChance * Mathf.Lerp(0.9f, 1.15f, skill) * AggrMul * chargeScale;
+        float chance = proactiveChargeChance * Mathf.Lerp(0.9f, 1.15f, skill) * AggrMul * chargeScale *
+                       (botV6 && !shadowMode ? v6ChargeScale : 1f);   // v6.1; v5 unchanged (factor 1, same random draws)
         chance = Mathf.Min(0.95f, chance);
 
         if (Random.value > chance)
@@ -1596,6 +1655,7 @@ public class SimpleBotController : MonoBehaviour
 
         botInput.SetKey(setup.charge, false);
         PressOneFrame(setup.charge);
+        lastOwnAttackTime = v6Clock;
         botCharging = false;
         botChargeTimer = 0f;
         botChargeCooldownTimer = proactiveChargeCooldown;
@@ -1780,6 +1840,7 @@ public class SimpleBotController : MonoBehaviour
             ApplyMovement(quickAimDir);
         }
         PressOneFrame(setup.lightAttack);
+        lastOwnAttackTime = v6Clock;
     }
 
     // Bot v5 (G): the special (Skipler: dash in the held direction) aimed at the opponent, like PressQuick.
@@ -1792,6 +1853,7 @@ public class SimpleBotController : MonoBehaviour
             ApplyMovement(quickAimDir);
         }
         PressOneFrame(setup.ability);
+        lastOwnAttackTime = v6Clock;
     }
 
     // Bot v5 (H): the opponent is charging / charged, on our level and facing us (its charge hits only in front).
@@ -1803,6 +1865,170 @@ public class SimpleBotController : MonoBehaviour
     }
 
     // Bot v5 (I): human answer to an opponent's heavy start nearby, after the perception delay.
+    // ---- Bot v6 ----
+    // Hits are detected from HP changes (own and target), so nothing else in the game changes.
+    private void UpdateV6Tracking(float dt)
+    {
+        v6Clock += dt;
+        if (followTimer > 0f) followTimer = Mathf.Max(0f, followTimer - dt);
+        if (escapePerceiveTimer > 0f) escapePerceiveTimer = Mathf.Max(0f, escapePerceiveTimer - dt);
+        escapeCooldownTimer -= dt;
+        if (followChaseTimer > 0f) followChaseTimer = Mathf.Max(0f, followChaseTimer - dt);
+
+        int selfHp = character.GetCurrentHealth();
+        int targetHp = target.GetCurrentHealth();
+        if (prevSelfHp >= 0 && selfHp < prevSelfHp && !character.IsBlocking) OnV6HitTaken(prevSelfHp - selfHp);
+        if (prevTargetHp >= 0 && targetHp < prevTargetHp && !target.IsBlocking &&
+            v6Clock - lastOwnAttackTime <= ownHitAttributionWindow) OnV6HitLanded();
+        prevSelfHp = selfHp;
+        prevTargetHp = targetHp;
+
+        if (followChain > 0 && followTimer < 0f && v6Clock - lastLandedTime > escapeWindow) followChain = 0;   // chain over
+    }
+
+    // J: after a landed hit, continue with a new attack (chance from aggression, smaller for every further link).
+    private void OnV6HitLanded()
+    {
+        if (v6Clock - lastLandedTime < multiHitMerge) return;   // same multi-hit move
+        lastLandedTime = v6Clock;
+        followChain++;
+        float p = Mathf.Lerp(followChanceMin, followChanceMax, aggression) * Mathf.Pow(followDecay, followChain - 1);
+        followTimer = (followChain < followMaxChain && Random.value < p)
+            ? LogNormalV6(followDelayMedian, followDelaySigma, followDelayMin, followDelayMax)
+            : -1f;
+    }
+
+    // K: two hits taken within escapeWindow (or one heavy hit with the opponent close) -> escape after a human delay.
+    private void OnV6HitTaken(int damage)
+    {
+        followTimer = -1f;   // being hit ends my own chain
+        followChain = 0;
+        followChaseTimer = -1f;
+        if (hitsTaken.Count > 0 && v6Clock - hitsTaken[hitsTaken.Count - 1] < multiHitMerge) return;   // same multi-hit move
+        hitsTaken.Add(v6Clock);
+        hitsTaken.RemoveAll(t => v6Clock - t > escapeWindow);
+        if (escapeCooldownTimer > 0f || escapePerceiveTimer >= 0f || targetTr == null) return;
+
+        bool close = Mathf.Abs(targetTr.position.x - selfTr.position.x) <= engageRange * escapeCloseMul;   // v6.1: after the knockback
+        if (hitsTaken.Count >= 2 || (damage >= escapeHeavyDamage && close))
+        {
+            escapeTriggerTime = v6Clock;
+            escapePerceiveTimer = humanReactionDelay ? SampleReactionDelay() : 0f;
+        }
+    }
+
+    private bool TryV6Actions()
+    {
+        if (targetTr == null || botCharging) return false;
+        if (character.IsCasting || character.IsStunned || character.IsKnocked) return false;   // wait until free (escapeExpire)
+
+        float dxSigned = targetTr.position.x - selfTr.position.x;
+        float dx = Mathf.Abs(dxSigned);
+        bool sameLevel = Mathf.Abs(targetTr.position.y - selfTr.position.y) <= sameLevelTolerance;
+
+        // K first: a bot that is being hit does not continue its own chain.
+        if (escapePerceiveTimer == 0f)
+        {
+            escapePerceiveTimer = -1f;
+            if (v6Clock - escapeTriggerTime > escapeExpire) return false;
+            escapeCooldownTimer = escapeCooldown;
+            hitsTaken.Clear();
+
+            float awayW = escapeWAway * MobMul;
+            float counterW = escapeWCounter * AggrMul;
+            float blockW = character.BlockDisabled ? 0f : escapeWBlock * DefMul;
+            float noneW = escapeWNone;
+            float roll = Random.value * (awayW + counterW + blockW + noneW);
+
+            if (roll < awayW)   // get out: drop (on a platform) / jump back / walk back
+            {
+                float r = Random.value;
+                if (r < 0.15f && character.CanDropPlatform && character.IsGrounded)
+                {
+                    TriggerDropPlatform();
+                    ForceRetreatFromTarget(dxSigned, 0.25f);
+                }
+                else if (r < 0.40f && character.IsGrounded && !character.JumpDisabled)
+                {
+                    PressOneFrame(setup.up);
+                    ForceRetreatFromTarget(dxSigned, Random.Range(0.30f, 0.45f));
+                }
+                else
+                    ForceRetreatFromTarget(dxSigned, Random.Range(escapeRetreatMin, escapeRetreatMax));
+                actionTimer = Mathf.Max(actionTimer, 0.25f);
+                return true;
+            }
+            roll -= awayW;
+            if (roll < counterW)   // trade back, like Aris often does
+            {
+                if (Random.value < 0.6f) PressHeavy(0.22f, 0.36f);
+                else
+                {
+                    PressQuick(dxSigned);
+                    actionTimer = Random.Range(0.15f, 0.26f);
+                }
+                return true;
+            }
+            roll -= counterW;
+            if (roll < blockW)
+            {
+                botInput.SetKey(setup.block, true);
+                blockHoldTimer = Random.Range(0.35f, 0.60f);
+                actionTimer = blockHoldTimer;
+                return true;
+            }
+            actionTimer = Mathf.Max(actionTimer, Random.Range(0.10f, 0.25f));   // none: a short hesitation
+            return true;
+        }
+
+        // J: the follow-up press after a landed hit.
+        if (followTimer == 0f)
+        {
+            if (!sameLevel || blockHoldTimer > 0f || dx > followChaseRange || followChaseTimer == 0f)
+            {
+                followTimer = -1f;   // out of reach / chase given up: the chain ends, normal decisions continue
+                followChaseTimer = -1f;
+                followChain = 0;
+                return false;
+            }
+            if (dx > engageRange * 1.2f)   // v6.1: walk in (the heavy pushed the target back), hit when in reach
+            {
+                if (followChaseTimer < 0f) followChaseTimer = followChaseTime;
+                forcedHorizontalValue = Mathf.Sign(dxSigned);
+                forcedHorizontalTimer = 0.1f;
+                moveCommitTimer = 0f;
+                return true;
+            }
+            followTimer = -1f;
+            followChaseTimer = -1f;
+            float hW = followWHeavy;
+            float sW = CanUseSpecialNow() ? followWSpecial : 0f;
+            float qW = QuickReady ? followWQuick : 0f;
+            float roll = Random.value * (hW + sW + qW);
+            if (roll < hW)
+                PressHeavy(0.22f, 0.36f);
+            else if (roll < hW + sW)
+            {
+                PressSpecial(dxSigned);
+                actionTimer = Random.Range(0.24f, 0.42f);
+            }
+            else
+            {
+                PressQuick(dxSigned);
+                actionTimer = Random.Range(0.15f, 0.26f);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private static float LogNormalV6(float median, float sigma, float min, float max)
+    {
+        float u1 = Mathf.Max(1e-6f, Random.value), u2 = Random.value;
+        float z = Mathf.Sqrt(-2f * Mathf.Log(u1)) * Mathf.Cos(2f * Mathf.PI * u2);
+        return Mathf.Clamp(median * Mathf.Exp(sigma * z), min, max);
+    }
+
     private bool TryReactToHeavy()
     {
         if (!heavyReaction || heavyReactTimer > 0f) return false;
