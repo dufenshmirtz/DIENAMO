@@ -3,7 +3,7 @@ Schedule for RL fine-tuning (thesis, 02/11, branch RLTeach; used by rl_finetune.
 
 Agent personas "RL_<style>" (kind ILAgent, "rl": true = their decisions come from the trainer), one per target style:
   - the measured style of every TRAINING persona of the bot dataset (hold-outs stay unseen for the evaluations),
-  - Aris's 4 styles (HUMAN_P00N / A / D / M) from the human dataset.
+  - Aris's styles (default HUMAN_P00N / A / D / M; --human-styles) from the human dataset.
 Opponents: every training persona of the bot dataset as bot v6.1 ("bot": "v6", its own knobs) + REF (bot v5, knobs 0.5).
 Matches: --matches random (agent style, opponent) pairs, the agent alternately on P1 / P2 (seeded, reproducible).
 The build plays the schedule in order; the trainer stops by time, so the schedule is simply long.
@@ -23,6 +23,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bot-dataset-json", required=True, help=".../_datasets/Synthetic_v8/dataset.json")
     ap.add_argument("--human-dataset-json", required=True, help=".../_datasets/Human_v3/dataset.json")
+    ap.add_argument("--human-styles", nargs="*", default=["P00N", "P00A", "P00D", "P00M"],
+                    help="Aris's styles used as agent styles (03/11: P00D left out = forced, not natural play)")
     ap.add_argument("--matches", type=int, default=20000)
     ap.add_argument("--ref-share", type=float, default=0.15, help="share of matches against REF (bot v5)")
     ap.add_argument("--seed", type=int, default=20261102)
@@ -44,7 +46,7 @@ def main():
     personas.append({"id": "REF", "kind": "Scripted", "aggression": 0.5, "defense": 0.5, "mobility": 0.5, "patience": 0.5,
                      "holdout": False})
     styles = [(p["id"], p["style_mean"]) for p in train] + \
-             [(p["id"].replace("HUMAN_", ""), p["style_mean"]) for p in hp if p["id"] in ("HUMAN_P00N", "HUMAN_P00A", "HUMAN_P00D", "HUMAN_P00M")]
+             [(p["id"].replace("HUMAN_", ""), p["style_mean"]) for p in hp if p["id"] in ["HUMAN_" + h for h in a.human_styles]]
     for sid, sm in styles:
         q = {"id": "RL_" + sid, "kind": "ILAgent", "aggression": 0, "defense": 0, "mobility": 0, "patience": 0,
              "holdout": False, "rl": True}

@@ -10,6 +10,9 @@ Pure NumPy (no torch / ML-Agents needed; Python 3.12 OK).
 Policy  = the IL model's network (101 -> 256 -> 256 -> K), initialised from the IL model (e.g. theta8h_q0_e60_joint.json).
 Value   = a separate network of the same size (new), trained first alone for --critic-warmup updates.
 Reward  = (damage dealt - damage taken) / 100 per decision, +1 win / -1 loss at the end. Nothing else (no shaping).
+          Optional (05/11, --style-weight w > 0, build protocol 2): at the end of a round, - w * mean over the 5 axes of
+          |measured style - requested style| / style std (the model's normalisation): the agent must win WITH the style
+          it was asked for. The measured style comes from StyleAxes in the game (same code as the analysis).
 Leash   = beta * KL(pi || pi_ref) in the loss, pi_ref = a frozen IL model (default: the start model). With a reference
           that has another vocabulary (e.g. thetaH, human-only), its probabilities are mapped onto the policy's
           combinations; combinations it never uses get a small floor (--ref-floor) so the KL stays finite.
@@ -167,14 +170,20 @@ class Env(threading.Thread):
                     f.write(struct.pack("<i", a))
                 elif t == 3:                                 # END
                     dealt, taken, outcome, trunc = struct.unpack("<ffii", self._read(f, 16))
+                    style_ok, measured = 0, None
+                    if ep is not None and ep.get("protocol", 1) >= 2:
+                        style_ok, *measured = struct.unpack("<i5f", self._read(f, 24))
                     r = tr.step_reward(dealt, taken) + (tr.args.win_reward * outcome)
+                    sdist = tr.style_distance(ep, measured) if (style_ok and ep is not None) else None
+                    if sdist is not None:
+                        r -= tr.args.style_weight * sdist
                     with tr.lock:
                         if self.buf and self.buf[-1]["r"] is None:
                             self.buf[-1]["r"] = r
                             self.buf[-1]["done"] = True
                     if ep is not None:
                         ep["ret"] += r; ep["dealt"] += dealt; ep["taken"] += taken
-                        ep.update(outcome=outcome, truncated=trunc, env=self.k)
+                        ep.update(outcome=outcome, truncated=trunc, env=self.k, style_dist=sdist)
                         tr.episode_done(ep)
                     ep = None
                     f.write(struct.pack("<i", 0))
@@ -215,6 +224,14 @@ class Trainer:
 
     def step_reward(self, dealt, taken):
         return (dealt - taken) / 100.0
+
+    def style_distance(self, ep, measured):
+        """mean over the 5 axes of |measured - requested| / std (the model's style normalisation)."""
+        req = ep.get("style")
+        if not req or measured is None or len(req) != 5:
+            return None
+        sd = np.array(self.base["styleStd"], np.float64)
+        return float(np.mean(np.abs(np.array(measured, np.float64) - np.array(req, np.float64)) / sd))
 
     def act(self, x):
         lp = log_softmax(self.pi.forward(x[None])[0])
@@ -324,6 +341,8 @@ def main():
     ap.add_argument("--beta", type=float, default=0.05, help="KL leash strength")
     ap.add_argument("--ref-floor", type=float, default=1e-4)
     ap.add_argument("--win-reward", type=float, default=1.0)
+    ap.add_argument("--style-weight", type=float, default=0.0,
+                    help="style reward (05/11): - w * mean |measured - requested| / std at the end of a round (0 = off)")
     ap.add_argument("--gamma", type=float, default=0.995)
     ap.add_argument("--lam", type=float, default=0.95)
     ap.add_argument("--clip", type=float, default=0.1)
@@ -366,7 +385,7 @@ def main():
     logf = open(log_path, "a", newline=""); log = csv.writer(logf)
     if new:
         log.writerow(["update", "minutes", "decisions", "episodes", "win", "loss", "dealt", "taken", "return",
-                      "kl_ref", "entropy", "clipfrac", "approx_kl", "vloss", "critic_only"])
+                      "kl_ref", "entropy", "clipfrac", "approx_kl", "vloss", "critic_only", "style_dist"])
     t0 = time.time(); seen_eps = 0
     try:
         while tr.updates < args.max_updates and (time.time() - t0) < args.hours * 3600:
@@ -389,9 +408,11 @@ def main():
                    round(np.mean([e["dealt"] for e in eps]), 1) if eps else "", round(np.mean([e["taken"] for e in eps]), 1) if eps else "",
                    round(np.mean([e["ret"] for e in eps]), 3) if eps else "", round(st["kl_ref"], 4), round(st["ent"], 3),
                    round(st["clip"], 3), round(st["approx_kl"], 5), round(st["vloss"], 4), st["critic_only"]]
+            sd = [e["style_dist"] for e in eps if e.get("style_dist") is not None]
+            row.append(round(float(np.mean(sd)), 3) if sd else "")
             log.writerow(row); logf.flush()
             print("[upd] " + " ".join(f"{h}={v}" for h, v in zip(
-                ["u", "min", "dec", "eps", "win", "loss", "dealt", "taken", "ret", "kl_ref", "ent", "clip", "akl", "vl", "co"], row)), flush=True)
+                ["u", "min", "dec", "eps", "win", "loss", "dealt", "taken", "ret", "kl_ref", "ent", "clip", "akl", "vl", "co", "style"], row)), flush=True)
             if tr.updates % args.export_every == 0:
                 name = f"thetaR_{args.out}_u{tr.updates}"
                 export_unity_model(tr.base, tr.pi, os.path.join(run_dir, name + ".json"), name)

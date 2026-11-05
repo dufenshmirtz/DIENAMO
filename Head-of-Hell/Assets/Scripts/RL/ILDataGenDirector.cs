@@ -405,7 +405,8 @@ public class ILDataGenDirector : MonoBehaviour
                     // RL training (02/11): decisions from the Python trainer; the imitation logger is off (thousands of
                     // matches, and these are not imitation data)
                     string oppId = ReferenceEquals(side, current.p1) ? current.p2.Id : current.p1.Id;
-                    remote = ILRemotePolicy.ForMatch(ILGenArgs.RlPort + ILGenArgs.ShardIndex, side.Id, oppId, side.ilModel.name, il.VocabSize);
+                    remote = ILRemotePolicy.ForMatch(ILGenArgs.RlPort + ILGenArgs.ShardIndex, side.Id, oppId, side.ilModel.name, il.VocabSize,
+                                                     self.playerNum, il.Style);   // 05/11: seat + requested style (style reward)
                     il.remote = remote;
                     foreach (var lg in FindObjectsOfType<ImitationLoggerV2>()) lg.enabled = false;
                 }
