@@ -1,0 +1,180 @@
+{
+ "name": "schedule_blind_P04",
+ "seed": 20274491,
+ "participant": "P04",
+ "outputFolder": "HV_blind_P04",
+ "rating": true,
+ "purpose": "blind human-likeness test (friends, mirror only): rate each opponent 1-5 and guess bot / agent; first 0 rounds = WARMUP, not analysed (DO NOT OPEN before the test)",
+ "warmup_rounds": 0,
+ "blind_key": {
+  "REF": "K76",
+  "M_IL": "K52",
+  "M_RL": "K78",
+  "M_RLS": "K85",
+  "models": {
+   "M_IL": "theta8h_q0_e60_joint",
+   "M_RL": "thetaR_RLp_b02_u60",
+   "M_RLS": "thetaR_RLc3_w2_u40"
+  }
+ },
+ "personas": [
+  {
+   "id": "P04",
+   "kind": "Human",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "WARMUP",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "K76",
+   "kind": "Scripted",
+   "aggression": 0.5,
+   "defense": 0.5,
+   "mobility": 0.5,
+   "patience": 0.5,
+   "holdout": false
+  },
+  {
+   "id": "K52",
+   "kind": "ILAgent",
+   "ilModel": "theta8h_q0_e60_joint",
+   "mirrorOf": "HUMAN_P04",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "K78",
+   "kind": "ILAgent",
+   "ilModel": "thetaR_RLp_b02_u60",
+   "mirrorOf": "HUMAN_P04",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  },
+  {
+   "id": "K85",
+   "kind": "ILAgent",
+   "ilModel": "thetaR_RLc3_w2_u40",
+   "mirrorOf": "HUMAN_P04",
+   "aggression": 0,
+   "defense": 0,
+   "mobility": 0,
+   "patience": 0,
+   "holdout": false
+  }
+ ],
+ "matches": [
+  {
+   "index": 0,
+   "round": 1,
+   "p1": "P04",
+   "p2": "K85"
+  },
+  {
+   "index": 1,
+   "round": 2,
+   "p1": "P04",
+   "p2": "K76"
+  },
+  {
+   "index": 2,
+   "round": 3,
+   "p1": "P04",
+   "p2": "K78"
+  },
+  {
+   "index": 3,
+   "round": 4,
+   "p1": "P04",
+   "p2": "K52"
+  },
+  {
+   "index": 4,
+   "round": 5,
+   "p1": "P04",
+   "p2": "K78"
+  },
+  {
+   "index": 5,
+   "round": 6,
+   "p1": "P04",
+   "p2": "K76"
+  },
+  {
+   "index": 6,
+   "round": 7,
+   "p1": "P04",
+   "p2": "K85"
+  },
+  {
+   "index": 7,
+   "round": 8,
+   "p1": "P04",
+   "p2": "K78"
+  },
+  {
+   "index": 8,
+   "round": 9,
+   "p1": "P04",
+   "p2": "K85"
+  },
+  {
+   "index": 9,
+   "round": 10,
+   "p1": "P04",
+   "p2": "K52"
+  },
+  {
+   "index": 10,
+   "round": 11,
+   "p1": "P04",
+   "p2": "K76"
+  },
+  {
+   "index": 11,
+   "round": 12,
+   "p1": "P04",
+   "p2": "K85"
+  },
+  {
+   "index": 12,
+   "round": 13,
+   "p1": "P04",
+   "p2": "K52"
+  },
+  {
+   "index": 13,
+   "round": 14,
+   "p1": "P04",
+   "p2": "K76"
+  },
+  {
+   "index": 14,
+   "round": 15,
+   "p1": "P04",
+   "p2": "K52"
+  },
+  {
+   "index": 15,
+   "round": 16,
+   "p1": "P04",
+   "p2": "K78"
+  }
+ ]
+}
