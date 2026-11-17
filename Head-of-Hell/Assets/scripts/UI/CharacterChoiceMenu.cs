@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class CharacterChoiceMenu : MonoBehaviour
+public class CharacterChoiceMenu : MonoBehaviour, IMenuCancelHandler
 {
     public Button[] characterButtons;
 
@@ -70,7 +71,12 @@ public class CharacterChoiceMenu : MonoBehaviour
             cscript.BothPicked(true);
 
             if (startButton != null)
+            {
                 startButton.gameObject.SetActive(true);
+                // Keyboard/gamepad: everyone has picked -> put the cursor on Start, so Enter/A starts the game.
+                if (EventSystem.current != null)
+                    EventSystem.current.SetSelectedGameObject(startButton.gameObject);
+            }
 
             if (requiredPlayers == 2)
             {
@@ -109,6 +115,28 @@ public class CharacterChoiceMenu : MonoBehaviour
 
         picksMade--;
         currentPlayer = picksMade + 1;
+    }
+
+    /// <summary>Esc / gamepad B (via MenuNavigator): undo the last pick, exactly like right-click.
+    /// Returns false when nothing is picked, so MenuNavigator presses Back instead.</summary>
+    public bool TryCancel()
+    {
+        if (picksMade <= 0)
+            return false;
+
+        // The button of the pick being undone (it shows the "P<n>" marker) -> put the cursor back on it.
+        Button undone = null;
+        foreach (Button button in characterButtons)
+        {
+            Transform marker = button != null ? button.transform.Find($"P{picksMade}") : null;
+            if (marker != null && marker.gameObject.activeSelf) { undone = button; break; }
+        }
+
+        DeselectCharacter();
+
+        if (undone != null && EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(undone.gameObject);
+        return true;
     }
 
     public void ResetCharacterSelection()

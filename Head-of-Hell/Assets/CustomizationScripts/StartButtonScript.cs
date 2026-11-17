@@ -6,15 +6,9 @@ public class StartButtonScript : MonoBehaviour
 {
     public TMP_Text setting; // Assign in Inspector (for Default ruleset check)
 
-    void Update()
-    {
-        //print(setting.text);
-        // Check for Enter key press (both Return and Keypad Enter)
-        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
-        {
-            StartGame();
-        }
-    }
+    // Enter/A is now handled by the EventSystem: when everyone has picked, the Start button is selected
+    // and Enter clicks it once (OnStartButtonClicked). The old Update() that started the game on ANY
+    // Enter press was removed because together with the EventSystem it started the game more than once.
 
     // Called when the UI Button is clicked (assign in Inspector)
     public void OnStartButtonClicked()

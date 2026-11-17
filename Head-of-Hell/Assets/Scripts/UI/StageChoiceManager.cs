@@ -21,14 +21,20 @@ public class StageChoiceManager : MonoBehaviour
     public TextMeshProUGUI selectionText;
 
     private int selectedModeIndex = 0; // 0 = default, 1 = custom
-    private int selectedStageIndex = 0;
 
-    private bool gameModePicked = false;
-    private bool stagePicked = false;
-    private bool readyToProceed = false;
+    [Tooltip("Custom Settings slot buttons that pick a ruleset and return to Game Setup. " +
+             "After one of them (or Default) is clicked, the cursor goes to the first stage.")]
+    public Button[] customSlotButtons;
 
     void Start()
     {
+        // Choosing a ruleset (Default here, or a slot in Custom Settings) moves the cursor to the stages.
+        if (defaultButton != null)
+            defaultButton.onClick.AddListener(SelectFirstStage);
+        if (customSlotButtons != null)
+            foreach (Button slot in customSlotButtons)
+                if (slot != null) slot.onClick.AddListener(SelectFirstStage);
+
         HighlightCurrentSelection();
         RefreshCurrentSettingText();
         if (selectionText != null)
@@ -38,105 +44,32 @@ public class StageChoiceManager : MonoBehaviour
     }
     void Update()
     {
-        if (!gameModePicked)
-        {
-            HandleModeSelection();
-        }
-        else if (!stagePicked)
-        {
-            HandleStageSelection();
-        }
-        else if (readyToProceed)
-        {
-            HandleProceed();
-        }
+        // Keyboard/gamepad navigation (mode -> stage -> proceed) is now handled by Unity's EventSystem
+        // + MenuNavigator: arrows move freely, Enter/A clicks the selected button (stage pick then jumps
+        // to Proceed, see StageChoiceButtons), Esc/B undoes the stage pick or goes Back. The old
+        // arrow/Enter state machine was removed here because it ran in parallel with the EventSystem.
 
         if (Input.GetMouseButtonDown(1)) // Right click to reset
         {
             ResetAll();
         }
-
-        // Global fallback: if proceed is selected and Enter is pressed, invoke
-        if (Input.GetKeyDown(KeyCode.Return) &&
-            EventSystem.current.currentSelectedGameObject == proceedButton.gameObject)
-        {
-            proceedButton.onClick.Invoke();
-        }
     }
 
-    void HandleModeSelection()
+    /// <summary>Puts the keyboard/gamepad cursor on the left-most stage that can be picked
+    /// (if a stage is already picked, that is the picked one, since the others are locked).</summary>
+    public void SelectFirstStage()
     {
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
-        {
-            selectedModeIndex = Mathf.Max(0, selectedModeIndex - 1);
-            HighlightCurrentSelection();
-            RefreshCurrentSettingText();
-        }
-        else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-        {
-            selectedModeIndex = Mathf.Min(1, selectedModeIndex + 1);
-            HighlightCurrentSelection();
-            RefreshCurrentSettingText();
-        }
-        else if (Input.GetKeyDown(KeyCode.Return))
-        {
-            gameModePicked = true;
-            HighlightStageSelection();
-            RefreshCurrentSettingText();
-        }
-    }
-
-    void HandleStageSelection()
-    {
-        if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
-        {
-            if (selectedStageIndex > 0)
-                selectedStageIndex--;
-        }
-        else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-        {
-            if (selectedStageIndex < stageButtons.Length - 1)
-                selectedStageIndex++;
-        }
-        else if (Input.GetKeyDown(KeyCode.Return))
-        {
-            Button selectedButton = stageButtons[selectedStageIndex];
-
-            if (selectedButton == randomButton)
-            {
-                Button randomStage = GetRandomStageButton();
-                randomStage.onClick.Invoke();
-
-                // Update selectedStageIndex to match randomly selected button
-                for (int i = 0; i < stageButtons.Length; i++)
-                {
-                    if (stageButtons[i] == randomStage)
-                    {
-                        selectedStageIndex = i;
-                        break;
-                    }
-                }
-
-                Debug.Log("Randomly selected stage: " + randomStage.name);
-                HighlightStageSelection();
-            }
-            else
-            {
-                selectedButton.onClick.Invoke();
-            }
-
-            stagePicked = true;
-            readyToProceed = true;
-            HighlightProceed();
+        if (!gameObject.activeInHierarchy || EventSystem.current == null || stageButtons == null)
             return;
+
+        foreach (Button stage in stageButtons)
+        {
+            if (stage != null && stage.gameObject.activeInHierarchy && stage.interactable)
+            {
+                EventSystem.current.SetSelectedGameObject(stage.gameObject);
+                return;
+            }
         }
-
-        HighlightStageSelection();
-    }
-
-    void HandleProceed()
-    {
-        HighlightProceed(); // Just highlight — Enter is handled globally in Update()
     }
 
     void HighlightCurrentSelection()
@@ -147,27 +80,9 @@ public class StageChoiceManager : MonoBehaviour
             customButton.Select();
     }
 
-    void HighlightStageSelection()
-    {
-        if (stageButtons != null && stageButtons.Length > selectedStageIndex)
-        {
-            stageButtons[selectedStageIndex].Select();
-        }
-    }
-
-    void HighlightProceed()
-    {
-        proceedButton.Select();
-    }
-
     void ResetAll()
     {
-        gameModePicked = false;
-        stagePicked = false;
-        readyToProceed = false;
-
         selectedModeIndex = 0;
-        selectedStageIndex = 0;
 
         HighlightCurrentSelection();
     }
@@ -248,11 +163,4 @@ public class StageChoiceManager : MonoBehaviour
         }
     }
 
-    private Button GetRandomStageButton()
-    {
-        List<Button> availableButtons = new List<Button>(stageButtons);
-        availableButtons.Remove(randomButton); // Exclude the random button itself
-        int randomIndex = Random.Range(0, availableButtons.Count);
-        return availableButtons[randomIndex];
-    }
 }

@@ -61,19 +61,11 @@ public class CharacterChoiceScript : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        if ((Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.UpArrow) ||
-             Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow)) && notSelected)
-        {
-            AutoSelectButton();
-        }
-
-        if (bothpicked && (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)))
-        {
-            TriggerStartButton();
-        }
-    }
+    // Keyboard/gamepad navigation is handled by Unity's EventSystem + MenuNavigator (Canvas):
+    // first direction press selects the first character, Enter/A clicks the selected button
+    // (when everyone has picked, CharacterChoiceMenu selects Start, so Enter starts the game once).
+    // The old arrow-key auto-select and Enter -> Start handling was removed from here because it
+    // ran in parallel with the EventSystem and could press Start more than once.
 
     void AutoSelectButton()
     {

@@ -1,8 +1,9 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
-public class StageChoiceButtons : MonoBehaviour
+public class StageChoiceButtons : MonoBehaviour, IMenuCancelHandler
 {
     public Button[] stageButtons;  // Buttons representing stages
     public TextMeshProUGUI stageNameText;  // Text to display the selected stage name
@@ -58,6 +59,29 @@ public class StageChoiceButtons : MonoBehaviour
 
         // Show the start button once a stage is selected
         startButton.gameObject.SetActive(true);
+
+        // Keyboard/gamepad: put the cursor on Proceed, so Enter/A continues to character select.
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(startButton.gameObject);
+    }
+
+    /// <summary>Esc / gamepad B (via MenuNavigator): undo the stage pick, exactly like right-click,
+    /// and put the cursor back on that stage. Returns false when no stage is picked, so Back is pressed.</summary>
+    public bool TryCancel()
+    {
+        if (!stagePicked)
+            return false;
+
+        // While a stage is picked, only that stage button is still interactable.
+        Button picked = null;
+        foreach (Button button in stageButtons)
+            if (button != null && button.interactable) { picked = button; break; }
+
+        ResetStageSelection();
+
+        if (picked != null && EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(picked.gameObject);
+        return true;
     }
 
     public void ResetStageSelection()
