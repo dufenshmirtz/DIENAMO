@@ -42,7 +42,10 @@ public class PauseMenuScript : MonoBehaviour
             return;
         }
 
-        if (!wasOpen && !open)
+        // Victory screen is up: Esc / Start must not open the pause menu on top of it.
+        bool victoryShown = manager.victoryScreenNavigation != null && manager.victoryScreenNavigation.activeInHierarchy;
+
+        if (!wasOpen && !open && !victoryShown)
         {
             // Closed: Esc or gamepad Start opens the pause menu.
             if (esc || start) ToggleMenu();

@@ -377,6 +377,219 @@ public static class MenuNavigationSetup
         EditorUtility.SetDirty(s);
     }
 
+    [MenuItem("Tools/DIENAMO/Menu Navigation/Apply Step 8 (Character select label fix, pause volume sliders)")]
+    static void ApplyStep8()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        string back = EditorSceneManager.GetActiveScene().path;
+
+        // 1) Character select: Back/Start are not characters -> remove them from CharacterChoiceScript.buttons
+        //    (the buttons themselves stay; only the script's list changes).
+        var menuScene = EditorSceneManager.OpenScene("Assets/Scenes/HoHMainMenu.unity", OpenSceneMode.Single);
+        var chars = FindInScene("Canvas/StartingScreenBG/CharacterChoiceMenu");
+        var cscript = chars != null ? chars.GetComponent<CharacterChoiceScript>() : null;
+        if (cscript != null)
+        {
+            int before = cscript.buttons.Length;
+            cscript.buttons = System.Array.FindAll(cscript.buttons, b => b != null && b.name != "BackButton" && b.name != "StartButton");
+            EditorUtility.SetDirty(cscript);
+            EditorSceneManager.MarkSceneDirty(menuScene);
+            EditorSceneManager.SaveScene(menuScene);
+            Debug.Log("[NavSetup] CharacterChoiceScript.buttons: " + before + " -> " + cscript.buttons.Length + " (removed BackButton/StartButton). Saved HoHMainMenu.");
+        }
+        else Debug.LogError("[NavSetup] CharacterChoiceScript not found on CharacterChoiceMenu.");
+
+        // 2) Pause menu volume sliders (rotated to look vertical): Up/Down = volume, Left/Right = other slider.
+        foreach (var scenePath in new[] { "Assets/Scenes/GamePlayScene.unity", "Assets/Scenes/TutorialScene.unity" })
+        {
+            var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            var musicGo = FindInScene("Canvas/MenuImage/SoundSettings/MusicSlider");
+            var sfxGo = FindInScene("Canvas/MenuImage/SoundSettings/SFXSlider");
+            var backGo = FindInScene("Canvas/MenuImage/SoundSettings/Back");
+            if (musicGo == null || sfxGo == null || backGo == null) { Debug.LogError("[NavSetup] Sound sliders not found in " + scenePath); continue; }
+
+            var music = musicGo.GetComponent<Slider>();
+            var sfx = sfxGo.GetComponent<Slider>();
+            var backBtn = backGo.GetComponent<Selectable>();
+            foreach (var sl in new[] { music, sfx })
+            {
+                var keys = sl.GetComponent<RotatedSliderKeys>();
+                if (keys == null) keys = sl.gameObject.AddComponent<RotatedSliderKeys>();
+                // +90 degrees around Z: the slider's "right" points up, so Up increases the value.
+                keys.upIncreases = Mathf.DeltaAngle(sl.transform.localEulerAngles.z, 90f) < 45f;
+                EditorUtility.SetDirty(keys);
+            }
+            Link(music, left: sfx, right: sfx);
+            Link(sfx, left: music, right: music);
+            Link(backBtn, up: music, left: music, right: sfx);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[NavSetup] " + scenePath + ": volume sliders Up/Down = volume, Left/Right = Music <-> SFX, Esc/B = Back. Saved.");
+        }
+
+        if (!string.IsNullOrEmpty(back)) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+        Debug.Log("[NavSetup] Step 8 applied (scenes already saved). To undo: revert the scene files in GitHub Desktop.");
+    }
+
+    [MenuItem("Tools/DIENAMO/Menu Navigation/Apply Step 9 (Character select Back = mouse + Esc only)")]
+    static void ApplyStep9()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        string back = EditorSceneManager.GetActiveScene().path;
+
+        var scene = EditorSceneManager.OpenScene("Assets/Scenes/HoHMainMenu.unity", OpenSceneMode.Single);
+        var backGo = FindInScene("Canvas/StartingScreenBG/CharacterChoiceMenu/BackButton");
+        var lupenGo = FindInScene("Canvas/StartingScreenBG/CharacterChoiceMenu/CharacterButtons/Lupen");
+        var visviaGo = FindInScene("Canvas/StartingScreenBG/CharacterChoiceMenu/CharacterButtons/Visvia");
+        if (backGo == null || lupenGo == null || visviaGo == null) { Debug.LogError("[NavSetup] Character select objects not found."); return; }
+
+        // Back button: mouse only. Keyboard/gamepad go back with Esc / B (MenuNavigator: undo last pick first, then Back).
+        var backSel = backGo.GetComponent<Selectable>();
+        var n = backSel.navigation; n.mode = Navigation.Mode.None; backSel.navigation = n;
+        EditorUtility.SetDirty(backSel);
+        Debug.Log("[NavSetup] Character select BackButton Navigation = None (mouse only; Esc/B = back)");
+
+        // Lupen's Left used to lead to Back; now it wraps to the end of its row (Visvia), like the rest of the grid.
+        var lupen = lupenGo.GetComponent<Selectable>();
+        var ln = lupen.navigation;
+        if (ln.selectOnLeft == backSel)
+        {
+            ln.selectOnLeft = visviaGo.GetComponent<Selectable>();
+            lupen.navigation = ln;
+            EditorUtility.SetDirty(lupen);
+            Debug.Log("[NavSetup] Lupen Left: BackButton -> Visvia (row wrap)");
+        }
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        if (!string.IsNullOrEmpty(back) && back != scene.path) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+        Debug.Log("[NavSetup] Step 9 applied and HoHMainMenu saved. To undo: revert HoHMainMenu.unity in GitHub Desktop.");
+    }
+
+    [MenuItem("Tools/DIENAMO/Menu Navigation/Apply Step 10 (Victory screen)")]
+    static void ApplyStep10()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        string back = EditorSceneManager.GetActiveScene().path;
+
+        foreach (var scenePath in new[] { "Assets/Scenes/GamePlayScene.unity", "Assets/Scenes/TutorialScene.unity" })
+        {
+            var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            var canvas = FindInScene("Canvas");
+            var nav = canvas != null ? canvas.GetComponent<MenuNavigator>() : null;
+            var victory = FindInScene("Canvas/VictoryScreenNavigation");
+            if (nav == null || victory == null) { Debug.LogWarning("[NavSetup] " + scenePath + ": no MenuNavigator or VictoryScreenNavigation - skipped."); continue; }
+
+            var playAgain = FindInScene("Canvas/VictoryScreenNavigation/PlayAgainButton");
+            var profiles = FindInScene("Canvas/VictoryScreenNavigation/ChangeProfilesPanel");
+            var apply = FindInScene("Canvas/VictoryScreenNavigation/ChangeProfilesPanel/Apply");
+
+            // Victory screen (and its Change Profiles panel) handled by the navigator: always something selected,
+            // new indicator on every button, Esc/B on the Change Profiles panel = Cancel.
+            if (!nav.managedPanels.Contains(victory)) nav.managedPanels.Add(victory);
+            if (profiles != null && !nav.managedPanels.Contains(profiles)) nav.managedPanels.Add(profiles);
+            if (playAgain != null && !nav.panelDefaults.Exists(d => d.panel == victory))
+                nav.panelDefaults.Add(new MenuNavigator.PanelDefault { panel = victory, firstSelected = playAgain.GetComponent<Selectable>() });
+            if (profiles != null && apply != null && !nav.panelDefaults.Exists(d => d.panel == profiles))
+                nav.panelDefaults.Add(new MenuNavigator.PanelDefault { panel = profiles, firstSelected = apply.GetComponent<Selectable>() });
+            if (System.Array.IndexOf(nav.backButtonNames, "Cancel") < 0)
+            {
+                var names = new List<string>(nav.backButtonNames); names.Insert(0, "Cancel"); nav.backButtonNames = names.ToArray();
+            }
+            EditorUtility.SetDirty(nav);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+            Debug.Log("[NavSetup] " + scenePath + ": victory screen managed (default Play Again), Change Profiles panel managed (default Apply, Esc/B = Cancel). Saved.");
+        }
+
+        if (!string.IsNullOrEmpty(back)) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+        Debug.Log("[NavSetup] Step 10 applied (scenes already saved). To undo: revert those scene files in GitHub Desktop.");
+    }
+
+    [MenuItem("Tools/DIENAMO/Menu Navigation/Apply Step 11 (PvE bot menu, Custom Settings)")]
+    static void ApplyStep11()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        string back = EditorSceneManager.GetActiveScene().path;
+
+        var scene = EditorSceneManager.OpenScene("Assets/Scenes/HoHMainMenu.unity", OpenSceneMode.Single);
+        var canvas = FindInScene("Canvas");
+        var nav = canvas != null ? canvas.GetComponent<MenuNavigator>() : null;
+        var bot = FindInScene("Canvas/StartingScreenBG/BotMenuScene");
+        var proceed = FindInScene("Canvas/StartingScreenBG/BotMenuScene/Proceed");
+        var custom = FindInScene("Canvas/StartingScreenBG/Custom Settings Menu");
+        var slot1 = FindInScene("Canvas/StartingScreenBG/Custom Settings Menu/Slotbuttons/Slot1Button");
+        if (nav == null || bot == null || proceed == null || custom == null || slot1 == null)
+        { Debug.LogError("[NavSetup] MenuNavigator, BotMenuScene/Proceed or Custom Settings Menu/Slot1Button not found."); return; }
+
+        // PvE bot menu: managed (opens on Proceed, arrows reach the bot type/difficulty/side arrows, Esc/B = Back).
+        if (!nav.managedPanels.Contains(bot)) nav.managedPanels.Add(bot);
+        if (!nav.panelDefaults.Exists(d => d.panel == bot))
+            nav.panelDefaults.Add(new MenuNavigator.PanelDefault { panel = bot, firstSelected = proceed.GetComponent<Selectable>() });
+        Debug.Log("[NavSetup] BotMenuScene managed (default Proceed, Esc/B = Back)");
+
+        // Custom Settings: managed (opens on Slot 1, Esc/B = Back), old SlotMenuNavigation disabled (not deleted).
+        if (!nav.managedPanels.Contains(custom)) nav.managedPanels.Add(custom);
+        if (!nav.panelDefaults.Exists(d => d.panel == custom))
+            nav.panelDefaults.Add(new MenuNavigator.PanelDefault { panel = custom, firstSelected = slot1.GetComponent<Selectable>() });
+        foreach (var mb in custom.GetComponents<MonoBehaviour>())
+            if (mb != null && mb.GetType().Name == "SlotMenuNavigation" && mb.enabled)
+            { mb.enabled = false; EditorUtility.SetDirty(mb); Debug.Log("[NavSetup] Disabled old SlotMenuNavigation on Custom Settings Menu"); }
+        Debug.Log("[NavSetup] Custom Settings Menu managed (default Slot 1, Esc/B = Back)");
+
+        EditorUtility.SetDirty(nav);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        if (!string.IsNullOrEmpty(back) && back != scene.path) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+        Debug.Log("[NavSetup] Step 11 applied and HoHMainMenu saved. To undo: revert HoHMainMenu.unity in GitHub Desktop.");
+    }
+
+    [MenuItem("Tools/DIENAMO/Menu Navigation/Apply Step 12 (All remaining main-menu panels: Options sub-menus etc.)")]
+    static void ApplyStep12()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        string back = EditorSceneManager.GetActiveScene().path;
+
+        var scene = EditorSceneManager.OpenScene("Assets/Scenes/HoHMainMenu.unity", OpenSceneMode.Single);
+        var canvas = FindInScene("Canvas");
+        var nav = canvas != null ? canvas.GetComponent<MenuNavigator>() : null;
+        var bg = FindInScene("Canvas/StartingScreenBG");
+        if (nav == null || bg == null) { Debug.LogError("[NavSetup] MenuNavigator / StartingScreenBG not found."); return; }
+
+        // Every panel under StartingScreenBG that has a Back (or No) button and is not managed yet
+        // (Audio, Profiles, Profile Editor, Controls, Stats, Replays, Profile Analysis, Edit Settings, lore/info pages,
+        // Yes/No dialog): something is selected when it opens, new indicator, Esc/B = its own Back/No button.
+        foreach (Transform child in bg.transform)
+        {
+            var go = child.gameObject;
+            if (nav.managedPanels.Contains(go)) continue;
+            bool hasBack = false;
+            foreach (var b in go.GetComponentsInChildren<Button>(true))
+                if (b.name == "BackButton" || b.name == "NoButton") { hasBack = true; break; }
+            if (!hasBack) continue;
+            nav.managedPanels.Add(go);
+            Debug.Log("[NavSetup] Managed panel: " + go.name + " (Esc/B = Back)");
+        }
+
+        // Yes/No dialogs had Navigation = None (couldn't move between Yes and No) -> Automatic.
+        foreach (var b in bg.GetComponentsInChildren<Button>(true))
+        {
+            if (b.transform.parent == null || b.transform.parent.name != "WarningMessageCanvas") continue;
+            if (b.navigation.mode != Navigation.Mode.None) continue;
+            var n = b.navigation; n.mode = Navigation.Mode.Automatic; b.navigation = n;
+            EditorUtility.SetDirty(b);
+            Debug.Log("[NavSetup] " + b.transform.parent.parent.name + "/WarningMessageCanvas/" + b.name + " Navigation = Automatic");
+        }
+
+        EditorUtility.SetDirty(nav);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        if (!string.IsNullOrEmpty(back) && back != scene.path) EditorSceneManager.OpenScene(back, OpenSceneMode.Single);
+        Debug.Log("[NavSetup] Step 12 applied and HoHMainMenu saved. To undo: revert HoHMainMenu.unity in GitHub Desktop.");
+    }
+
     static GameObject FindInScene(string path)
     {
         var parts = path.Split('/');

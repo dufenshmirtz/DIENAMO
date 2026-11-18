@@ -3088,14 +3088,21 @@ MonoBehaviour:
   managedPanels:
   - {fileID: 940830954}
   - {fileID: 930861427}
+  - {fileID: 1599703186}
+  - {fileID: 1595019496}
   panelDefaults:
   - panel: {fileID: 940830954}
     firstSelected: {fileID: 1590474011}
   - panel: {fileID: 930861427}
     firstSelected: {fileID: 507262019}
+  - panel: {fileID: 1599703186}
+    firstSelected: {fileID: 675885517}
+  - panel: {fileID: 1595019496}
+    firstSelected: {fileID: 2097330549}
   selectOnFirstInput: []
   noIndicatorUnder: []
   backButtonNames:
+  - Cancel
   - Back
   - ResumeButton
   sfx: {fileID: 0}
@@ -13736,6 +13743,7 @@ GameObject:
   m_Component:
   - component: {fileID: 507262018}
   - component: {fileID: 507262019}
+  - component: {fileID: 507262020}
   m_Layer: 5
   m_Name: MusicSlider
   m_TagString: Untagged
@@ -13780,10 +13788,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 583462909}
-    m_SelectOnDown: {fileID: 1222930771}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 1222930771}
+    m_SelectOnRight: {fileID: 1222930771}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.078431375, g: 0.043137256, b: 0.2509804, a: 0.16862746}
@@ -13828,6 +13836,20 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &507262020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 507262017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238f43d328e91de48b5afb6034209277, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stepFraction: 0.1
+  upIncreases: 1
 --- !u!4 &509641167 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7153430015563890371, guid: ffb5788334799754a9ad80b9ea452c87, type: 3}
@@ -16389,10 +16411,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 1222930771}
-    m_SelectOnDown: {fileID: 507262019}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
+    m_SelectOnUp: {fileID: 507262019}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 507262019}
+    m_SelectOnRight: {fileID: 1222930771}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 0}
@@ -32113,6 +32135,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1222930770}
   - component: {fileID: 1222930771}
+  - component: {fileID: 1222930772}
   m_Layer: 5
   m_Name: SFXSlider
   m_TagString: Untagged
@@ -32157,10 +32180,10 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 507262019}
-    m_SelectOnDown: {fileID: 583462909}
-    m_SelectOnLeft: {fileID: 0}
-    m_SelectOnRight: {fileID: 0}
+    m_SelectOnUp: {fileID: 0}
+    m_SelectOnDown: {fileID: 0}
+    m_SelectOnLeft: {fileID: 507262019}
+    m_SelectOnRight: {fileID: 507262019}
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 0.078431375, g: 0.043137256, b: 0.2509804, a: 0.16862746}
@@ -32205,6 +32228,20 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+--- !u!114 &1222930772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1222930769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 238f43d328e91de48b5afb6034209277, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  stepFraction: 0.1
+  upIncreases: 1
 --- !u!1 &1226532179
 GameObject:
   m_ObjectHideFlags: 0

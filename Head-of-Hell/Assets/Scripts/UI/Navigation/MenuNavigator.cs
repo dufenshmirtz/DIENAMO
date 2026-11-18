@@ -126,7 +126,7 @@ public class MenuNavigator : MonoBehaviour
         MenuInputGuard.MarkOpen();
 
         // Cancel (Esc / gamepad B) -> let the panel undo something first, otherwise press its own back button.
-        if (CancelPressed(es) && Time.frameCount - lastPanelOpenedFrame > 1)
+        if (CancelPressed(es) && Time.frameCount - lastPanelOpenedFrame > 1 && !IsRebinding())
         {
             foreach (var handler in panel.GetComponentsInChildren<IMenuCancelHandler>(false))
                 if (handler.TryCancel()) return;
@@ -204,10 +204,15 @@ public class MenuNavigator : MonoBehaviour
             if (d != null && d.panel == panel && d.firstSelected != null && IsUsable(d.firstSelected.gameObject))
                 return d.firstSelected.gameObject;
 
+        // First choice: the first navigable button that is not a Back/No button; otherwise any navigable one.
+        GameObject fallback = null;
         foreach (var s in panel.GetComponentsInChildren<Selectable>(false))
-            if (IsUsable(s.gameObject) && IsNavigable(s.gameObject)) return s.gameObject;
-
-        return null;
+        {
+            if (!IsUsable(s.gameObject) || !IsNavigable(s.gameObject)) continue;
+            if (System.Array.IndexOf(backButtonNames, s.name) < 0) return s.gameObject;
+            if (fallback == null) fallback = s.gameObject;
+        }
+        return fallback;
     }
 
     Button FindBackButton(GameObject panel)
@@ -232,6 +237,14 @@ public class MenuNavigator : MonoBehaviour
     {
         var s = go.GetComponent<Selectable>();
         return s != null && s.navigation.mode != Navigation.Mode.None;
+    }
+
+    // While a key is being rebound (Controls menu), Esc belongs to RebindListener (it cancels the rebind).
+    static bool IsRebinding()
+    {
+        foreach (var r in FindObjectsOfType<RebindListener>())
+            if (r != null && r.IsListening) return true;
+        return false;
     }
 
     static bool IsUnderAny(Transform t, List<GameObject> roots)

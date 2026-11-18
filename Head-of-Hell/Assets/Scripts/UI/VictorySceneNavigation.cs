@@ -51,17 +51,7 @@ public class VictoryScreenNavigation : MonoBehaviour
         BackToMenuButton.navigation = navBackToMenu;
     }
 
-    void Update()
-    {
-        if (!isVictoryScreenActive) return;
-
-        if (Input.GetKeyDown(KeyCode.Return))
-        {
-            GameObject selected = EventSystem.current.currentSelectedGameObject;
-            if (selected != null && selected.TryGetComponent(out Button button))
-            {
-                button.onClick.Invoke();
-            }
-        }
-    }
+    // Enter / gamepad A is handled by the EventSystem (it clicks the selected button) and MenuNavigator
+    // keeps a button selected. The old Update() that ALSO clicked the selected button on Enter was removed,
+    // because together with the EventSystem it pressed buttons twice (e.g. Play Again / Save Replay).
 }
