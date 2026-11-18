@@ -2983,6 +2983,7 @@ GameObject:
   - component: {fileID: 102424233}
   - component: {fileID: 102424232}
   - component: {fileID: 102424236}
+  - component: {fileID: 102424237}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -3124,6 +3125,40 @@ MonoBehaviour:
   p2Manager: {fileID: 1367423825}
   gameManager: {fileID: 2144866982}
   audioManager: {fileID: 832730747}
+--- !u!114 &102424237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 102424231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd7b7baa20464bd4687f9b76d4997e4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  managedPanels:
+  - {fileID: 940830954}
+  - {fileID: 930861427}
+  panelDefaults:
+  - panel: {fileID: 940830954}
+    firstSelected: {fileID: 1590474011}
+  - panel: {fileID: 930861427}
+    firstSelected: {fileID: 507262019}
+  selectOnFirstInput: []
+  noIndicatorUnder: []
+  backButtonNames:
+  - Back
+  - ResumeButton
+  sfx: {fileID: 0}
+  gameplaySfx: {fileID: 832730747}
+  glowColor: {r: 0.85, g: 0.3, b: 0.42, a: 0.2}
+  underlineColor: {r: 1, g: 0.62, b: 0.72, a: 0.9}
+  selectedScale: 1.035
+  fadeTime: 0.12
+  glowPadding: {x: 10, y: 6}
+  underlineWidth: 0.7
+  underlineHeight: 3
 --- !u!1 &102498954
 GameObject:
   m_ObjectHideFlags: 0
@@ -9121,7 +9156,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296144838}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6bc02d27fa3d37542b9a84acb274bb59, type: 3}
   m_Name: 
@@ -14328,10 +14363,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
+    m_SelectOnUp: {fileID: 583462909}
+    m_SelectOnDown: {fileID: 1222930771}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -16759,8 +16794,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 1590474011}
-    m_SelectOnDown: {fileID: 790769233}
+    m_SelectOnUp: {fileID: 790769233}
+    m_SelectOnDown: {fileID: 1590474011}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -17028,8 +17063,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 790769233}
-    m_SelectOnDown: {fileID: 576012246}
+    m_SelectOnUp: {fileID: 1222930771}
+    m_SelectOnDown: {fileID: 507262019}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -22581,8 +22616,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 576012246}
-    m_SelectOnDown: {fileID: 1590474011}
+    m_SelectOnUp: {fileID: 1885681509}
+    m_SelectOnDown: {fileID: 576012246}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -34576,10 +34611,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
+    m_SelectOnUp: {fileID: 507262019}
+    m_SelectOnDown: {fileID: 583462909}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -44630,8 +44665,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 790769233}
-    m_SelectOnDown: {fileID: 576012246}
+    m_SelectOnUp: {fileID: 576012246}
+    m_SelectOnDown: {fileID: 1885681509}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -52983,8 +53018,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 790769233}
-    m_SelectOnDown: {fileID: 576012246}
+    m_SelectOnUp: {fileID: 1590474011}
+    m_SelectOnDown: {fileID: 790769233}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -55300,7 +55335,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}

@@ -49,6 +49,8 @@ public class MenuNavigator : MonoBehaviour
     [Header("Sound")]
     [Tooltip("Same MainMenuMusic the old menu navigation script used. Leave empty for no move sound.")]
     public MainMenuMusic sfx;
+    [Tooltip("In gameplay scenes: the AudioManager whose ButtonSound() the old pause menu navigation used.")]
+    public AudioManager gameplaySfx;
 
     [Header("Indicator look (shared by every SelectionIndicator)")]
     public Color glowColor = new Color(0.85f, 0.30f, 0.42f, 0.20f);
@@ -66,6 +68,9 @@ public class MenuNavigator : MonoBehaviour
     // Frame of the last direction press (arrows / D-pad / stick): the move sound only plays for real moves,
     // not when a script moves the cursor (e.g. to Start or Proceed after a pick).
     int lastMoveInputFrame = -10;
+    // Frame in which a managed panel became the open panel: Cancel is ignored in that frame and the next,
+    // so the same Esc press that OPENED a menu (e.g. the pause menu) doesn't immediately close it again.
+    int lastPanelOpenedFrame = -10;
 
     readonly Dictionary<GameObject, GameObject> lastSelectedInPanel = new Dictionary<GameObject, GameObject>();
     readonly List<GameObject> openOrder = new List<GameObject>();   // managed panels, most recently opened last
@@ -109,17 +114,19 @@ public class MenuNavigator : MonoBehaviour
         // Move sound: selection changed between two usable buttons, not because of the mouse,
         // and only for elements with our indicator (the others play their own sounds).
         if (current != previousSelection && IsUsable(current) && previousSelection != null &&
-            lastPointerSelectFrame < Time.frameCount - 1 && lastMoveInputFrame >= Time.frameCount - 1 && sfx != null &&
+            lastPointerSelectFrame < Time.frameCount - 1 && lastMoveInputFrame >= Time.frameCount - 1 &&
             current.GetComponent<SelectionIndicator>() != null)
         {
-            sfx.ButtonSound();
+            if (sfx != null) sfx.ButtonSound();
+            else if (gameplaySfx != null) gameplaySfx.ButtonSound();
         }
         previousSelection = current;
 
         if (panel == null || IsTyping(current)) return;
+        MenuInputGuard.MarkOpen();
 
         // Cancel (Esc / gamepad B) -> let the panel undo something first, otherwise press its own back button.
-        if (CancelPressed(es))
+        if (CancelPressed(es) && Time.frameCount - lastPanelOpenedFrame > 1)
         {
             foreach (var handler in panel.GetComponentsInChildren<IMenuCancelHandler>(false))
                 if (handler.TryCancel()) return;
@@ -167,6 +174,7 @@ public class MenuNavigator : MonoBehaviour
             {
                 openOrder.Remove(p);
                 openOrder.Add(p);
+                lastPanelOpenedFrame = Time.frameCount;
             }
             if (active) activeLastFrame.Add(p); else activeLastFrame.Remove(p);
         }

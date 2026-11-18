@@ -1100,8 +1100,11 @@ public class GameManager : MonoBehaviour
             TelemetryManager.Instance?.MarkFightStart();
         }
 
-        // Restart anytime during normal gameplay (not training)
-        if (!trainingMode && Input.GetKeyDown(KeyCode.Return))
+        // Restart anytime during normal gameplay (not training) - but not while a menu is open
+        // (pause menu / victory screen use Enter to press their buttons).
+        bool menuOpen = MenuInputGuard.MenuOpen ||
+                        (victoryScreenNavigation != null && victoryScreenNavigation.activeInHierarchy);
+        if (!trainingMode && !menuOpen && Input.GetKeyDown(KeyCode.Return))
         {
             QuickRestart();
         }

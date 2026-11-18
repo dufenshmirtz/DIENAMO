@@ -326,7 +326,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -2946,6 +2945,7 @@ GameObject:
   - component: {fileID: 102424233}
   - component: {fileID: 102424232}
   - component: {fileID: 102424236}
+  - component: {fileID: 102424237}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -3073,6 +3073,40 @@ MonoBehaviour:
   p2Manager: {fileID: 1367423825}
   gameManager: {fileID: 2144866982}
   audioManager: {fileID: 832730747}
+--- !u!114 &102424237
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 102424231}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd7b7baa20464bd4687f9b76d4997e4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  managedPanels:
+  - {fileID: 940830954}
+  - {fileID: 930861427}
+  panelDefaults:
+  - panel: {fileID: 940830954}
+    firstSelected: {fileID: 1590474011}
+  - panel: {fileID: 930861427}
+    firstSelected: {fileID: 507262019}
+  selectOnFirstInput: []
+  noIndicatorUnder: []
+  backButtonNames:
+  - Back
+  - ResumeButton
+  sfx: {fileID: 0}
+  gameplaySfx: {fileID: 832730747}
+  glowColor: {r: 0.85, g: 0.3, b: 0.42, a: 0.2}
+  underlineColor: {r: 1, g: 0.62, b: 0.72, a: 0.9}
+  selectedScale: 1.035
+  fadeTime: 0.12
+  glowPadding: {x: 10, y: 6}
+  underlineWidth: 0.7
+  underlineHeight: 3
 --- !u!1 &102498954
 GameObject:
   m_ObjectHideFlags: 0
@@ -4845,7 +4879,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -5482,7 +5515,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -6703,6 +6735,11 @@ MonoBehaviour:
   ChibackColor: {r: 1, g: 1, b: 1, a: 1}
   LupenColor: {r: 1, g: 1, b: 1, a: 1}
   LupenSpiritColor: {r: 0.6698113, g: 0.6698113, b: 0.6698113, a: 1}
+  player1OutlineColor: {r: 0.96, g: 0.18, b: 0.18, a: 1}
+  player2OutlineColor: {r: 0.2, g: 0.52, b: 1, a: 1}
+  player3OutlineColor: {r: 0.12, g: 0.86, b: 0.36, a: 1}
+  player4OutlineColor: {r: 1, g: 0.85, b: 0.18, a: 1}
+  outlineSize: 1
   SteelagerAnimatorController: {fileID: 9100000, guid: bd34ee43096dbcc438b20dbac8fff3b0, type: 2}
   FinAnimatorController: {fileID: 9100000, guid: 9a5ce3a335588a2468b9949c17340e17, type: 2}
   RagerAnimatorController: {fileID: 9100000, guid: f71edc3b937f70a43934b1b47dee5d0a, type: 2}
@@ -6776,7 +6813,6 @@ MonoBehaviour:
   selfManager: {fileID: 221568179}
   enemyManager: {fileID: 1367423825}
   playerSuffix: _P1
-  emptyReleasedChargePenalty: -0.0004
 --- !u!114 &221568216
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7749,7 +7785,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -8707,7 +8742,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 296144838}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6bc02d27fa3d37542b9a84acb274bb59, type: 3}
   m_Name: 
@@ -9781,7 +9816,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -10714,7 +10748,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -12639,7 +12672,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -13746,10 +13778,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
+    m_SelectOnUp: {fileID: 583462909}
+    m_SelectOnDown: {fileID: 1222930771}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -14405,7 +14437,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -15376,7 +15407,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -16090,8 +16120,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 1590474011}
-    m_SelectOnDown: {fileID: 790769233}
+    m_SelectOnUp: {fileID: 790769233}
+    m_SelectOnDown: {fileID: 1590474011}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -16359,8 +16389,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 790769233}
-    m_SelectOnDown: {fileID: 576012246}
+    m_SelectOnUp: {fileID: 1222930771}
+    m_SelectOnDown: {fileID: 507262019}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -17740,7 +17770,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -20665,7 +20694,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -21583,8 +21611,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 576012246}
-    m_SelectOnDown: {fileID: 1590474011}
+    m_SelectOnUp: {fileID: 1885681509}
+    m_SelectOnDown: {fileID: 576012246}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -23892,7 +23920,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -24266,7 +24293,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -24669,6 +24695,50 @@ Transform:
   - {fileID: 1951567237}
   m_Father: {fileID: 1531342470}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &900000100
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 900000101}
+  - component: {fileID: 900000102}
+  m_Layer: 0
+  m_Name: TutorialManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &900000101
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900000100}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &900000102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 900000100}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebfdcea2945644c29f494a11414e5c2d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &902193229
 GameObject:
   m_ObjectHideFlags: 0
@@ -27657,7 +27727,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -30613,7 +30682,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -30857,7 +30925,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -31693,7 +31760,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f147db0553337344862593914dda28a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -32089,10 +32155,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 0}
-    m_SelectOnDown: {fileID: 0}
+    m_SelectOnUp: {fileID: 507262019}
+    m_SelectOnDown: {fileID: 583462909}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -32510,7 +32576,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -32837,7 +32902,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -33316,7 +33380,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6998d57695752804ca4547096e6a4673, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -34097,7 +34160,6 @@ MonoBehaviour:
   enableTelemetry: 1
   debugToConsole: 0
   prettyPrintJson: 1
-  autoStartOnFirstEvent: 1
   autoSaveOnQuit: 1
 --- !u!4 &1291379660
 Transform:
@@ -34447,7 +34509,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -35002,7 +35063,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 654129d6cad6bc149a6e4cdd914d6d5f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -36317,6 +36377,11 @@ MonoBehaviour:
   ChibackColor: {r: 1, g: 1, b: 1, a: 1}
   LupenColor: {r: 1, g: 1, b: 1, a: 1}
   LupenSpiritColor: {r: 0.67058825, g: 0.67058825, b: 0.67058825, a: 1}
+  player1OutlineColor: {r: 0.96, g: 0.18, b: 0.18, a: 1}
+  player2OutlineColor: {r: 0.2, g: 0.52, b: 1, a: 1}
+  player3OutlineColor: {r: 0.12, g: 0.86, b: 0.36, a: 1}
+  player4OutlineColor: {r: 1, g: 0.85, b: 0.18, a: 1}
+  outlineSize: 1
   SteelagerAnimatorController: {fileID: 9100000, guid: bd34ee43096dbcc438b20dbac8fff3b0, type: 2}
   FinAnimatorController: {fileID: 9100000, guid: 9a5ce3a335588a2468b9949c17340e17, type: 2}
   RagerAnimatorController: {fileID: 9100000, guid: f71edc3b937f70a43934b1b47dee5d0a, type: 2}
@@ -36390,7 +36455,6 @@ MonoBehaviour:
   selfManager: {fileID: 1367423825}
   enemyManager: {fileID: 221568179}
   playerSuffix: _P2
-  emptyReleasedChargePenalty: -0.0004
 --- !u!114 &1367423862
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38329,7 +38393,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -39720,7 +39783,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -40569,8 +40631,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 790769233}
-    m_SelectOnDown: {fileID: 576012246}
+    m_SelectOnUp: {fileID: 576012246}
+    m_SelectOnDown: {fileID: 1885681509}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -41820,7 +41882,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -42316,7 +42377,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -44780,7 +44840,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d83bc2e325808824ab233587b3d8da4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -46426,7 +46485,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5ee14e5ef9e5575408a48f14c588dfa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -48428,8 +48486,8 @@ MonoBehaviour:
   m_Navigation:
     m_Mode: 4
     m_WrapAround: 0
-    m_SelectOnUp: {fileID: 790769233}
-    m_SelectOnDown: {fileID: 576012246}
+    m_SelectOnUp: {fileID: 1590474011}
+    m_SelectOnDown: {fileID: 790769233}
     m_SelectOnLeft: {fileID: 0}
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
@@ -50020,7 +50078,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -50612,7 +50669,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Navigation:
-    m_Mode: 3
+    m_Mode: 0
     m_WrapAround: 0
     m_SelectOnUp: {fileID: 0}
     m_SelectOnDown: {fileID: 0}
@@ -51075,7 +51132,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ce9d25f139ebd644b82ae0aa368bfef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -51682,7 +51738,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a45580a4c381f424ab955b7bf58228a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -54271,8 +54326,12 @@ MonoBehaviour:
   finalWinner: {fileID: 378751617}
   p1ProfileNameText: {fileID: 1894171373}
   p2ProfileNameText: {fileID: 743971580}
+  p3ProfileNameText: {fileID: 0}
+  p4ProfileNameText: {fileID: 0}
   p1Manager: {fileID: 221568179}
   p2Manager: {fileID: 1367423825}
+  p3Manager: {fileID: 0}
+  p4Manager: {fileID: 0}
   playAgainButton: {fileID: 675885515}
   mainMenuButton: {fileID: 1593568637}
   saveReplayButton: {fileID: 86648141}
@@ -54284,6 +54343,12 @@ MonoBehaviour:
   p2R1: {fileID: 2147385444}
   p2R2: {fileID: 1972993231}
   p2R3: {fileID: 1577572721}
+  p3R1: {fileID: 0}
+  p3R2: {fileID: 0}
+  p3R3: {fileID: 0}
+  p4R1: {fileID: 0}
+  p4R2: {fileID: 0}
+  p4R3: {fileID: 0}
   portalPairs:
   - {fileID: 2378139886903145467}
   - {fileID: 979127239}
@@ -54803,7 +54868,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 187a91747899a5f4da73dbe80614cf50, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveLogCooldown: 0.2
   isBlocking: 0
   ignoreDamage: 0
   isStatic: 0
@@ -54844,50 +54908,6 @@ MonoBehaviour:
   spawn: {fileID: 0}
   isLightAttacking: 0
   heavyAttacking: 0
---- !u!1 &900000100
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 900000101}
-  - component: {fileID: 900000102}
-  m_Layer: 0
-  m_Name: TutorialManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &900000101
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900000100}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &900000102
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 900000100}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ebfdcea2945644c29f494a11414e5c2d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
